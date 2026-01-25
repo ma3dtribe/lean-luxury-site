@@ -29,28 +29,67 @@
     <p>MA3DTribe Media</p>
   </header>
 
-  <main>
-    <section>
-      <h2>Live Now</h2>
+  <div class="bg-glow"></div>
+<main>
+  <section class="hero">
+    <div class="hero-left">
+      <span class="pill">MA3DTribe Media</span>
+      <h2>Live streams, podcasts, sports talk, and culture.</h2>
+      <p class="subtext">
+        Watch live on Twitch, catch replays, and tap in with the community.
+      </p>
 
-      <!-- Twitch Video -->
-   <iframe
-  src="https://player.twitch.tv/?channel=MA3DTribe&parent=ma3dtribe.netlify.app"
-  height="400"
-  width="100%"
-  allowfullscreen>
-</iframe>
+      <div class="cta-row">
+        <a class="btn primary" href="#live">Watch Live</a>
+        <a class="btn ghost" href="#podcasts">Explore Shows</a>
+      </div>
+    </div>
 
+    <div class="hero-right">
+      <div class="stat-card">
+        <div class="stat-title">Now Streaming</div>
+        <div class="stat-value">MA3DTribe</div>
+        <div class="stat-note">Twitch + live chat</div>
+      </div>
+    </div>
+  </section>
 
-      <!-- Twitch Chat -->
-  <iframe
-  src="https://www.twitch.tv/embed/MA3DTribe/chat?parent=ma3dtribe.netlify.app"
-  height="300"
-  width="100%">
-</iframe>
+  <section id="live" class="card">
+    <h3>Live Now</h3>
 
-    </section>
-  </main>
+    <iframe
+      src="https://player.twitch.tv/?channel=MA3DTribe&parent=ma3dtribe.netlify.app"
+      height="420"
+      width="100%"
+      allowfullscreen>
+    </iframe>
+
+    <iframe
+      src="https://www.twitch.tv/embed/MA3DTribe/chat?parent=ma3dtribe.netlify.app"
+      height="320"
+      width="100%">
+    </iframe>
+  </section>
+
+  <section id="podcasts" class="card">
+    <h3>Featured Shows</h3>
+    <div class="grid">
+      <div class="tile">
+        <div class="tile-title">Sports</div>
+        <div class="tile-text">Weekly breakdowns, recaps, and debates.</div>
+      </div>
+      <div class="tile">
+        <div class="tile-title">Law</div>
+        <div class="tile-text">Real conversations on legal topics & culture.</div>
+      </div>
+      <div class="tile">
+        <div class="tile-title">Music</div>
+        <div class="tile-text">Live sets, interviews, and community vibes.</div>
+      </div>
+    </div>
+  </section>
+</main>
 
 </body>
+  <div class="bg-glow"></div>
 </html>
