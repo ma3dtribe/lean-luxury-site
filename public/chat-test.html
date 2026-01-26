@@ -1,1 +1,37 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MA3DTRIBE Chat Test</title>
+</head>
+<body>
+  <h1 style="color:red">CHAT TEST LOADED</h1>
 
+  <h2>MA3DTRIBE Chat Test</h2>
+
+  <div id="messages" style="border:1px solid #ccc;height:300px;overflow:auto;padding:10px;"></div>
+
+  <input id="text" placeholder="Type a message" />
+  <button id="send">Send</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp,
+      query,
+      orderBy,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    // 🔴 REPLACE THIS WITH YOUR REAL CONFIG (paste your firebaseConfig here)
+    const firebaseConfig = {
+      apiKey: "PASTE_HERE",
+      authDomain: "PASTE_HERE",
+      projectId: "PASTE_HERE",
+      storageBucket: "PASTE_HERE",
+      messagingSenderId: "PASTE_HERE",
+      appId: "PA
