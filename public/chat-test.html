@@ -34,4 +34,44 @@
       projectId: "PASTE_HERE",
       storageBucket: "PASTE_HERE",
       messagingSenderId: "PASTE_HERE",
-      appId: "PA
+      appId: "PASTE_HERE"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const guestName =
+      localStorage.getItem("guestName") ||
+      (() => {
+        const name = "Guest-" + Math.floor(Math.random() * 900 + 100);
+        localStorage.setItem("guestName", name);
+        return name;
+      })();
+
+    const messagesEl = document.getElementById("messages");
+    const textEl = document.getElementById("text");
+    const sendBtn = document.getElementById("send");
+
+    const q = query(collection(db, "messages"), orderBy("timestamp"));
+    onSnapshot(q, (snap) => {
+      messagesEl.innerHTML = "";
+      snap.forEach((doc) => {
+        const m = doc.data();
+        messagesEl.innerHTML += `<div><strong>${m.displayName}</strong>: ${m.text}</div>`;
+      });
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+
+    sendBtn.onclick = async () => {
+      if (!textEl.value.trim()) return;
+      await addDoc(collection(db, "messages"), {
+        source: "web",
+        displayName: guestName,
+        text: textEl.value,
+        timestamp: serverTimestamp()
+      });
+      textEl.value = "";
+    };
+  </script>
+</body>
+</html>
