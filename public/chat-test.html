@@ -4,20 +4,42 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MA3DTRIBE Chat Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+    }
+    #messages {
+      border: 1px solid #ccc;
+      height: 300px;
+      overflow-y: auto;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .msg {
+      margin-bottom: 6px;
+    }
+    input {
+      width: 75%;
+      padding: 8px;
+    }
+    button {
+      padding: 8px 12px;
+    }
+  </style>
 </head>
 <body>
+
   <h1 style="color:red">CHAT TEST LOADED</h1>
-
   <h2>MA3DTRIBE Chat Test</h2>
+  <div id="status"></div>
 
-  <div id="status" style="opacity:.8;margin-bottom:8px;"></div>
+  <div id="messages"></div>
 
-  <div id="messages" style="border:1px solid #ccc;height:300px;overflow:auto;padding:10px;"></div>
-
-  <div style="margin-top:10px;">
-    <input id="text" placeholder="Type a message" style="width:70%;padding:8px;" />
-    <button id="send" style="padding:8px 12px;">Send</button>
-  </div>
+  <input id="text" placeholder="Type a message" />
+  <button id="send">Send</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -25,14 +47,11 @@
       getFirestore,
       collection,
       addDoc,
-      serverTimestamp,
-      query,
-      orderBy,
       onSnapshot,
-      limit
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    // ✅ Replace with your real Firebase config
+    // 🔴 REPLACE ONLY THIS CONFIG WITH YOUR REAL ONE
     const firebaseConfig = {
       apiKey: "PASTE_HERE",
       authDomain: "PASTE_HERE",
@@ -53,61 +72,43 @@
         return name;
       })();
 
-    const statusEl = document.getElementById("status");
+    document.getElementById("status").innerText =
+      "Signed in as: " + guestName;
+
     const messagesEl = document.getElementById("messages");
     const textEl = document.getElementById("text");
     const sendBtn = document.getElementById("send");
 
-    statusEl.textContent = "Signed in as: " + guestName;
-
-    // ✅ Realtime listener (last 100 messages by createdAtMs)
-    const q = query(
-      collection(db, "messages"),
-      orderBy("createdAtMs", "asc"),
-      limit(100)
-    );
-
-    onSnapshot(q, (snap) => {
+    // 🔥 SIMPLE REALTIME LISTENER (NO QUERY, NO ORDERING)
+    onSnapshot(collection(db, "messages"), (snapshot) => {
       messagesEl.innerHTML = "";
-      snap.forEach((doc) => {
+      snapshot.forEach((doc) => {
         const m = doc.data();
-        const row = document.createElement("div");
-        const name = (m.displayName || "Unknown").replaceAll("<", "&lt;");
-        const text = (m.text || "").replaceAll("<", "&lt;");
-        row.innerHTML = "<strong>" + name + "</strong>: " + text;
-        messagesEl.appendChild(row);
+        const div = document.createElement("div");
+        div.className = "msg";
+        div.innerHTML =
+          "<strong>" + (m.displayName || "Anon") + "</strong>: " +
+          (m.text || "");
+        messagesEl.appendChild(div);
       });
       messagesEl.scrollTop = messagesEl.scrollHeight;
-    }, (err) => {
-      statusEl.textContent = "Listener error: " + err.message;
-      console.error(err);
     });
 
-    async function send() {
+    sendBtn.onclick = async () => {
       const text = textEl.value.trim();
       if (!text) return;
 
-      try {
-        await addDoc(collection(db, "messages"), {
-          source: "web",
-          displayName: guestName,
-          text,
-          gifUrl: null,
-          createdAtMs: Date.now(),
-          timestamp: serverTimestamp()
-        });
-        textEl.value = "";
-        textEl.focus();
-      } catch (err) {
-        statusEl.textContent = "Send error: " + err.message;
-        console.error(err);
-      }
-    }
+      await addDoc(collection(db, "messages"), {
+        source: "web",
+        displayName: guestName,
+        text: text,
+        createdAtMs: Date.now(),
+        timestamp: serverTimestamp()
+      });
 
-    sendBtn.addEventListener("click", send);
-    textEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") send();
-    });
+      textEl.value = "";
+    };
   </script>
+
 </body>
 </html>
