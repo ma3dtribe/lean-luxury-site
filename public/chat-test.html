@@ -52,8 +52,14 @@
     const textEl = document.getElementById("text");
     const sendBtn = document.getElementById("send");
 
-    const q = query(collection(db, "messages"), orderBy("createdAtMs", "asc"));
-    onSnapshot(q, (snap) => {
+    onSnapshot(collection(db, "messages"), (snap) => {
+  messagesEl.innerHTML = `<div style="opacity:.7">Docs: ${snap.size}</div>`;
+  snap.forEach((doc) => {
+    const m = doc.data();
+    messagesEl.innerHTML += `<div><strong>${m.displayName}</strong>: ${m.text}</div>`;
+  });
+});
+
       messagesEl.innerHTML = "";
       snap.forEach((doc) => {
         const m = doc.data();
