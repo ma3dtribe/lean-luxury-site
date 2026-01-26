@@ -52,7 +52,7 @@
     const textEl = document.getElementById("text");
     const sendBtn = document.getElementById("send");
 
-    const q = query(collection(db, "messages"), orderBy("timestamp"));
+    const q = query(collection(db, "messages"), orderBy("createdAtMs", "asc"));
     onSnapshot(q, (snap) => {
       messagesEl.innerHTML = "";
       snap.forEach((doc) => {
@@ -65,11 +65,12 @@
     sendBtn.onclick = async () => {
       if (!textEl.value.trim()) return;
       await addDoc(collection(db, "messages"), {
-        source: "web",
-        displayName: guestName,
-        text: textEl.value,
-        timestamp: serverTimestamp()
-      });
+  source: "web",
+  displayName: guestName,
+  text: textEl.value,
+  createdAtMs: Date.now(),
+  timestamp: serverTimestamp()
+});
       textEl.value = "";
     };
   </script>
