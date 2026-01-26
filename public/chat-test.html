@@ -10,10 +10,14 @@
 
   <h2>MA3DTRIBE Chat Test</h2>
 
+  <div id="status" style="opacity:.8;margin-bottom:8px;"></div>
+
   <div id="messages" style="border:1px solid #ccc;height:300px;overflow:auto;padding:10px;"></div>
 
-  <input id="text" placeholder="Type a message" />
-  <button id="send">Send</button>
+  <div style="margin-top:10px;">
+    <input id="text" placeholder="Type a message" style="width:70%;padding:8px;" />
+    <button id="send" style="padding:8px 12px;">Send</button>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -24,10 +28,11 @@
       serverTimestamp,
       query,
       orderBy,
-      onSnapshot
+      onSnapshot,
+      limit
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    // 🔴 REPLACE THIS WITH YOUR REAL CONFIG (paste your firebaseConfig here)
+    // ✅ Replace with your real Firebase config
     const firebaseConfig = {
       apiKey: "PASTE_HERE",
       authDomain: "PASTE_HERE",
@@ -48,36 +53,61 @@
         return name;
       })();
 
+    const statusEl = document.getElementById("status");
     const messagesEl = document.getElementById("messages");
     const textEl = document.getElementById("text");
     const sendBtn = document.getElementById("send");
 
-    onSnapshot(collection(db, "messages"), (snap) => {
-  messagesEl.innerHTML = `<div style="opacity:.7">Docs: ${snap.size}</div>`;
-  snap.forEach((doc) => {
-    const m = doc.data();
-    messagesEl.innerHTML += `<div><strong>${m.displayName}</strong>: ${m.text}</div>`;
-  });
-});
+    statusEl.textContent = "Signed in as: " + guestName;
+
+    // ✅ Realtime listener (last 100 messages by createdAtMs)
+    const q = query(
+      collection(db, "messages"),
+      orderBy("createdAtMs", "asc"),
+      limit(100)
+    );
+
+    onSnapshot(q, (snap) => {
       messagesEl.innerHTML = "";
       snap.forEach((doc) => {
         const m = doc.data();
-        messagesEl.innerHTML += `<div><strong>${m.displayName}</strong>: ${m.text}</div>`;
+        const row = document.createElement("div");
+        const name = (m.displayName || "Unknown").replaceAll("<", "&lt;");
+        const text = (m.text || "").replaceAll("<", "&lt;");
+        row.innerHTML = "<strong>" + name + "</strong>: " + text;
+        messagesEl.appendChild(row);
       });
       messagesEl.scrollTop = messagesEl.scrollHeight;
+    }, (err) => {
+      statusEl.textContent = "Listener error: " + err.message;
+      console.error(err);
     });
 
-    sendBtn.onclick = async () => {
-      if (!textEl.value.trim()) return;
-      await addDoc(collection(db, "messages"), {
-  source: "web",
-  displayName: guestName,
-  text: textEl.value,
-  createdAtMs: Date.now(),
-  timestamp: serverTimestamp()
-});
-      textEl.value = "";
-    };
+    async function send() {
+      const text = textEl.value.trim();
+      if (!text) return;
+
+      try {
+        await addDoc(collection(db, "messages"), {
+          source: "web",
+          displayName: guestName,
+          text,
+          gifUrl: null,
+          createdAtMs: Date.now(),
+          timestamp: serverTimestamp()
+        });
+        textEl.value = "";
+        textEl.focus();
+      } catch (err) {
+        statusEl.textContent = "Send error: " + err.message;
+        console.error(err);
+      }
+    }
+
+    sendBtn.addEventListener("click", send);
+    textEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") send();
+    });
   </script>
 </body>
 </html>
