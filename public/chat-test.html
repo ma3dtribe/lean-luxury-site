@@ -7,8 +7,7 @@
 <body>
 
 <h1 style="color:green">FIRESTORE READ TEST</h1>
-<p>If you see messages below, reading works.</p>
-
+<div id="status" style="font-weight:bold;margin:10px 0;"></div>
 <div id="messages"></div>
 
 <script type="module">
@@ -16,7 +15,7 @@
   import { getFirestore, collection, onSnapshot } from
     "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-  // 🔴 PASTE YOUR REAL FIREBASE CONFIG HERE
+  // 🔴 PASTE YOUR REAL FIREBASE CONFIG HERE (from ma3dtribe-chat project)
   const firebaseConfig = {
     apiKey: "PASTE_HERE",
     authDomain: "PASTE_HERE",
@@ -26,19 +25,30 @@
     appId: "PASTE_HERE"
   };
 
+  const statusEl = document.getElementById("status");
+  const messagesEl = document.getElementById("messages");
+
+  statusEl.textContent = "Connecting… projectId = " + firebaseConfig.projectId;
+
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  const messagesEl = document.getElementById("messages");
+  onSnapshot(
+    collection(db, "messages"),
+    (snapshot) => {
+      statusEl.textContent = "Connected ✅ Docs found: " + snapshot.size;
 
-  onSnapshot(collection(db, "messages"), (snapshot) => {
-    messagesEl.innerHTML = "";
-    snapshot.forEach((doc) => {
-      const m = doc.data();
-      messagesEl.innerHTML +=
-        `<div><strong>${m.displayName || "?"}</strong>: ${m.text || ""}</div>`;
-    });
-  });
+      messagesEl.innerHTML = "";
+      snapshot.forEach((doc) => {
+        const m = doc.data();
+        messagesEl.innerHTML +=
+          `<div><strong>${m.displayName || "?"}</strong>: ${m.text || ""}</div>`;
+      });
+    },
+    (error) => {
+      statusEl.textContent = "Listener ERROR ❌ " + error.message;
+    }
+  );
 </script>
 
 </body>
