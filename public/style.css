@@ -83,13 +83,8 @@ iframe {
 }
 
 .site-logo {
-  max-width: 150px;   /* 👈 controls size */
-  width: 50%;
+  max-width: 200px;   /* 👈 controls size */
+  width: 100%;
   height: auto;
   display: inline-block;
-}
-@media (max-width: 600px) {
-  .site-logo {
-    max-width: 190px;
-  }
 }
