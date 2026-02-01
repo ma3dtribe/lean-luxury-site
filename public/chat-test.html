@@ -109,10 +109,16 @@ supabase
   .channel("room-" + ROOM)
   .on(
     "postgres_changes",
-    { event: "INSERT", schema: "public", table: "messages" },
-    payload => renderMessage(payload.new)
+    { event: "INSERT", schema: "public", table: "messages", filter: `room=eq.${ROOM}` },
+    (payload) => renderMessage(payload.new)
   )
-  .subscribe();
+  .subscribe((status) => {
+    if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+      chatMessages.innerHTML =
+        `<div class="msg them"><div class="meta">System</div>Realtime connection issue. Refresh the page.</div>`;
+    }
+  });
+
 
 /* =========================
    SEND MESSAGE
