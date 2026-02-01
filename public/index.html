@@ -12,54 +12,101 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
+    :root{
+      /* Lighter, music-lounge charcoal */
+      --bg: #1b1f24;
+      --text: #e9eef5;
+      --muted: rgba(233,238,245,.76);
+      --border: rgba(255,255,255,.12);
+      --card: rgba(255,255,255,.05);
+      --card2: rgba(255,255,255,.035);
+    }
+
     body {
       margin: 0;
       font-family: Inter, system-ui, sans-serif;
-      background: #14171a;
-      color: #e6e6e6;
+      background: var(--bg);
+      color: var(--text);
     }
 
+    /* Softer, musical glow (purple/teal) */
     .bg-glow {
       position: fixed;
       inset: 0;
       background:
-        radial-gradient(900px 350px at 15% 10%, rgba(255,255,255,.06), transparent 55%),
-        radial-gradient(700px 280px at 85% 60%, rgba(255,255,255,.04), transparent 55%);
+        radial-gradient(900px 380px at 12% 12%, rgba(168, 85, 247, .14), transparent 60%),
+        radial-gradient(850px 340px at 88% 58%, rgba(34, 211, 238, .10), transparent 62%),
+        radial-gradient(700px 280px at 45% 95%, rgba(236, 72, 153, .08), transparent 60%);
       z-index: -1;
-      opacity: .45;
+      opacity: .85;
+      pointer-events: none;
     }
 
     header {
       text-align: center;
-      padding: 22px 16px;
+      padding: 22px 16px 8px;
     }
 
     header h1 {
       margin: 0;
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 800;
+      letter-spacing: .3px;
     }
 
     header p {
-      margin: 6px 0 0;
-      opacity: .7;
+      margin: 8px 0 0;
+      opacity: .74;
       font-size: 14px;
     }
 
     main {
       max-width: 1100px;
-      margin: auto;
-      padding: 10px 16px 60px;
+      margin: 0 auto;
+      padding: 14px 16px 70px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid var(--border);
+      user-select: none;
     }
 
     .hero h2 {
-      margin: 0 0 10px;
-      font-size: 32px;
+      margin: 14px 0 10px;
+      font-size: 34px;
+      line-height: 1.15;
     }
 
     .subtext {
-      opacity: .75;
-      max-width: 520px;
+      opacity: .80;
+      max-width: 560px;
+      line-height: 1.55;
+    }
+
+    .cta-row {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     .btn {
@@ -71,6 +118,9 @@
       color: inherit;
       text-decoration: none;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .btn.primary {
@@ -82,16 +132,99 @@
       border-radius: 18px;
       padding: 18px;
       margin-bottom: 22px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(255,255,255,.12);
+      background: var(--card2);
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 42px rgba(0,0,0,.28);
+      backdrop-filter: blur(6px);
     }
 
-    .live-placeholder {
+    .card h3 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      letter-spacing: .2px;
+    }
+
+    /* LIVE badge */
+    .live-badge {
+      display: none; /* shown via JS */
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .35px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 77, 77, .40);
+      background: rgba(255, 77, 77, .12);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #ff4d4d;
+      box-shadow: 0 0 0 0 rgba(255, 77, 77, .55);
+      animation: pulse 1.4s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, .55); }
+      70% { box-shadow: 0 0 0 10px rgba(255, 77, 77, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+    }
+
+    /* Live section placeholder */
+    .live-shell {
       border-radius: 16px;
-      padding: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12);
       background:
-        radial-gradient(700px 260px at 20% 20%, rgba(255,255,255,.08), transparent 55%),
+        radial-gradient(900px 320px at 20% 18%, rgba(168, 85, 247, .12), transparent 60%),
+        radial-gradient(700px 260px at 80% 70%, rgba(34, 211, 238, .09), transparent 62%),
         rgba(255,255,255,.03);
+      box-shadow: 0 12px 40px rgba(0,0,0,.25);
+      padding: 18px;
+    }
+
+    .live-title-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+
+    .live-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: .2px;
+      margin: 0;
+    }
+
+    .live-desc{
+      margin: 0;
+      opacity: .78;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .tile {
+      padding: 16px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .tile-title {
+      font-weight: 800;
+      margin-bottom: 6px;
     }
   </style>
 </head>
@@ -105,31 +238,55 @@
   </header>
 
   <main>
+    <!-- HERO -->
     <section class="hero">
-      <h2>Live streams, podcasts, sports talk, and more.</h2>
-      <p class="subtext">
-        Watch here or live on Twitch, catch replays, and tap in with the community.
-      </p>
-      <div style="margin-top:14px;">
-        <a class="btn primary" href="#live">Watch Live</a>
-        <a class="btn" href="#chat">Open Chat</a>
+      <div>
+        <div class="pill">
+          <span>MA3DTribe Media</span>
+          <span id="heroLiveBadge" class="live-badge">
+            <span class="live-dot"></span> LIVE
+          </span>
+        </div>
+
+        <h2>Music, culture, sports talk — and the community.</h2>
+        <p class="subtext">
+          Tap in for live moments, replays, and conversations. If we’re live, the stream opens automatically.
+        </p>
+
+        <div class="cta-row">
+          <a class="btn primary" href="#watch">▶ Watch</a>
+          <a class="btn" href="#chat">💬 Open Chat</a>
+          <a class="btn" href="#podcasts">✨ Explore Shows</a>
+        </div>
+      </div>
+
+      <div class="card" style="margin:0;">
+        <h3 style="margin:0 0 8px;">Tonight’s vibe</h3>
+        <div style="opacity:.78;font-size:13px;line-height:1.45;">
+          Reggae • R&B • Afrobeats • Hip Hop<br/>
+          Pull up, say what’s up, and share the energy.
+        </div>
       </div>
     </section>
 
-    <!-- LIVE SECTION -->
-    <section id="live" class="card">
-      <h3>Live Now</h3>
+    <!-- WATCH (no "Live Now" label anywhere) -->
+    <section id="watch" class="card">
+      <div class="live-shell">
+        <div class="live-title-row">
+          <p class="live-title">Watch on Twitch</p>
 
-      <div id="livePlaceholder" class="live-placeholder">
-        <strong>MA3DTribe on Twitch</strong>
-        <p style="opacity:.75;font-size:13px;">
-          Loading stream automatically if live…
+          <span id="watchLiveBadge" class="live-badge">
+            <span class="live-dot"></span> LIVE
+          </span>
+        </div>
+
+        <p id="watchDesc" class="live-desc">
+          Checking stream status… If live, the player will load automatically.
         </p>
 
-        <div style="margin-top:12px;">
-          <a class="btn" href="https://www.twitch.tv/ma3dtribe" target="_blank">
-            Open Twitch
-          </a>
+        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="btn" href="https://www.twitch.tv/ma3dtribe" target="_blank" rel="noreferrer">Open Twitch</a>
+          <button id="loadPlayerBtn" class="btn" type="button" style="display:none;">Load Player</button>
         </div>
       </div>
 
@@ -138,28 +295,62 @@
 
     <!-- CHAT -->
     <section id="chat" class="card">
-      <h3>Live Chat</h3>
+      <h3>Community Chat</h3>
+
       <iframe
         src="/chat-test.html"
-        style="width:100%;height:520px;border:0;border-radius:16px;"
+        title="MA3DTribe Chat"
+        style="width:100%; height:520px; border:0; border-radius:16px; display:block;"
         loading="lazy">
       </iframe>
     </section>
+
+    <!-- PODCASTS -->
+    <section id="podcasts" class="card">
+      <h3>Featured Shows</h3>
+      <div class="grid">
+        <div class="tile">
+          <div class="tile-title">Music</div>
+          <div style="opacity:.82;">R&B, Hip Hop, Reggae, Afrobeats</div>
+        </div>
+        <div class="tile">
+          <div class="tile-title">Law</div>
+          <div style="opacity:.82;">Real conversations on legal topics & culture</div>
+        </div>
+        <div class="tile">
+          <div class="tile-title">Sports</div>
+          <div style="opacity:.82;">Sports talk & commentary</div>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- AUTO-LOAD TWITCH IF LIVE -->
+  <!-- Auto-load Twitch player ONLY if live (low bandwidth) -->
   <script>
     (function () {
       const CHANNEL = "ma3dtribe";
       const PARENT = "ma3dtribe.netlify.app";
 
-      const placeholder = document.getElementById("livePlaceholder");
       const mount = document.getElementById("playerMount");
+      const desc = document.getElementById("watchDesc");
+      const manualBtn = document.getElementById("loadPlayerBtn");
+
+      const heroBadge = document.getElementById("heroLiveBadge");
+      const watchBadge = document.getElementById("watchLiveBadge");
+
+      function showLiveBadges() {
+        heroBadge.style.display = "inline-flex";
+        watchBadge.style.display = "inline-flex";
+      }
+
+      function hideLiveBadges() {
+        heroBadge.style.display = "none";
+        watchBadge.style.display = "none";
+      }
 
       function loadPlayer() {
         if (mount.dataset.loaded) return;
         mount.dataset.loaded = "1";
-        placeholder.style.display = "none";
 
         const iframe = document.createElement("iframe");
         iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}`;
@@ -168,24 +359,50 @@
         iframe.allowFullscreen = true;
         iframe.style.border = "0";
         iframe.style.borderRadius = "18px";
+        iframe.style.display = "block";
 
         mount.appendChild(iframe);
       }
 
-      // Lightweight live check (no API key, no billing)
-      fetch(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`)
+      // Manual fallback button (only if offline/unknown)
+      function enableManualLoad() {
+        manualBtn.style.display = "inline-flex";
+        manualBtn.addEventListener("click", loadPlayer, { once: true });
+      }
+
+      // Default state
+      hideLiveBadges();
+      enableManualLoad(); // show manual option after status check if needed
+      manualBtn.style.display = "none"; // hidden until we decide
+
+      // Lightweight live check (no API keys, no billing)
+      fetch(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`, { cache: "no-store" })
         .then(res => res.text())
         .then(text => {
-          if (!text.toLowerCase().includes("offline")) {
-            loadPlayer(); // AUTO LOAD IF LIVE
+          const t = (text || "").toLowerCase();
+
+          if (!t.includes("offline")) {
+            // LIVE
+            showLiveBadges();
+            desc.textContent = "We’re live — loading the stream now.";
+            loadPlayer();
+          } else {
+            // OFFLINE
+            hideLiveBadges();
+            desc.textContent = "Currently off air. You can still open the Twitch channel or load the player.";
+            manualBtn.style.display = "inline-flex";
           }
         })
         .catch(() => {
-          // Fail silently — placeholder stays
+          // UNKNOWN
+          hideLiveBadges();
+          desc.textContent = "Status couldn’t load. You can open Twitch or load the player.";
+          manualBtn.style.display = "inline-flex";
         });
     })();
   </script>
 </body>
 </html>
+
 
 
