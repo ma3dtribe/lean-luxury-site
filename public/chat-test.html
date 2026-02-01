@@ -2,54 +2,95 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Firestore Chat Test</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MA3DTRIBE Chat</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: auto;
-      padding: 20px;
+    :root{
+      --bg:#0b1220;
+      --panel:#0f1a33;
+      --line:#1d2b55;
+      --text:#e8ecff;
+      --muted:#9aa6d6;
+      --accent:#4dd4ff;
+      --web:#27d07d;
+      --twitch:#a970ff;
     }
-    #messages {
-      border: 1px solid #ccc;
-      height: 300px;
-      overflow-y: auto;
-      padding: 10px;
-      margin-top: 10px;
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+    .wrap{max-width:860px;margin:0 auto;padding:14px;}
+    .header{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--panel),#0c1630);
+      position:sticky;top:0;z-index:5;
     }
-    .msg {
-      margin-bottom: 6px;
+    .title{font-weight:800;letter-spacing:.4px}
+    .status{font-size:12px;color:var(--muted)}
+    .chat{
+      margin-top:12px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.03);
     }
-    input {
-      width: 75%;
-      padding: 8px;
+    .msgs{height:460px;overflow:auto;padding:12px 12px 2px;}
+    .row{display:flex;gap:10px;margin:10px 0;align-items:flex-start;}
+    .avatar{
+      width:34px;height:34px;border-radius:10px;background:#16244a;border:1px solid var(--line);
+      display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:var(--accent);flex:0 0 auto;
     }
-    button {
-      padding: 8px 12px;
+    .bubble{
+      max-width:75%;
+      border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:#0f1a33;
+      box-shadow:0 8px 22px rgba(0,0,0,.25);
     }
+    .meta{display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:12px;color:var(--muted)}
+    .name{font-weight:800}
+    .badge{
+      font-size:11px;border-radius:999px;padding:2px 8px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+    }
+    .badge.web{border-color:rgba(39,208,125,.35);color:var(--web)}
+    .badge.twitch{border-color:rgba(169,112,255,.35);color:var(--twitch)}
+    .time{margin-left:auto;color:var(--muted)}
+    .text{white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.35}
+    .composer{
+      display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:rgba(0,0,0,.18);
+    }
+    .input{
+      flex:1;border:1px solid var(--line);background:#0a1430;color:var(--text);
+      border-radius:12px;padding:10px 12px;outline:none;
+    }
+    .btn{
+      border:1px solid var(--line);background:#11204a;color:var(--text);
+      border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:700;
+    }
+    .btn:active{transform:translateY(1px)}
+    .hint{font-size:12px;color:var(--muted);margin-top:10px}
   </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <div class="title">MA3DTRIBE • Chat</div>
+        <div class="status" id="status">Connecting…</div>
+      </div>
+      <div class="status" id="me"></div>
+    </div>
 
-  <h1 style="color:green">FIRESTORE CHAT TEST</h1>
-  <div id="status" style="font-weight:bold;margin-bottom:10px;"></div>
+    <div class="chat">
+      <div class="msgs" id="msgs"></div>
+      <div class="composer">
+        <input class="input" id="text" placeholder="Type a message…" maxlength="300" />
+        <button class="btn" id="send">Send</button>
+      </div>
+    </div>
 
-  <input id="text" placeholder="Type a message" />
-  <button id="send">Send</button>
-
-  <div id="messages"></div>
+    <div class="hint">Next step: add a GIF button + picker (Tenor) and show GIF tiles inline like NaturalVibez.</div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import {
-      getFirestore,
-      collection,
-      onSnapshot,
-      addDoc,
-      serverTimestamp
+      getFirestore, collection, onSnapshot, addDoc, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    // ✅ YOUR REAL FIREBASE CONFIG (already confirmed)
+    // Firebase config (your project)
     const firebaseConfig = {
       apiKey: "AIzaSyB7QQNTOJg-GzFZc1Fia2ULYKFzNd7uwMU",
       authDomain: "ma3dtribe-chat.firebaseapp.com",
@@ -63,45 +104,102 @@
     const db = getFirestore(app);
 
     const statusEl = document.getElementById("status");
-    const messagesEl = document.getElementById("messages");
+    const meEl = document.getElementById("me");
+    const msgsEl = document.getElementById("msgs");
     const textEl = document.getElementById("text");
     const sendBtn = document.getElementById("send");
 
-    statusEl.textContent = "Connected to Firestore ✔";
+    const guestName =
+      localStorage.getItem("guestName") ||
+      (() => {
+        const name = "Guest-" + Math.floor(Math.random() * 900 + 100);
+        localStorage.setItem("guestName", name);
+        return name;
+      })();
 
-    // 🔥 REALTIME LISTENER
-    onSnapshot(collection(db, "messages"), (snapshot) => {
-      statusEl.textContent = "Connected ✔ Docs: " + snapshot.size;
-      messagesEl.innerHTML = "";
-      snapshot.forEach((doc) => {
-        const m = doc.data();
-        const div = document.createElement("div");
-        div.className = "msg";
-        div.innerHTML =
-          "<strong>" + (m.displayName || "Guest") + "</strong>: " +
-          (m.text || "");
-        messagesEl.appendChild(div);
-      });
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    });
+    meEl.textContent = "You: " + guestName;
 
-    // ✉️ SEND MESSAGE
-    sendBtn.addEventListener("click", async () => {
-      const text = textEl.value.trim();
+    // Simple username color hash
+    function nameColor(name){
+      let h=0; for (let i=0;i<name.length;i++) h=(h*31 + name.charCodeAt(i))>>>0;
+      const hue = h % 360;
+      return `hsl(${hue} 85% 70%)`;
+    }
+
+    function fmtTime(ts){
+      if (!ts) return "";
+      try{
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+      }catch{ return ""; }
+    }
+
+    function renderMessage(m){
+      const source = (m.source || "web").toLowerCase();
+      const badgeClass = source === "twitch" ? "twitch" : "web";
+      const badgeText  = source === "twitch" ? "TWITCH" : "WEB";
+      const initial = (m.displayName || "?").slice(0,2).toUpperCase();
+      const color = nameColor(m.displayName || "Guest");
+
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `
+        <div class="avatar" style="color:${color}">${initial}</div>
+        <div class="bubble">
+          <div class="meta">
+            <span class="badge ${badgeClass}">${badgeText}</span>
+            <span class="name" style="color:${color}">${(m.displayName || "Guest")}</span>
+            <span class="time">${fmtTime(m.timestamp)}</span>
+          </div>
+          <div class="text"></div>
+        </div>
+      `;
+
+      row.querySelector(".text").textContent = m.text || "";
+      return row;
+    }
+
+    // Realtime listener (simple)
+    onSnapshot(
+      collection(db, "messages"),
+      (snapshot) => {
+        statusEl.textContent = "Connected ✓ Messages: " + snapshot.size;
+
+        msgsEl.innerHTML = "";
+        snapshot.forEach((doc) => {
+          const m = doc.data();
+          msgsEl.appendChild(renderMessage(m));
+        });
+
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      },
+      (err) => {
+        statusEl.textContent = "Error: " + err.message;
+        console.error(err);
+      }
+    );
+
+    async function send(){
+      const text = (textEl.value || "").trim();
       if (!text) return;
 
       await addDoc(collection(db, "messages"), {
         source: "web",
-        displayName: "Guest",
+        displayName: guestName,
         text,
+        gifUrl: null,
         createdAtMs: Date.now(),
         timestamp: serverTimestamp()
       });
 
       textEl.value = "";
-    });
-  </script>
+      textEl.focus();
+    }
 
+    sendBtn.addEventListener("click", send);
+    textEl.addEventListener("keydown", (e)=>{ if(e.key==="Enter") send(); });
+  </script>
 </body>
 </html>
+
 
