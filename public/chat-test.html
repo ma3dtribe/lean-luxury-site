@@ -390,18 +390,19 @@
     });
   });
 
-  function sendGif(url) {
-    // Basic behavior for now: copy GIF URL into your message input (if present)
-    const input = document.querySelector('input[type="text"], input:not([type]), textarea');
-    if (input) input.value = url;
+function sendGif(url) {
+  const chat = document.getElementById("chatMessages"); // or whatever your message container is
 
-    // If you already have a send button, this tries to click it:
-    const sendBtn = document.querySelector('button[type="submit"], button.send, #sendBtn');
-    if (sendBtn) sendBtn.click();
+  const img = document.createElement("img");
+  img.src = url;
+  img.style.maxWidth = "220px";
+  img.style.borderRadius = "10px";
+  img.style.display = "block";
+  img.style.margin = "6px 0";
 
-    // If you don't have a send button hooked up, at least you'll see this:
-    console.log("GIF selected:", url);
-  }
+  chat.appendChild(img);
+}
+
 </script>
 
 <!-- =================== -->
