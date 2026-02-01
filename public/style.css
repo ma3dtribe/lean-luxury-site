@@ -76,3 +76,20 @@ iframe {
     padding: 1rem;
   }
 }
+/* Header logo sizing */
+.site-header {
+  text-align: center;
+  padding: 20px 16px 10px;
+}
+
+.site-logo {
+  max-width: 240px;   /* 👈 controls size */
+  width: 100%;
+  height: auto;
+  display: inline-block;
+}
+@media (max-width: 600px) {
+  .site-logo {
+    max-width: 190px;
+  }
+}
