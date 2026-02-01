@@ -83,7 +83,7 @@ iframe {
 }
 
 .site-logo {
-  max-width: 200px;   /* 👈 controls size */
+  max-width: 180px;   /* 👈 controls size */
   width: 100%;
   height: auto;
   display: inline-block;
