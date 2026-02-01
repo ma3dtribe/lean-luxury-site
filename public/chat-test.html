@@ -48,8 +48,14 @@
     .badge.twitch{border-color:rgba(169,112,255,.35);color:var(--twitch)}
     .time{margin-left:auto;color:var(--muted)}
     .text{white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.35}
+    .gif{
+      margin-top:10px;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+      background:rgba(0,0,0,.25);
+    }
+    .gif img{display:block;max-width:320px;width:100%;height:auto}
     .composer{
       display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:rgba(0,0,0,.18);
+      align-items:center;
     }
     .input{
       flex:1;border:1px solid var(--line);background:#0a1430;color:var(--text);
@@ -57,10 +63,42 @@
     }
     .btn{
       border:1px solid var(--line);background:#11204a;color:var(--text);
-      border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:700;
+      border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:800;
+      display:flex;gap:8px;align-items:center;
     }
     .btn:active{transform:translateY(1px)}
-    .hint{font-size:12px;color:var(--muted);margin-top:10px}
+    .btn.gif{background:#161a3a}
+    .modalBack{
+      position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20;
+      padding:14px;
+    }
+    .modal{
+      width:min(920px, 96vw);
+      background:linear-gradient(180deg,#0f1a33,#0c1630);
+      border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.45);
+      overflow:hidden;
+    }
+    .modalTop{
+      display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid var(--line);
+    }
+    .modalTop input{
+      width:100%;
+      border:1px solid var(--line);background:#0a1430;color:var(--text);
+      border-radius:12px;padding:10px 12px;outline:none;
+    }
+    .grid{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px;max-height:55vh;overflow:auto;
+    }
+    .tile{
+      border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;background:rgba(0,0,0,.25);
+    }
+    .tile img{display:block;width:100%;height:140px;object-fit:cover}
+    .small{font-size:12px;color:var(--muted)}
+    @media (max-width:720px){
+      .bubble{max-width:100%}
+      .grid{grid-template-columns:repeat(2,1fr)}
+      .tile img{height:160px}
+    }
   </style>
 </head>
 <body>
@@ -76,12 +114,26 @@
     <div class="chat">
       <div class="msgs" id="msgs"></div>
       <div class="composer">
+        <button class="btn gif" id="gifBtn">GIF</button>
         <input class="input" id="text" placeholder="Type a message…" maxlength="300" />
         <button class="btn" id="send">Send</button>
       </div>
     </div>
+  </div>
 
-    <div class="hint">Next step: add a GIF button + picker (Tenor) and show GIF tiles inline like NaturalVibez.</div>
+  <!-- GIF Picker Modal -->
+  <div class="modalBack" id="modalBack">
+    <div class="modal">
+      <div class="modalTop">
+        <div style="font-weight:800">Pick a GIF</div>
+        <div style="flex:1">
+          <input id="gifQuery" placeholder="Search GIFs (powered by Tenor)…" />
+          <div class="small" style="margin-top:6px">Tip: search “dancehall”, “airhorn”, “party”, “big tune”</div>
+        </div>
+        <button class="btn" id="closeGif">Close</button>
+      </div>
+      <div class="grid" id="gifGrid"></div>
+    </div>
   </div>
 
   <script type="module">
@@ -90,7 +142,7 @@
       getFirestore, collection, onSnapshot, addDoc, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    // Firebase config (your project)
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyB7QQNTOJg-GzFZc1Fia2ULYKFzNd7uwMU",
       authDomain: "ma3dtribe-chat.firebaseapp.com",
@@ -100,6 +152,10 @@
       appId: "1:143335444804:web:c5d143218c5b3295764711"
     };
 
+    // ✅ TENOR KEY (temporary demo key)
+    // For production we’ll switch to your own key.
+    const TENOR_KEY = "LIVDSRZULELA";
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
@@ -108,6 +164,12 @@
     const msgsEl = document.getElementById("msgs");
     const textEl = document.getElementById("text");
     const sendBtn = document.getElementById("send");
+
+    const modalBack = document.getElementById("modalBack");
+    const gifBtn = document.getElementById("gifBtn");
+    const closeGif = document.getElementById("closeGif");
+    const gifQuery = document.getElementById("gifQuery");
+    const gifGrid = document.getElementById("gifGrid");
 
     const guestName =
       localStorage.getItem("guestName") ||
@@ -119,7 +181,6 @@
 
     meEl.textContent = "You: " + guestName;
 
-    // Simple username color hash
     function nameColor(name){
       let h=0; for (let i=0;i<name.length;i++) h=(h*31 + name.charCodeAt(i))>>>0;
       const hue = h % 360;
@@ -143,34 +204,32 @@
 
       const row = document.createElement("div");
       row.className = "row";
+
+      const safeName = (m.displayName || "Guest").replaceAll("<","&lt;");
+      const safeText = (m.text || "").replaceAll("<","&lt;");
+
       row.innerHTML = `
         <div class="avatar" style="color:${color}">${initial}</div>
         <div class="bubble">
           <div class="meta">
             <span class="badge ${badgeClass}">${badgeText}</span>
-            <span class="name" style="color:${color}">${(m.displayName || "Guest")}</span>
+            <span class="name" style="color:${color}">${safeName}</span>
             <span class="time">${fmtTime(m.timestamp)}</span>
           </div>
-          <div class="text"></div>
+          <div class="text">${safeText}</div>
+          ${m.gifUrl ? `<div class="gif"><img alt="gif" src="${m.gifUrl}"></div>` : ``}
         </div>
       `;
-
-      row.querySelector(".text").textContent = m.text || "";
       return row;
     }
 
-    // Realtime listener (simple)
     onSnapshot(
       collection(db, "messages"),
       (snapshot) => {
         statusEl.textContent = "Connected ✓ Messages: " + snapshot.size;
 
         msgsEl.innerHTML = "";
-        snapshot.forEach((doc) => {
-          const m = doc.data();
-          msgsEl.appendChild(renderMessage(m));
-        });
-
+        snapshot.forEach((doc) => msgsEl.appendChild(renderMessage(doc.data())));
         msgsEl.scrollTop = msgsEl.scrollHeight;
       },
       (err) => {
@@ -179,15 +238,16 @@
       }
     );
 
-    async function send(){
-      const text = (textEl.value || "").trim();
-      if (!text) return;
+    async function send({ text, gifUrl }){
+      const cleanText = (text || "").trim();
+
+      if (!cleanText && !gifUrl) return;
 
       await addDoc(collection(db, "messages"), {
         source: "web",
         displayName: guestName,
-        text,
-        gifUrl: null,
+        text: cleanText,
+        gifUrl: gifUrl || null,
         createdAtMs: Date.now(),
         timestamp: serverTimestamp()
       });
@@ -196,10 +256,68 @@
       textEl.focus();
     }
 
-    sendBtn.addEventListener("click", send);
-    textEl.addEventListener("keydown", (e)=>{ if(e.key==="Enter") send(); });
+    sendBtn.addEventListener("click", () => send({ text: textEl.value }));
+    textEl.addEventListener("keydown", (e)=>{ if(e.key==="Enter") send({ text: textEl.value }); });
+
+    // GIF picker
+    function openGif(){
+      modalBack.style.display = "flex";
+      gifQuery.value = "";
+      gifGrid.innerHTML = "";
+      gifQuery.focus();
+      loadTrending();
+    }
+    function closeGifModal(){
+      modalBack.style.display = "none";
+    }
+    gifBtn.addEventListener("click", openGif);
+    closeGif.addEventListener("click", closeGifModal);
+    modalBack.addEventListener("click", (e)=>{ if(e.target === modalBack) closeGifModal(); });
+
+    async function loadTrending(){
+      const url = `https://tenor.googleapis.com/v2/featured?key=${TENOR_KEY}&client_key=ma3dtribe&limit=24&media_filter=gif`;
+      const res = await fetch(url);
+      const data = await res.json();
+      renderGifGrid(data.results || []);
+    }
+
+    let searchTimer = null;
+    gifQuery.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      const q = gifQuery.value.trim();
+      searchTimer = setTimeout(() => {
+        if (!q) return loadTrending();
+        searchGifs(q);
+      }, 300);
+    });
+
+    async function searchGifs(q){
+      const url = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(q)}&key=${TENOR_KEY}&client_key=ma3dtribe&limit=24&media_filter=gif`;
+      const res = await fetch(url);
+      const data = await res.json();
+      renderGifGrid(data.results || []);
+    }
+
+    function renderGifGrid(results){
+      gifGrid.innerHTML = "";
+      results.forEach((r) => {
+        const media = r.media_formats?.gif;
+        const gifUrl = media?.url;
+        if (!gifUrl) return;
+
+        const div = document.createElement("div");
+        div.className = "tile";
+        div.innerHTML = `<img alt="gif" src="${gifUrl}">`;
+        div.addEventListener("click", async () => {
+          closeGifModal();
+          await send({ text: "", gifUrl });
+        });
+        gifGrid.appendChild(div);
+      });
+    }
   </script>
 </body>
 </html>
+
 
 
