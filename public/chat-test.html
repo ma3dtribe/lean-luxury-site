@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Chat + GIPHY</title>
+  <title>Ma3dTribe Chat + GIPHY</title>
   <style>
     body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0b0f14; color:#e9eef6; }
     .wrap { max-width: 860px; margin: 0 auto; padding: 16px; }
@@ -17,6 +17,8 @@
     .msg { max-width: 78%; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,.10); line-height:1.25; }
     .me { margin-left:auto; background:#1a2a42; }
     .them { margin-right:auto; background:#121b2b; opacity:.95; }
+
+    .meta { font-size: 12px; opacity: .7; margin-bottom: 4px; }
     .msg img { max-width: 260px; width:100%; border-radius: 12px; display:block; }
 
     .composer { padding: 12px 12px; border-top:1px solid rgba(255,255,255,.08); display:flex; gap:10px; align-items:center; }
@@ -34,6 +36,18 @@
     #gifResults { padding: 8px; display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; max-height: 62vh; overflow:auto; }
     #gifResults img { width:100%; border-radius: 12px; cursor:pointer; border:1px solid rgba(255,255,255,.10); }
     #gifResults img:hover { transform: translateY(-1px); transition: .08s; }
+
+    /* Tiny “profile pill” */
+    .pill {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      font-size: 13px; opacity:.9;
+    }
+    .pill b { font-weight:700; }
+    .linkBtn { background:transparent; border:0; color:#93c5fd; cursor:pointer; padding:0; font-size:13px; }
+    .linkBtn:hover { text-decoration: underline; }
   </style>
 </head>
 
@@ -43,11 +57,16 @@
       <div class="header">
         <div class="dot"></div>
         <div class="title">Ma3dTribe Chat (Test)</div>
-        <div class="sub">GIPHY enabled</div>
+        <div class="sub">
+          <span class="pill">Logged in as: <b id="userDisplay">...</b> · <button id="changeName" class="linkBtn" type="button">Change</button></span>
+        </div>
       </div>
 
       <div id="chatMessages">
-        <div class="msg them">Welcome. Type a message or hit GIF.</div>
+        <div class="msg them">
+          <div class="meta">System</div>
+          Welcome. Type a message or hit GIF.
+        </div>
       </div>
 
       <div class="composer">
@@ -72,15 +91,26 @@
   </div>
 
   <script>
-    // ✅ Your GIPHY API Key (as provided)
+    // =========================
+    // SETTINGS
+    // =========================
     const GIPHY_API_KEY = "3zxGKg42FRkYfKmUrnjmobhQch37O33L";
 
-    // Chat elements
+    // This is the key your website login should set.
+    // Later, your real login page can do:
+    // localStorage.setItem("ma3dtribe_username", actualUsernameFromLogin);
+    const USER_STORAGE_KEY = "ma3dtribe_username";
+
+    // =========================
+    // ELEMENTS
+    // =========================
     const chatMessages = document.getElementById("chatMessages");
     const messageInput = document.getElementById("messageInput");
     const sendBtn = document.getElementById("sendBtn");
 
-    // GIF elements
+    const userDisplay = document.getElementById("userDisplay");
+    const changeNameBtn = document.getElementById("changeName");
+
     const gifBtn = document.getElementById("gifBtn");
     const gifModal = document.getElementById("gifModal");
     const gifClose = document.getElementById("gifClose");
@@ -88,21 +118,73 @@
     const gifSearch = document.getElementById("gifSearch");
     const gifResults = document.getElementById("gifResults");
 
+    // =========================
+    // WEBSITE LOGIN NAME (localStorage)
+    // =========================
+    function getWebsiteUsername() {
+      let name = (localStorage.getItem(USER_STORAGE_KEY) || "").trim();
+
+      // If your login hasn’t set it yet, we prompt once and store it.
+      if (!name) {
+        name = (prompt("Enter your website username for chat:") || "").trim();
+        if (!name) name = "Guest";
+        localStorage.setItem(USER_STORAGE_KEY, name);
+      }
+
+      return name;
+    }
+
+    function setWebsiteUsername(newName) {
+      const clean = (newName || "").trim() || "Guest";
+      localStorage.setItem(USER_STORAGE_KEY, clean);
+      USERNAME = clean;
+      userDisplay.textContent = USERNAME;
+    }
+
+    // Global current username used for all messages
+    let USERNAME = getWebsiteUsername();
+    userDisplay.textContent = USERNAME;
+
+    changeNameBtn.addEventListener("click", () => {
+      const newName = prompt("Change your chat name:", USERNAME);
+      if (newName !== null) setWebsiteUsername(newName);
+    });
+
+    // =========================
+    // HELPERS
+    // =========================
     function scrollChatToBottom() {
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    function addTextMessage(text, who = "me") {
+    function addMessageContainer(who = "me", nameOverride = null) {
       const bubble = document.createElement("div");
       bubble.className = `msg ${who}`;
-      bubble.textContent = text;
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = nameOverride || USERNAME;
+
+      bubble.appendChild(meta);
+      return bubble;
+    }
+
+    // =========================
+    // CHAT: TEXT + GIF
+    // =========================
+    function addTextMessage(text, who = "me", nameOverride = null) {
+      const bubble = addMessageContainer(who, nameOverride);
+
+      const content = document.createElement("div");
+      content.textContent = text;
+
+      bubble.appendChild(content);
       chatMessages.appendChild(bubble);
       scrollChatToBottom();
     }
 
-    function addGifMessage(url, who = "me") {
-      const bubble = document.createElement("div");
-      bubble.className = `msg ${who}`;
+    function addGifMessage(url, who = "me", nameOverride = null) {
+      const bubble = addMessageContainer(who, nameOverride);
 
       const img = document.createElement("img");
       img.src = url;
@@ -129,7 +211,9 @@
       if (e.key === "Enter") sendCurrentText();
     });
 
-    // Open/close GIF modal
+    // =========================
+    // GIF MODAL OPEN/CLOSE
+    // =========================
     gifBtn.addEventListener("click", async () => {
       gifModal.style.display = "block";
       gifSearch.value = "";
@@ -142,9 +226,16 @@
       gifModal.style.display = "none";
     });
 
-    // Load trending
     gifTrending.addEventListener("click", loadTrending);
 
+    // Close modal by clicking outside the box
+    gifModal.addEventListener("click", (e) => {
+      if (e.target === gifModal) gifModal.style.display = "none";
+    });
+
+    // =========================
+    // GIPHY API CALLS
+    // =========================
     async function loadTrending() {
       gifResults.innerHTML = "Loading trending GIFs...";
       try {
@@ -156,13 +247,13 @@
           gifResults.innerHTML = "GIPHY error: " + (json?.message || json?.meta?.msg || "Unknown error");
           return;
         }
+
         renderGifGrid(json.data || []);
       } catch (err) {
         gifResults.innerHTML = "Network error: " + err.message;
       }
     }
 
-    // Search on Enter
     gifSearch.addEventListener("keydown", async (e) => {
       if (e.key !== "Enter") return;
 
@@ -182,11 +273,13 @@
           gifResults.innerHTML = "GIPHY error: " + (json?.message || json?.meta?.msg || "Unknown error");
           return;
         }
+
         const data = json.data || [];
         if (!data.length) {
           gifResults.innerHTML = "No results. Try another search.";
           return;
         }
+
         renderGifGrid(data);
       } catch (err) {
         gifResults.innerHTML = "Network error: " + err.message;
@@ -203,7 +296,7 @@
         img.src = imgUrl;
         img.loading = "lazy";
 
-        // ✅ This is the key: clicking actually posts the GIF to chat
+        // ✅ Clicking posts the GIF + shows the website login username
         img.addEventListener("click", () => {
           addGifMessage(imgUrl, "me");
           gifModal.style.display = "none";
@@ -212,14 +305,10 @@
         gifResults.appendChild(img);
       });
     }
-
-    // Close modal by clicking outside the box
-    gifModal.addEventListener("click", (e) => {
-      if (e.target === gifModal) gifModal.style.display = "none";
-    });
   </script>
 </body>
 </html>
+
 
 
 
