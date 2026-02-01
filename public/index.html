@@ -5,32 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MA3DTribe Media</title>
 
-  <meta name="title" content="MA3DTribe Media">
   <meta name="description" content="Live streams, podcasts, sports talk, and culture — powered by MA3DTribe.">
-
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://ma3dtribe.netlify.app/">
-  <meta property="og:title" content="MA3DTribe Media">
-  <meta property="og:description" content="Live streams, podcasts, sports talk, and culture — powered by MA3DTribe.">
-  <meta property="og:image" content="https://ma3dtribe.netlify.app/og-image.png">
-
-  <meta name="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://ma3dtribe.netlify.app/">
-  <meta property="twitter:title" content="MA3DTribe Media">
-  <meta property="twitter:description" content="Live streams, podcasts, sports talk, and culture — powered by MA3DTribe.">
-  <meta property="twitter:image" content="https://ma3dtribe.netlify.app/og-image.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css" />
-
-  <!-- Modern dark-gray override (safe, low bandwidth) -->
   <style>
     body {
       margin: 0;
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: Inter, system-ui, sans-serif;
       background: #14171a;
       color: #e6e6e6;
     }
@@ -41,21 +25,19 @@
       background:
         radial-gradient(900px 350px at 15% 10%, rgba(255,255,255,.06), transparent 55%),
         radial-gradient(700px 280px at 85% 60%, rgba(255,255,255,.04), transparent 55%);
-      pointer-events: none;
       z-index: -1;
       opacity: .45;
     }
 
     header {
-      padding: 22px 20px;
       text-align: center;
+      padding: 22px 16px;
     }
 
     header h1 {
       margin: 0;
       font-size: 26px;
       font-weight: 800;
-      letter-spacing: .4px;
     }
 
     header p {
@@ -66,38 +48,13 @@
 
     main {
       max-width: 1100px;
-      margin: 0 auto;
+      margin: auto;
       padding: 10px 16px 60px;
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap: 24px;
-      margin-bottom: 28px;
-    }
-
-    @media (max-width: 900px) {
-      .hero {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .pill {
-      display: inline-block;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.12);
-      margin-bottom: 12px;
     }
 
     .hero h2 {
       margin: 0 0 10px;
       font-size: 32px;
-      line-height: 1.2;
     }
 
     .subtext {
@@ -105,21 +62,15 @@
       max-width: 520px;
     }
 
-    .cta-row {
-      margin-top: 16px;
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
     .btn {
       font-size: 14px;
       padding: 10px 14px;
       border-radius: 999px;
-      text-decoration: none;
       border: 1px solid rgba(255,255,255,.14);
       background: rgba(255,255,255,.06);
       color: inherit;
+      text-decoration: none;
+      cursor: pointer;
     }
 
     .btn.primary {
@@ -133,56 +84,14 @@
       margin-bottom: 22px;
       background: rgba(255,255,255,.04);
       border: 1px solid rgba(255,255,255,.12);
-      box-shadow: 0 12px 40px rgba(0,0,0,.25);
     }
 
-    .card h3 {
-      margin: 0 0 12px;
-      font-size: 20px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    .tile {
-      padding: 16px;
-      border-radius: 14px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.10);
-    }
-
-    .tile-title {
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    /* Live placeholder */
     .live-placeholder {
       border-radius: 16px;
       padding: 18px;
       background:
         radial-gradient(700px 260px at 20% 20%, rgba(255,255,255,.08), transparent 55%),
         rgba(255,255,255,.03);
-    }
-
-    .live-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 14px;
-      flex-wrap: wrap;
-    }
-
-    .live-actions button {
-      cursor: pointer;
-      font-size: 13px;
-      padding: 9px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.10);
-      color: inherit;
     }
   </style>
 </head>
@@ -196,35 +105,31 @@
   </header>
 
   <main>
-    <!-- HERO -->
     <section class="hero">
-      <div>
-        <span class="pill">MA3DTribe Media</span>
-        <h2>Live streams, podcasts, sports talk, and more.</h2>
-        <p class="subtext">
-          Watch here or live on Twitch, catch replays, and tap in with the community.
-        </p>
-
-        <div class="cta-row">
-          <a class="btn primary" href="#live">Watch Live</a>
-          <a class="btn" href="#chat">Open Chat</a>
-        </div>
+      <h2>Live streams, podcasts, sports talk, and more.</h2>
+      <p class="subtext">
+        Watch here or live on Twitch, catch replays, and tap in with the community.
+      </p>
+      <div style="margin-top:14px;">
+        <a class="btn primary" href="#live">Watch Live</a>
+        <a class="btn" href="#chat">Open Chat</a>
       </div>
     </section>
 
-    <!-- LIVE SECTION (LOW BANDWIDTH) -->
+    <!-- LIVE SECTION -->
     <section id="live" class="card">
       <h3>Live Now</h3>
 
       <div id="livePlaceholder" class="live-placeholder">
         <strong>MA3DTribe on Twitch</strong>
-        <p style="opacity:.75;font-size:13px;margin-top:6px;">
-          Load the player only if you want to watch (saves data).
+        <p style="opacity:.75;font-size:13px;">
+          Loading stream automatically if live…
         </p>
 
-        <div class="live-actions">
-          <a class="btn" href="https://www.twitch.tv/ma3dtribe" target="_blank">Open Twitch</a>
-          <button id="loadPlayerBtn">Load Player</button>
+        <div style="margin-top:12px;">
+          <a class="btn" href="https://www.twitch.tv/ma3dtribe" target="_blank">
+            Open Twitch
+          </a>
         </div>
       </div>
 
@@ -234,51 +139,30 @@
     <!-- CHAT -->
     <section id="chat" class="card">
       <h3>Live Chat</h3>
-
       <iframe
         src="/chat-test.html"
-        title="MA3DTribe Chat"
-        style="width:100%; height:520px; border:0; border-radius:16px;"
+        style="width:100%;height:520px;border:0;border-radius:16px;"
         loading="lazy">
       </iframe>
     </section>
-
-    <!-- PODCASTS -->
-    <section id="podcasts" class="card">
-      <h3>Featured Shows</h3>
-      <div class="grid">
-        <div class="tile">
-          <div class="tile-title">Music</div>
-          <div>R&B, Hip Hop, Reggae, Afrobeats</div>
-        </div>
-        <div class="tile">
-          <div class="tile-title">Law</div>
-          <div>Real conversations on legal topics & culture</div>
-        </div>
-        <div class="tile">
-          <div class="tile-title">Sports</div>
-          <div>Sports talk & commentary</div>
-        </div>
-      </div>
-    </section>
   </main>
 
-  <!-- Twitch player loads ONLY after click -->
+  <!-- AUTO-LOAD TWITCH IF LIVE -->
   <script>
     (function () {
-      var btn = document.getElementById("loadPlayerBtn");
-      var mount = document.getElementById("playerMount");
-      var placeholder = document.getElementById("livePlaceholder");
+      const CHANNEL = "ma3dtribe";
+      const PARENT = "ma3dtribe.netlify.app";
 
-      if (!btn || !mount || !placeholder) return;
+      const placeholder = document.getElementById("livePlaceholder");
+      const mount = document.getElementById("playerMount");
 
-      btn.addEventListener("click", function () {
+      function loadPlayer() {
         if (mount.dataset.loaded) return;
         mount.dataset.loaded = "1";
         placeholder.style.display = "none";
 
-        var iframe = document.createElement("iframe");
-        iframe.src = "https://player.twitch.tv/?channel=ma3dtribe&parent=ma3dtribe.netlify.app";
+        const iframe = document.createElement("iframe");
+        iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}`;
         iframe.width = "100%";
         iframe.height = "420";
         iframe.allowFullscreen = true;
@@ -286,9 +170,22 @@
         iframe.style.borderRadius = "18px";
 
         mount.appendChild(iframe);
-      });
+      }
+
+      // Lightweight live check (no API key, no billing)
+      fetch(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`)
+        .then(res => res.text())
+        .then(text => {
+          if (!text.toLowerCase().includes("offline")) {
+            loadPlayer(); // AUTO LOAD IF LIVE
+          }
+        })
+        .catch(() => {
+          // Fail silently — placeholder stays
+        });
     })();
   </script>
 </body>
 </html>
+
 
