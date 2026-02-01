@@ -48,12 +48,13 @@
     header {
       text-align: center;
       padding: 22px 16px 8px;
-      .site-logo{
-  max-width:850px;
+.site-logo{
+  max-height:72px;   /* desktop height */
   width:auto;
   height:auto;
   display:inline-block;
 }
+
     }
 
     header h1 {
@@ -82,9 +83,11 @@
       margin-bottom: 22px;
     }
 
-    @media (max-width: 900px) {
-      .hero { grid-template-columns: 1fr; }
-    }
+    @media (max-width:600px){
+  .site-logo{
+    max-height:52px;
+  }
+}
 
     .pill {
       display: inline-flex;
