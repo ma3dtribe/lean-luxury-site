@@ -1,4 +1,4 @@
-<!doctype html>
+ƒ<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -316,6 +316,97 @@
       });
     }
   </script>
+  <!-- ===================== -->
+<!-- GIPHY GIF PICKER START -->
+<!-- ===================== -->
+
+<button id="gifBtn" type="button" style="margin-left:8px;">GIF</button>
+
+<div id="gifModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:99999;">
+  <div style="background:#111; max-width:700px; margin:8% auto; padding:14px; border-radius:12px;">
+    <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <input id="gifSearch" placeholder="Search GIFs and press Enter"
+        style="flex:1; padding:10px; border-radius:8px; border:0;" />
+      <button id="gifClose" type="button" style="padding:10px 14px; border-radius:8px; border:0; cursor:pointer;">
+        Close
+      </button>
+    </div>
+
+    <div id="gifResults" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;"></div>
+  </div>
+</div>
+
+<script>
+  // 1) PASTE YOUR REAL GIPHY KEY HERE:
+  const GIPHY_API_KEY = 3zxGKg42FRkYfKmUrnjmobhQch37O33L;
+
+  const gifBtn = document.getElementById("gifBtn");
+  const gifModal = document.getElementById("gifModal");
+  const gifClose = document.getElementById("gifClose");
+  const gifResults = document.getElementById("gifResults");
+  const gifSearch = document.getElementById("gifSearch");
+
+  gifBtn.addEventListener("click", () => {
+    gifModal.style.display = "block";
+    gifSearch.value = "";
+    gifResults.innerHTML = "";
+    gifSearch.focus();
+  });
+
+  gifClose.addEventListener("click", () => {
+    gifModal.style.display = "none";
+  });
+
+  gifSearch.addEventListener("keydown", async (e) => {
+    if (e.key !== "Enter") return;
+    const q = gifSearch.value.trim();
+    if (!q) return;
+
+    gifResults.innerHTML = "Loading...";
+
+    const res = await fetch(
+      `https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(GIPHY_API_KEY)}&q=${encodeURIComponent(q)}&limit=12&rating=pg-13`
+    );
+
+    const json = await res.json();
+    gifResults.innerHTML = "";
+
+    (json.data || []).forEach(gif => {
+      const url = gif?.images?.fixed_width?.url;
+      if (!url) return;
+
+      const img = document.createElement("img");
+      img.src = url;
+      img.style.width = "100%";
+      img.style.borderRadius = "10px";
+      img.style.cursor = "pointer";
+
+      img.addEventListener("click", () => {
+        sendGif(url);
+        gifModal.style.display = "none";
+      });
+
+      gifResults.appendChild(img);
+    });
+  });
+
+  function sendGif(url) {
+    // Basic behavior for now: copy GIF URL into your message input (if present)
+    const input = document.querySelector('input[type="text"], input:not([type]), textarea');
+    if (input) input.value = url;
+
+    // If you already have a send button, this tries to click it:
+    const sendBtn = document.querySelector('button[type="submit"], button.send, #sendBtn');
+    if (sendBtn) sendBtn.click();
+
+    // If you don't have a send button hooked up, at least you'll see this:
+    console.log("GIF selected:", url);
+  }
+</script>
+
+<!-- =================== -->
+<!-- GIPHY GIF PICKER END -->
+<!-- =================== -->
 </body>
 </html>
 
