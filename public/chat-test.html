@@ -6,202 +6,139 @@
   <title>Ma3dTribe Chat + GIPHY</title>
 
   <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: #0b0f14;
-      color: #e9eef6;
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:#0b0f14;
+      color:#e9eef6;
+    }
+    .wrap{max-width:860px;margin:0 auto;padding:16px;}
+    .card{
+      background:#111826;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .header{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;gap:10px;align-items:center;
+    }
+    .dot{
+      width:10px;height:10px;border-radius:50%;
+      background:#22c55e;
+      box-shadow:0 0 18px rgba(34,197,94,.35);
+      flex:0 0 auto;
+    }
+    .title{font-weight:700;}
+    .sub{opacity:.85;font-size:13px;margin-left:auto;display:flex;align-items:center;gap:10px;}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.04);
+      font-size:13px;
+    }
+    .pill b{font-weight:700;}
+    .linkBtn{
+      background:transparent;border:0;color:#93c5fd;cursor:pointer;
+      padding:0;font-size:13px;
+    }
+    .linkBtn:hover{text-decoration:underline;}
+
+    #chatMessages{
+      height:58vh;overflow:auto;
+      padding:14px 16px;
+      display:flex;flex-direction:column;gap:10px;
+    }
+    .msg{
+      max-width:78%;
+      padding:10px 12px;border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      line-height:1.25;
+      word-wrap:break-word;
+    }
+    .me{margin-left:auto;background:#1a2a42;}
+    .them{margin-right:auto;background:#121b2b;opacity:.95;}
+    .meta{font-size:12px;opacity:.7;margin-bottom:4px;}
+    .msg img{
+      max-width:260px;width:100%;
+      border-radius:12px;display:block;
+      border:1px solid rgba(255,255,255,.10);
     }
 
-    .wrap {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 16px;
+    .composer{
+      padding:12px;border-top:1px solid rgba(255,255,255,.08);
+      display:flex;gap:10px;align-items:center;
     }
-
-    .card {
-      background: #111826;
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 14px;
-      overflow: hidden;
+    #messageInput{
+      flex:1;
+      padding:12px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:#0e1623;color:#e9eef6;outline:none;
     }
-
-    .header {
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      display: flex;
-      gap: 10px;
-      align-items: center;
+    .btn{
+      padding:10px 12px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:#0e1623;color:#e9eef6;cursor:pointer;
     }
+    .btn:hover{filter:brightness(1.08);}
+    .btnPrimary{background:#2563eb;border-color:#2563eb;}
 
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 18px rgba(34,197,94,.35);
+    /* =========================
+       GIF MODAL (fixed blocking)
+       ========================= */
+    #gifModal{
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.75);
+      z-index:9999;
+
+      /* Critical: when hidden, don't block typing/clicks */
+      pointer-events:none;
     }
-
-    .title { font-weight: 700; }
-
-    .sub {
-      opacity: .7;
-      font-size: 13px;
-      margin-left: auto;
+    #gifModal.show{
+      display:block;
+      pointer-events:auto;
     }
-
-    #chatMessages {
-      height: 58vh;
-      overflow: auto;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    .modalBox{
+      background:#0f1623;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px;
+      max-width:820px;
+      margin:6vh auto;
+      padding:12px;
     }
-
-    .msg {
-      max-width: 78%;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-      line-height: 1.25;
+    .modalTop{
+      display:flex;gap:10px;align-items:center;
+      padding:6px;
     }
-
-    .me {
-      margin-left: auto;
-      background: #1a2a42;
+    #gifSearch{
+      flex:1;
+      padding:12px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:#0b1220;color:#e9eef6;outline:none;
     }
-
-    .them {
-      margin-right: auto;
-      background: #121b2b;
-      opacity: .95;
+    .hint{opacity:.7;font-size:12px;padding:0 10px 10px;}
+    #gifResults{
+      padding:8px;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      max-height:62vh;
+      overflow:auto;
     }
-
-    .meta {
-      font-size: 12px;
-      opacity: .7;
-      margin-bottom: 4px;
+    #gifResults img{
+      width:100%;
+      border-radius:12px;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,.10);
     }
-
-    .msg img {
-      max-width: 260px;
-      width: 100%;
-      border-radius: 12px;
-      display: block;
+    #gifResults img:hover{
+      transform:translateY(-1px);
+      transition:.08s;
     }
-
-    .composer {
-      padding: 12px;
-      border-top: 1px solid rgba(255,255,255,.08);
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    #messageInput,
-    #gifSearch {
-      flex: 1;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: #0e1623;
-      color: #e9eef6;
-      outline: none;
-    }
-
-    .btn {
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: #0e1623;
-      color: #e9eef6;
-      cursor: pointer;
-    }
-
-    .btn:hover { filter: brightness(1.08); }
-
-    .btnPrimary {
-      background: #2563eb;
-      border-color: #2563eb;
-    }
-
-    /* Modal */
-    #gifModal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.75);
-      z-index: 9999;
-    }
-
-    .modalBox {
-      background: #0f1623;
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 14px;
-      max-width: 820px;
-      margin: 6vh auto;
-      padding: 12px;
-    }
-
-    .modalTop {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      padding: 6px;
-    }
-
-    .hint {
-      opacity: .7;
-      font-size: 12px;
-      padding: 0 10px 10px;
-    }
-
-    #gifResults {
-      padding: 8px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      max-height: 62vh;
-      overflow: auto;
-    }
-
-    #gifResults img {
-      width: 100%;
-      border-radius: 12px;
-      cursor: pointer;
-      border: 1px solid rgba(255,255,255,.10);
-    }
-
-    #gifResults img:hover {
-      transform: translateY(-1px);
-      transition: .08s;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.04);
-      font-size: 13px;
-      opacity: .9;
-    }
-
-    .pill b { font-weight: 700; }
-
-    .linkBtn {
-      background: transparent;
-      border: 0;
-      color: #93c5fd;
-      cursor: pointer;
-      padding: 0;
-      font-size: 13px;
-    }
-
-    .linkBtn:hover { text-decoration: underline; }
   </style>
 </head>
 
@@ -248,14 +185,22 @@
   </div>
 
   <script>
+    // =========================
+    // SETTINGS
+    // =========================
     const GIPHY_API_KEY = "3zxGKg42FRkYfKmUrnjmobhQch37O33L";
     const USER_STORAGE_KEY = "ma3dtribe_username";
 
+    // =========================
+    // ELEMENTS
+    // =========================
     const chatMessages = document.getElementById("chatMessages");
     const messageInput = document.getElementById("messageInput");
     const sendBtn = document.getElementById("sendBtn");
+
     const userDisplay = document.getElementById("userDisplay");
     const changeNameBtn = document.getElementById("changeName");
+
     const gifBtn = document.getElementById("gifBtn");
     const gifModal = document.getElementById("gifModal");
     const gifClose = document.getElementById("gifClose");
@@ -263,113 +208,193 @@
     const gifSearch = document.getElementById("gifSearch");
     const gifResults = document.getElementById("gifResults");
 
+    // =========================
+    // USERNAME (localStorage)
+    // =========================
     function getWebsiteUsername() {
       let name = (localStorage.getItem(USER_STORAGE_KEY) || "").trim();
       if (!name) {
-        name = prompt("Enter your website username for chat:") || "Guest";
+        name = (prompt("Enter your website username for chat:") || "").trim();
+        if (!name) name = "Guest";
         localStorage.setItem(USER_STORAGE_KEY, name);
       }
       return name;
     }
 
     function setWebsiteUsername(newName) {
-      USERNAME = (newName || "Guest").trim();
-      localStorage.setItem(USER_STORAGE_KEY, USERNAME);
+      const clean = (newName || "").trim() || "Guest";
+      localStorage.setItem(USER_STORAGE_KEY, clean);
+      USERNAME = clean;
       userDisplay.textContent = USERNAME;
     }
 
     let USERNAME = getWebsiteUsername();
     userDisplay.textContent = USERNAME;
 
-    changeNameBtn.onclick = () => {
-      const n = prompt("Change your chat name:", USERNAME);
-      if (n !== null) setWebsiteUsername(n);
-    };
+    changeNameBtn.addEventListener("click", () => {
+      const newName = prompt("Change your chat name:", USERNAME);
+      if (newName !== null) setWebsiteUsername(newName);
+      messageInput.focus();
+    });
 
+    // =========================
+    // HELPERS
+    // =========================
     function scrollChatToBottom() {
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    function addMessageContainer(who) {
+    function addMessageContainer(who = "me", nameOverride = null) {
       const bubble = document.createElement("div");
       bubble.className = `msg ${who}`;
+
       const meta = document.createElement("div");
       meta.className = "meta";
-      meta.textContent = USERNAME;
+      meta.textContent = nameOverride || USERNAME;
+
       bubble.appendChild(meta);
       return bubble;
     }
 
-    function addTextMessage(text) {
-      const bubble = addMessageContainer("me");
-      bubble.appendChild(document.createTextNode(text));
+    // =========================
+    // CHAT: TEXT + GIF
+    // =========================
+    function addTextMessage(text, who = "me", nameOverride = null) {
+      const bubble = addMessageContainer(who, nameOverride);
+      const content = document.createElement("div");
+      content.textContent = text;
+      bubble.appendChild(content);
       chatMessages.appendChild(bubble);
       scrollChatToBottom();
     }
 
-    function addGifMessage(url) {
-      const bubble = addMessageContainer("me");
+    function addGifMessage(url, who = "me", nameOverride = null) {
+      const bubble = addMessageContainer(who, nameOverride);
       const img = document.createElement("img");
       img.src = url;
+      img.alt = "gif";
       img.loading = "lazy";
       bubble.appendChild(img);
       chatMessages.appendChild(bubble);
       scrollChatToBottom();
     }
 
-    sendBtn.onclick = () => {
-      const text = messageInput.value.trim();
+    function sendCurrentText() {
+      const text = (messageInput.value || "").trim();
       if (!text) return;
-      addTextMessage(text);
+      addTextMessage(text, "me");
       messageInput.value = "";
-    };
-
-    messageInput.onkeydown = e => e.key === "Enter" && sendBtn.click();
-
-    gifBtn.onclick = async () => {
-      gifModal.style.display = "block";
-      gifResults.textContent = "Loading trending GIFs...";
-      await loadTrending();
-    };
-
-    gifClose.onclick = () => gifModal.style.display = "none";
-    gifTrending.onclick = loadTrending;
-
-    async function loadTrending() {
-      const url = `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=18&rating=pg-13`;
-      const res = await fetch(url);
-      const json = await res.json();
-      renderGifGrid(json.data || []);
+      messageInput.focus();
     }
 
-    gifSearch.onkeydown = async e => {
-      if (e.key !== "Enter") return;
-      const q = gifSearch.value.trim();
-      if (!q) return loadTrending();
+    sendBtn.addEventListener("click", sendCurrentText);
+    messageInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendCurrentText();
+    });
 
-      const url = `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(q)}&limit=18&rating=pg-13`;
-      const res = await fetch(url);
-      const json = await res.json();
-      renderGifGrid(json.data || []);
-    };
+    // =========================
+    // GIF MODAL OPEN/CLOSE (safe)
+    // =========================
+    function openGifModal() {
+      gifModal.classList.add("show");
+      gifSearch.value = "";
+      gifResults.textContent = "Loading trending GIFs...";
+      loadTrending();
+      gifSearch.focus();
+    }
+
+    function closeGifModal() {
+      gifModal.classList.remove("show");
+      messageInput.focus();
+    }
+
+    gifBtn.addEventListener("click", openGifModal);
+    gifClose.addEventListener("click", closeGifModal);
+    gifTrending.addEventListener("click", loadTrending);
+
+    // Close modal by clicking outside the box
+    gifModal.addEventListener("click", (e) => {
+      if (e.target === gifModal) closeGifModal();
+    });
+
+    // =========================
+    // GIPHY API CALLS
+    // =========================
+    async function loadTrending() {
+      gifResults.textContent = "Loading trending GIFs...";
+      try {
+        const url = `https://api.giphy.com/v1/gifs/trending?api_key=${encodeURIComponent(GIPHY_API_KEY)}&limit=18&rating=pg-13`;
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (!res.ok) {
+          gifResults.textContent = "GIPHY error: " + (json?.message || json?.meta?.msg || "Unknown error");
+          return;
+        }
+
+        renderGifGrid(json.data || []);
+      } catch (err) {
+        gifResults.textContent = "Network error: " + err.message;
+      }
+    }
+
+    gifSearch.addEventListener("keydown", async (e) => {
+      if (e.key !== "Enter") return;
+
+      const q = gifSearch.value.trim();
+      if (!q) {
+        await loadTrending();
+        return;
+      }
+
+      gifResults.textContent = "Searching...";
+      try {
+        const url = `https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(GIPHY_API_KEY)}&q=${encodeURIComponent(q)}&limit=18&rating=pg-13`;
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (!res.ok) {
+          gifResults.textContent = "GIPHY error: " + (json?.message || json?.meta?.msg || "Unknown error");
+          return;
+        }
+
+        const data = json.data || [];
+        if (!data.length) {
+          gifResults.textContent = "No results. Try another search.";
+          return;
+        }
+
+        renderGifGrid(data);
+      } catch (err) {
+        gifResults.textContent = "Network error: " + err.message;
+      }
+    });
 
     function renderGifGrid(gifs) {
       gifResults.innerHTML = "";
       gifs.forEach(g => {
-        const url = g?.images?.fixed_width?.url;
-        if (!url) return;
+        const imgUrl = g?.images?.fixed_width?.url;
+        if (!imgUrl) return;
+
         const img = document.createElement("img");
-        img.src = url;
-        img.onclick = () => {
-          addGifMessage(url);
-          gifModal.style.display = "none";
-        };
+        img.src = imgUrl;
+        img.loading = "lazy";
+
+        img.addEventListener("click", () => {
+          addGifMessage(imgUrl, "me");
+          closeGifModal();
+        });
+
         gifResults.appendChild(img);
       });
     }
+
+    // Focus text input on load (helps Safari sometimes)
+    window.addEventListener("load", () => messageInput.focus());
   </script>
 </body>
 </html>
+
 
 
 
