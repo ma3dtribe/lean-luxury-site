@@ -85,17 +85,13 @@
     .btn:hover{filter:brightness(1.08);}
     .btnPrimary{background:#2563eb;border-color:#2563eb;}
 
-    /* =========================
-       GIF MODAL (fixed blocking)
-       ========================= */
+    /* GIF MODAL */
     #gifModal{
       display:none;
       position:fixed;
       inset:0;
       background:rgba(0,0,0,.75);
       z-index:9999;
-
-      /* Critical: when hidden, don't block typing/clicks */
       pointer-events:none;
     }
     #gifModal.show{
@@ -147,7 +143,7 @@
     <div class="card">
       <div class="header">
         <div class="dot"></div>
-        <div class="title">Ma3dTribe Chat (Test)</div>
+        <div class="title">Ma3dTribe Chat</div>
         <div class="sub">
           <span class="pill">
             Logged in as: <b id="userDisplay">...</b> ·
@@ -159,7 +155,7 @@
       <div id="chatMessages">
         <div class="msg them">
           <div class="meta">System</div>
-          Welcome. Type a message or hit GIF.
+          Loading messages…
         </div>
       </div>
 
@@ -183,17 +179,20 @@
       <div id="gifResults"></div>
     </div>
   </div>
+
+  <!-- Supabase UMD build -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
   <script>
     // =========================
     // SETTINGS
     // =========================
+    const ROOM = "ma3dtribe";
     const GIPHY_API_KEY = "3zxGKg42FRkYfKmUrnjmobhQch37O33L";
     const USER_STORAGE_KEY = "ma3dtribe_username";
+
     const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_xzNaO0t5I2iCmv3LzYG9Ow_K8ZS9s0u";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_ANON_KEY = "sb_publishable_xzNaO0t5I2iCmv3LzYG9Ow_K8ZS9s0u"; // 
 
     // =========================
     // ELEMENTS
@@ -242,7 +241,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_xzNaO0t5I2iCmv3LzYG9Ow_K8ZS9s0u";
     });
 
     // =========================
-    // HELPERS
+    // UI HELPERS
     // =========================
     function scrollChatToBottom() {
       chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -260,9 +259,6 @@ const SUPABASE_ANON_KEY = "sb_publishable_xzNaO0t5I2iCmv3LzYG9Ow_K8ZS9s0u";
       return bubble;
     }
 
-    // =========================
-    // CHAT: TEXT + GIF
-    // =========================
     function addTextMessage(text, who = "me", nameOverride = null) {
       const bubble = addMessageContainer(who, nameOverride);
       const content = document.createElement("div");
@@ -283,29 +279,83 @@ const SUPABASE_ANON_KEY = "sb_publishable_xzNaO0t5I2iCmv3LzYG9Ow_K8ZS9s0u";
       scrollChatToBottom();
     }
 
+    // =========================
+    // SUPABASE INIT
+    // =========================
+    function assertSupabaseLoaded() {
+      if (!window.supabase || !window.supabase.createClient) {
+        addTextMessage("Supabase library did NOT load. Check the script tag / deploy.", "them", "System");
+        console.error("Supabase library missing: window.supabase is", window.supabase);
+        return false;
+      }
+      return true;
+    }
+
+    const supabase = (assertSupabaseLoaded())
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    // =========================
+    // LOAD MESSAGES (last 50)
+    // =========================
+    async function loadRecent() {
+      chatMessages.innerHTML = "";
+      addTextMessage("Connected. Loading recent messages…", "them", "System");
+
+      if (!supabase) return;
+
+      const { data, error } = await supabase
+        .from("messages")
+        .select("created_at, room, username, kind, context, source")
+        .eq("room", ROOM)
+        .order("created_at", { ascending: true })
+        .limit(50);
+
+      chatMessages.innerHTML = "";
+      if (error) {
+        addTextMessage("Supabase read error. Open Console for details.", "them", "System");
+        console.error("Supabase read error:", error);
+        return;
+      }
+
+      (data || []).forEach(row => {
+        const who = (row.source === "web" && row.username === USERNAME) ? "me" : "them";
+        if (row.kind === "gif") addGifMessage(row.context, who, row.username);
+        else addTextMessage(row.context, who, row.username);
+      });
+
+      if (!data || data.length === 0) {
+        addTextMessage("No messages yet. Send one to test.", "them", "System");
+      }
+      scrollChatToBottom();
+    }
+
+    // =========================
+    // SEND TEXT -> SUPABASE
+    // =========================
     async function sendCurrentText() {
-  const text = (messageInput.value || "").trim();
-  if (!text) return;
+      const text = (messageInput.value || "").trim();
+      if (!text) return;
 
-  // show instantly on screen (feels fast)
-  addTextMessage(text, "me");
-  messageInput.value = "";
-  messageInput.focus();
+      // UI first
+      addTextMessage(text, "me");
+      messageInput.value = "";
+      messageInput.focus();
 
-  // save to Supabase
-  const { error } = await supabase.from("messages").insert({
-    room: "ma3dtribe",
-    username: USERNAME,
-    kind: "text",
-    context: text,
-    source: "web"
-  });
+      if (!supabase) return;
 
-  if (error) {
-    console.error("Supabase insert error:", error);
-  }
-}
+      const { error } = await supabase.from("messages").insert({
+        room: ROOM,
+        username: USERNAME,
+        kind: "text",
+        context: text,
+        source: "web"
+      });
 
+      if (error) {
+        console.error("Supabase insert error:", error);
+        addTextMessage("Supabase insert failed. Check Console.", "them", "System");
+      }
     }
 
     sendBtn.addEventListener("click", sendCurrentText);
@@ -314,7 +364,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_xzNaO0t5I2iCmv3LzYG9Ow_K8ZS9s0u";
     });
 
     // =========================
-    // GIF MODAL OPEN/CLOSE (safe)
+    // GIF MODAL
     // =========================
     function openGifModal() {
       gifModal.classList.add("show");
@@ -333,13 +383,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_xzNaO0t5I2iCmv3LzYG9Ow_K8ZS9s0u";
     gifClose.addEventListener("click", closeGifModal);
     gifTrending.addEventListener("click", loadTrending);
 
-    // Close modal by clicking outside the box
     gifModal.addEventListener("click", (e) => {
       if (e.target === gifModal) closeGifModal();
     });
 
     // =========================
-    // GIPHY API CALLS
+    // GIPHY
     // =========================
     async function loadTrending() {
       gifResults.textContent = "Loading trending GIFs...";
@@ -347,12 +396,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_xzNaO0t5I2iCmv3LzYG9Ow_K8ZS9s0u";
         const url = `https://api.giphy.com/v1/gifs/trending?api_key=${encodeURIComponent(GIPHY_API_KEY)}&limit=18&rating=pg-13`;
         const res = await fetch(url);
         const json = await res.json();
-
         if (!res.ok) {
           gifResults.textContent = "GIPHY error: " + (json?.message || json?.meta?.msg || "Unknown error");
           return;
         }
-
         renderGifGrid(json.data || []);
       } catch (err) {
         gifResults.textContent = "Network error: " + err.message;
@@ -361,30 +408,23 @@ const SUPABASE_ANON_KEY = "sb_publishable_xzNaO0t5I2iCmv3LzYG9Ow_K8ZS9s0u";
 
     gifSearch.addEventListener("keydown", async (e) => {
       if (e.key !== "Enter") return;
-
       const q = gifSearch.value.trim();
-      if (!q) {
-        await loadTrending();
-        return;
-      }
+      if (!q) return loadTrending();
 
       gifResults.textContent = "Searching...";
       try {
         const url = `https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(GIPHY_API_KEY)}&q=${encodeURIComponent(q)}&limit=18&rating=pg-13`;
         const res = await fetch(url);
         const json = await res.json();
-
         if (!res.ok) {
           gifResults.textContent = "GIPHY error: " + (json?.message || json?.meta?.msg || "Unknown error");
           return;
         }
-
         const data = json.data || [];
         if (!data.length) {
           gifResults.textContent = "No results. Try another search.";
           return;
         }
-
         renderGifGrid(data);
       } catch (err) {
         gifResults.textContent = "Network error: " + err.message;
@@ -401,25 +441,39 @@ const SUPABASE_ANON_KEY = "sb_publishable_xzNaO0t5I2iCmv3LzYG9Ow_K8ZS9s0u";
         img.src = imgUrl;
         img.loading = "lazy";
 
-        img.addEventListener("click", () => {
+        img.addEventListener("click", async () => {
+          // UI
           addGifMessage(imgUrl, "me");
           closeGifModal();
+
+          if (!supabase) return;
+
+          // Save to Supabase
+          const { error } = await supabase.from("messages").insert({
+            room: ROOM,
+            username: USERNAME,
+            kind: "gif",
+            context: imgUrl,
+            source: "web"
+          });
+
+          if (error) {
+            console.error("Supabase GIF insert error:", error);
+            addTextMessage("Supabase GIF insert failed. Check Console.", "them", "System");
+          }
         });
 
         gifResults.appendChild(img);
       });
     }
 
-    // Focus text input on load (helps Safari sometimes)
-    window.addEventListener("load", () => messageInput.focus());
+    // =========================
+    // START
+    // =========================
+    window.addEventListener("load", () => {
+      messageInput.focus();
+      loadRecent();
+    });
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
