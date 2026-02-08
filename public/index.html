@@ -48,26 +48,17 @@
     header {
       text-align: center;
       padding: 22px 16px 8px;
-.site-logo{
-  max-height:72px;   /* desktop height */
-  width:auto;
-  height:auto;
-  display:inline-block;
-}
-
     }
 
-    header h1 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: .3px;
+    .site-logo{
+      max-height:72px;
+      width:auto;
+      height:auto;
+      display:inline-block;
     }
 
-    header p {
-      margin: 8px 0 0;
-      opacity: .75;
-      font-size: 14px;
+    @media (max-width:600px){
+      .site-logo{ max-height:52px; }
     }
 
     main {
@@ -83,22 +74,21 @@
       margin-bottom: 22px;
     }
 
-    @media (max-width:600px){
-  .site-logo{
-    max-height:52px;
-  }
-}
+    @media (max-width: 860px){
+      .hero{ grid-template-columns: 1fr; }
+    }
 
     .pill {
       display: inline-flex;
       align-items: center;
       gap: 10px;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       padding: 7px 12px;
       border-radius: 999px;
       background: rgba(255,255,255,.08);
       border: 1px solid var(--border);
+      letter-spacing: .35px;
     }
 
     .hero h2 {
@@ -132,11 +122,18 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+    }
+
+    .btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.09);
+      border-color: rgba(255,255,255,.22);
     }
 
     .btn.primary {
       background: rgba(255,255,255,.14);
-      font-weight: 700;
+      font-weight: 800;
     }
 
     .card {
@@ -154,26 +151,61 @@
       font-size: 20px;
     }
 
-    /* LIVE badge */
-    .live-badge {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: .35px;
-      padding: 7px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,59,59,.45);
-      background: rgba(255,59,59,.16);
+    /* =========================
+       ✅ NEW: Live/Offline pill + hero status line
+    ========================= */
+    .statusbar{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-top:12px;
+      flex-wrap:wrap;
     }
 
-    .live-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    .status-dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background:#6b7280;
+      box-shadow:none;
+    }
+
+    .status-text{
+      opacity:.82;
+      font-size:14px;
+      line-height:1.45;
+      color: var(--muted);
+    }
+
+    /* Offline state */
+    #livebar[data-state="offline"] .status-dot{
+      background:#6b7280;
+    }
+
+    /* Live state */
+    #livebar[data-state="live"] .status-pill{
+      border-color: rgba(255,59,59,.45);
+      background: rgba(255,59,59,.12);
+      box-shadow: 0 0 0 1px rgba(255,59,59,.10), 0 0 18px rgba(255,59,59,.14);
+    }
+
+    #livebar[data-state="live"] .status-dot{
       background: var(--red);
-      box-shadow: 0 0 0 0 rgba(255,59,59,.55);
+      box-shadow: 0 0 0 4px rgba(255,59,59,.18);
       animation: pulse 1.4s infinite;
     }
 
@@ -194,6 +226,13 @@
         rgba(255,255,255,.03);
       box-shadow: 0 12px 40px rgba(0,0,0,.28);
       padding: 18px;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    /* ✅ NEW: Glow the watch shell when live */
+    .watch-shell.is-live{
+      border-color: rgba(255,59,59,.28);
+      box-shadow: 0 0 0 1px rgba(255,59,59,.10), 0 18px 60px rgba(0,0,0,.34);
     }
 
     .watch-head {
@@ -207,7 +246,7 @@
 
     .watch-title {
       font-size: 18px;
-      font-weight: 800;
+      font-weight: 900;
     }
 
     .watch-desc {
@@ -231,7 +270,7 @@
     }
 
     .tile-title {
-      font-weight: 800;
+      font-weight: 900;
       margin-bottom: 6px;
     }
   </style>
@@ -241,29 +280,36 @@
   <div class="bg-glow"></div>
 
   <header class="site-header">
-  <img
-    src="/images/IMG_4977.png"
-    alt="MA3DTribe Media"
-    class="site-logo"
-  />
-</header>
-
+    <img
+      src="/images/IMG_4977.png"
+      alt="MA3DTribe Media"
+      class="site-logo"
+    />
+  </header>
 
   <main>
     <!-- HERO -->
     <section class="hero">
       <div>
-        <div class="pill">
-          MA3DTribe Media
-          <span id="heroLiveBadge" class="live-badge">
-            <span class="live-dot"></span> LIVE
-          </span>
-        </div>
+        <div class="pill">MA3DTribe Media</div>
 
         <h2>Music. Culture. Sports talk. Community.</h2>
-        <p class="subtext">
+
+        <!-- ✅ Keep your subtext but give it an ID so it can change -->
+        <p class="subtext" id="heroSubtext">
           When we’re live, the stream opens automatically. Pull up and feel the vibe.
         </p>
+
+        <!-- ✅ NEW: Always-visible LIVE/OFFLINE bar -->
+        <div class="statusbar" id="livebar" data-state="offline">
+          <span class="status-pill">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="liveLabel">OFFLINE</span>
+          </span>
+          <span class="status-text" id="liveText">
+            Currently off air. Tap “Load Player” when we go live.
+          </span>
+        </div>
 
         <div class="cta-row">
           <a class="btn primary" href="#watch">▶ Watch</a>
@@ -275,7 +321,7 @@
       <div class="card" style="margin:0;">
         <h3 style="margin-bottom:6px;">Tonight’s energy</h3>
         <div style="opacity:.78;font-size:13px;line-height:1.45;">
-          Reggae • R&B • Afrobeats • Hip Hop<br/>
+          Reggae • R&amp;B • Afrobeats • Hip Hop<br/>
           Heavy vibes. Real conversation.
         </div>
       </div>
@@ -283,12 +329,9 @@
 
     <!-- WATCH -->
     <section id="watch" class="card">
-      <div class="watch-shell">
+      <div class="watch-shell" id="watchShell">
         <div class="watch-head">
           <div class="watch-title">Watch on Twitch</div>
-          <span id="watchLiveBadge" class="live-badge">
-            <span class="live-dot"></span> LIVE
-          </span>
         </div>
 
         <p id="watchDesc" class="watch-desc">
@@ -296,7 +339,7 @@
         </p>
 
         <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-          <a class="btn" href="https://www.twitch.tv/ma3dtribe" target="_blank">Open Twitch</a>
+          <a class="btn" href="https://www.twitch.tv/ma3dtribe" target="_blank" rel="noopener">Open Twitch</a>
           <button id="manualLoadBtn" class="btn" style="display:none;">Load Player</button>
         </div>
       </div>
@@ -320,15 +363,15 @@
       <div class="grid">
         <div class="tile">
           <div class="tile-title">Music</div>
-          <div style="opacity:.82;">R&B, Hip Hop, Reggae, Afrobeats</div>
+          <div style="opacity:.82;">R&amp;B, Hip Hop, Reggae, Afrobeats</div>
         </div>
         <div class="tile">
           <div class="tile-title">Law</div>
-          <div style="opacity:.82;">Real conversations on legal topics & culture</div>
+          <div style="opacity:.82;">Real conversations on legal topics &amp; culture</div>
         </div>
         <div class="tile">
           <div class="tile-title">Sports</div>
-          <div style="opacity:.82;">Sports talk & commentary</div>
+          <div style="opacity:.82;">Sports talk &amp; commentary</div>
         </div>
       </div>
     </section>
@@ -343,17 +386,30 @@
       const mount = document.getElementById("playerMount");
       const desc = document.getElementById("watchDesc");
       const manualBtn = document.getElementById("manualLoadBtn");
-      const heroBadge = document.getElementById("heroLiveBadge");
-      const watchBadge = document.getElementById("watchLiveBadge");
+      const watchShell = document.getElementById("watchShell");
 
-      function showLive() {
-        heroBadge.style.display = "inline-flex";
-        watchBadge.style.display = "inline-flex";
-      }
+      // ✅ new hero status elements
+      const livebar = document.getElementById("livebar");
+      const liveLabel = document.getElementById("liveLabel");
+      const liveText = document.getElementById("liveText");
+      const heroSubtext = document.getElementById("heroSubtext");
 
-      function hideLive() {
-        heroBadge.style.display = "none";
-        watchBadge.style.display = "none";
+      function setLiveState(isLive){
+        if (!livebar || !liveLabel || !liveText) return;
+
+        if (isLive){
+          livebar.dataset.state = "live";
+          liveLabel.textContent = "LIVE NOW";
+          liveText.textContent = "We’re live right now — pull up and join the chat.";
+          if (heroSubtext) heroSubtext.textContent = "We’re live right now. Pull up and join the conversation.";
+          if (watchShell) watchShell.classList.add("is-live");
+        } else {
+          livebar.dataset.state = "offline";
+          liveLabel.textContent = "OFFLINE";
+          liveText.textContent = "Currently off air. Tap “Load Player” when we go live.";
+          if (heroSubtext) heroSubtext.textContent = "When we’re live, the stream opens automatically. Pull up and feel the vibe.";
+          if (watchShell) watchShell.classList.remove("is-live");
+        }
       }
 
       function loadPlayer() {
@@ -373,22 +429,28 @@
 
       manualBtn.addEventListener("click", loadPlayer);
 
+      // Default UI
+      setLiveState(false);
+
+      // Your existing status check (kept) — now controls the hero bar too
       fetch(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`, { cache: "no-store" })
         .then(r => r.text())
         .then(t => {
           const text = (t || "").toLowerCase();
-          if (!text.includes("offline")) {
-            showLive();
+          const isLive = !text.includes("offline");
+
+          if (isLive) {
+            setLiveState(true);
             desc.textContent = "We’re live — loading the stream now.";
             loadPlayer();
           } else {
-            hideLive();
+            setLiveState(false);
             desc.textContent = "Currently off air. You can still open Twitch or load the player.";
             manualBtn.style.display = "inline-flex";
           }
         })
         .catch(() => {
-          hideLive();
+          setLiveState(false);
           desc.textContent = "Status unavailable. Open Twitch or load the player.";
           manualBtn.style.display = "inline-flex";
         });
@@ -396,7 +458,6 @@
   </script>
 </body>
 </html>
-
 
 
 
