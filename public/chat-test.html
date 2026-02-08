@@ -282,12 +282,29 @@ const SUPABASE_ANON_KEY = "sb_publishable_xzNaO0t5I2iCmv3LzYG9Ow_K8ZS9s0u";
       scrollChatToBottom();
     }
 
-    function sendCurrentText() {
-      const text = (messageInput.value || "").trim();
-      if (!text) return;
-      addTextMessage(text, "me");
-      messageInput.value = "";
-      messageInput.focus();
+    async function sendCurrentText() {
+  const text = (messageInput.value || "").trim();
+  if (!text) return;
+
+  // show instantly on screen (feels fast)
+  addTextMessage(text, "me");
+  messageInput.value = "";
+  messageInput.focus();
+
+  // save to Supabase
+  const { error } = await supabase.from("messages").insert({
+    room: "ma3dtribe",
+    username: USERNAME,
+    kind: "text",
+    context: text,
+    source: "web"
+  });
+
+  if (error) {
+    console.error("Supabase insert error:", error);
+  }
+}
+
     }
 
     sendBtn.addEventListener("click", sendCurrentText);
