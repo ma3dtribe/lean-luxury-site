@@ -3,25 +3,134 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ma3dTribe Chat (Supabase)</title>
+  <title>Ma3dTribe Chat</title>
 
   <style>
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0b0f14;color:#e9eef6;}
-    .wrap{max-width:860px;margin:0 auto;padding:16px;}
-    .card{background:#111826;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;}
-    .header{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;gap:10px;align-items:center;}
-    .dot{width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,.35);}
-    .title{font-weight:700;}
-    .status{margin-left:auto;font-size:12px;opacity:.85;}
-    #chatMessages{height:58vh;overflow:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
-    .msg{max-width:78%;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10);}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:#0b0f14;
+      color:#e9eef6;
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:16px;}
+    .card{
+      background:#111826;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow:0 16px 60px rgba(0,0,0,.35);
+    }
+    .header{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;gap:10px;align-items:center;justify-content:space-between;
+    }
+    .leftHead{display:flex;gap:10px;align-items:center;}
+    .dot{
+      width:10px;height:10px;border-radius:50%;
+      background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,.35);
+      flex:0 0 auto;
+    }
+    .title{font-weight:800}
+    .rightHead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.04);
+      font-size:13px;opacity:.95;
+    }
+    .linkBtn{
+      background:transparent;border:0;color:#93c5fd;cursor:pointer;
+      padding:0;font-size:13px;
+    }
+    .linkBtn:hover{text-decoration:underline;}
+    .status{font-size:13px;opacity:.85}
+
+    #chatMessages{
+      height:58vh;overflow:auto;
+      padding:14px 16px;
+      display:flex;flex-direction:column;gap:10px;
+    }
+    .msg{
+      max-width:78%;
+      padding:10px 12px;border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      line-height:1.25;
+      word-wrap:break-word;
+    }
     .me{margin-left:auto;background:#1a2a42;}
-    .them{margin-right:auto;background:#121b2b;}
+    .them{margin-right:auto;background:#121b2b;opacity:.95;}
     .meta{font-size:12px;opacity:.7;margin-bottom:4px;}
-    .composer{padding:12px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:10px;}
-    #messageInput{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#0e1623;color:#e9eef6;}
-    .btn{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#0e1623;color:#e9eef6;cursor:pointer;}
+    .msg img{
+      max-width:320px;width:100%;
+      border-radius:12px;display:block;
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .composer{
+      padding:12px;border-top:1px solid rgba(255,255,255,.08);
+      display:flex;gap:10px;align-items:center;
+    }
+    #messageInput{
+      flex:1;
+      padding:12px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:#0e1623;color:#e9eef6;outline:none;
+    }
+    .btn{
+      padding:10px 12px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:#0e1623;color:#e9eef6;cursor:pointer;
+      user-select:none;
+    }
+    .btn:hover{filter:brightness(1.08);}
     .btnPrimary{background:#2563eb;border-color:#2563eb;}
+
+    /* GIF MODAL */
+    #gifModal{
+      display:none;
+      position:fixed;inset:0;
+      background:rgba(0,0,0,.75);
+      z-index:9999;
+      pointer-events:none;
+    }
+    #gifModal.show{display:block;pointer-events:auto;}
+    .modalBox{
+      background:#0f1623;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px;
+      max-width:920px;
+      margin:6vh auto;
+      padding:12px;
+      box-shadow:0 20px 80px rgba(0,0,0,.5);
+    }
+    .modalTop{display:flex;gap:10px;align-items:center;padding:6px;}
+    #gifSearch{
+      flex:1;
+      padding:12px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:#0b1220;color:#e9eef6;outline:none;
+    }
+    .hint{opacity:.7;font-size:12px;padding:0 10px 10px;}
+    #gifResults{
+      padding:8px;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      max-height:62vh;
+      overflow:auto;
+    }
+    @media (max-width:820px){
+      #gifResults{grid-template-columns:repeat(2,1fr);}
+    }
+    #gifResults img{
+      width:100%;
+      border-radius:12px;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    #gifResults img:hover{transform:translateY(-1px);transition:.08s;}
   </style>
 </head>
 
@@ -29,9 +138,15 @@
   <div class="wrap">
     <div class="card">
       <div class="header">
-        <div class="dot"></div>
-        <div class="title">Ma3dTribe Chat (Supabase)</div>
-        <div id="dbStatus" class="status">DB: loading…</div>
+        <div class="leftHead">
+          <div class="dot"></div>
+          <div class="title">Ma3dTribe Chat</div>
+        </div>
+
+        <div class="rightHead">
+          <span class="pill">User: <b id="userDisplay">...</b> · <button id="changeName" class="linkBtn" type="button">Change</button></span>
+          <span class="pill status" id="dbStatus">DB: loading…</span>
+        </div>
       </div>
 
       <div id="chatMessages">
@@ -42,35 +157,94 @@
       </div>
 
       <div class="composer">
-        <input id="messageInput" type="text" placeholder="Type your message…" />
-        <button id="sendBtn" class="btn btnPrimary">Send</button>
+        <input id="messageInput" type="text" placeholder="Type your message…" autocomplete="off" />
+        <button id="gifBtn" class="btn" type="button">GIF</button>
+        <button id="sendBtn" class="btn btnPrimary" type="button">Send</button>
       </div>
     </div>
   </div>
 
-  <!-- Load Supabase -->
+  <!-- GIF MODAL -->
+  <div id="gifModal">
+    <div class="modalBox">
+      <div class="modalTop">
+        <input id="gifSearch" type="text" placeholder="Search GIFs (press Enter) — or leave blank for Trending" />
+        <button id="gifTrending" class="btn" type="button">Trending</button>
+        <button id="gifClose" class="btn" type="button">Close</button>
+      </div>
+      <div class="hint">Tip: Press Enter to search. Click a GIF to send it to chat.</div>
+      <div id="gifResults"></div>
+    </div>
+  </div>
+
+  <!-- ✅ Supabase UMD (gives window.supabase). Keep EXACTLY ONE copy of this. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
   <script>
+    /* =========================
+       CONFIG
+    ========================= */
     const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
+    // Use your Anon (Legacy) key or Publishable key. This one is your Anon (Legacy) key:
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
 
     const ROOM = "ma3dtribe";
-    const USERNAME = (localStorage.getItem("ma3dtribe_username") || "DW").trim() || "DW";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const GIPHY_API_KEY = "3zxGKg42FRkYfKmUrnjmobhQch37O33L";
+    const USER_STORAGE_KEY = "ma3dtribe_username";
 
+    /* =========================
+       ELEMENTS
+    ========================= */
     const dbStatus = document.getElementById("dbStatus");
     const chatMessages = document.getElementById("chatMessages");
     const messageInput = document.getElementById("messageInput");
     const sendBtn = document.getElementById("sendBtn");
 
-    function scrollBottom(){
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+    const userDisplay = document.getElementById("userDisplay");
+    const changeNameBtn = document.getElementById("changeName");
+
+    const gifBtn = document.getElementById("gifBtn");
+    const gifModal = document.getElementById("gifModal");
+    const gifClose = document.getElementById("gifClose");
+    const gifTrending = document.getElementById("gifTrending");
+    const gifSearch = document.getElementById("gifSearch");
+    const gifResults = document.getElementById("gifResults");
+
+    /* =========================
+       USERNAME
+    ========================= */
+    function getWebsiteUsername() {
+      let name = (localStorage.getItem(USER_STORAGE_KEY) || "").trim();
+      if (!name) {
+        name = (prompt("Enter your website username for chat:") || "").trim();
+        if (!name) name = "Guest";
+        localStorage.setItem(USER_STORAGE_KEY, name);
+      }
+      return name;
     }
 
+    function setWebsiteUsername(newName) {
+      const clean = (newName || "").trim() || "Guest";
+      localStorage.setItem(USER_STORAGE_KEY, clean);
+      USERNAME = clean;
+      userDisplay.textContent = USERNAME;
+    }
+
+    let USERNAME = getWebsiteUsername();
+    userDisplay.textContent = USERNAME;
+
+    changeNameBtn.addEventListener("click", () => {
+      const newName = prompt("Change your chat name:", USERNAME);
+      if (newName !== null) setWebsiteUsername(newName);
+      messageInput.focus();
+    });
+
+    /* =========================
+       SAFE HELPERS
+    ========================= */
     function escapeHtml(str){
-      return String(str)
+      return String(str ?? "")
         .replaceAll("&","&amp;")
         .replaceAll("<","&lt;")
         .replaceAll(">","&gt;")
@@ -78,58 +252,112 @@
         .replaceAll("'","&#039;");
     }
 
-    function renderMsg(row){
+    function scrollBottom(){ chatMessages.scrollTop = chatMessages.scrollHeight; }
+
+    function renderRow(row){
       const who = (row.username === USERNAME) ? "me" : "them";
-      const div = document.createElement("div");
-      div.className = `msg ${who}`;
-      div.innerHTML = `<div class="meta">${row.username}</div>${escapeHtml(row.content || "")}`;
-      chatMessages.appendChild(div);
+      const bubble = document.createElement("div");
+      bubble.className = `msg ${who}`;
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = row.username || "Guest";
+      bubble.appendChild(meta);
+
+      if ((row.kind || "").toLowerCase() === "gif") {
+        const img = document.createElement("img");
+        img.src = row.content || "";
+        img.alt = "gif";
+        img.loading = "lazy";
+        bubble.appendChild(img);
+      } else {
+        const div = document.createElement("div");
+        div.innerHTML = escapeHtml(row.content || "");
+        bubble.appendChild(div);
+      }
+
+      chatMessages.appendChild(bubble);
       scrollBottom();
     }
 
+    /* =========================
+       SUPABASE CLIENT
+       IMPORTANT: name it "sb" to avoid Safari/global name issues.
+    ========================= */
+    function getSbClient(){
+      if (!window.supabase) {
+        dbStatus.textContent = "DB: library not loaded ❌";
+        chatMessages.innerHTML = `
+          <div class="msg them">
+            <div class="meta">System</div>
+            Supabase library did not load. Check the script tag.
+          </div>`;
+        console.log("SUPABASE TEST:", window.supabase);
+        return null;
+      }
+      return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+
+    const sb = getSbClient();
+
+    /* =========================
+       LOAD + REALTIME
+    ========================= */
     async function loadInitial(){
+      if (!sb) return;
+
       dbStatus.textContent = "DB: loading…";
 
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from("messages")
         .select("id, room, username, kind, content, created_at")
         .eq("room", ROOM)
         .order("created_at", { ascending: true })
-        .limit(100);
-
-      chatMessages.innerHTML = "";
+        .limit(200);
 
       if (error){
         console.error("SELECT error:", error);
         dbStatus.textContent = "DB: read failed ❌";
-        chatMessages.innerHTML = `<div class="msg them"><div class="meta">System</div>${escapeHtml(error.message)}</div>`;
+        chatMessages.innerHTML = `
+          <div class="msg them">
+            <div class="meta">System</div>
+            Read failed: ${escapeHtml(error.message)}
+          </div>`;
         return;
+      }
+
+      chatMessages.innerHTML = "";
+      if (!data || !data.length){
+        chatMessages.innerHTML = `
+          <div class="msg them">
+            <div class="meta">System</div>
+            No messages yet. Say something.
+          </div>`;
+      } else {
+        data.forEach(renderRow);
       }
 
       dbStatus.textContent = "DB: ready ✅";
-
-      if (!data || !data.length){
-        chatMessages.innerHTML = `<div class="msg them"><div class="meta">System</div>No messages yet. Say something.</div>`;
-        return;
-      }
-
-      data.forEach(renderMsg);
     }
 
     async function sendText(){
+      if (!sb) return;
+
       const text = (messageInput.value || "").trim();
       if (!text) return;
 
       messageInput.value = "";
+      dbStatus.textContent = "DB: saving…";
 
-      const { error } = await supabase.from("messages").insert({
+      const { error } = await sb.from("messages").insert({
         room: ROOM,
         username: USERNAME,
         kind: "text",
-        content: text
+        content: text,
+        source: "web"
       });
 
-      console.log("INSERT error:", error);
+      console.log("INSERT text error:", error);
 
       if (error){
         dbStatus.textContent = "DB: save failed ❌";
@@ -140,21 +368,143 @@
     }
 
     sendBtn.addEventListener("click", sendText);
-    messageInput.addEventListener("keydown", (e) => { if (e.key === "Enter") sendText(); });
+    messageInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendText();
+    });
 
     function subscribeRealtime(){
-      supabase.channel("room-" + ROOM)
+      if (!sb) return;
+
+      sb.channel("room-" + ROOM)
         .on("postgres_changes",
           { event: "INSERT", schema: "public", table: "messages", filter: `room=eq.${ROOM}` },
           (payload) => {
-            renderMsg(payload.new);
+            // Render new row arriving from DB
+            if (payload && payload.new) renderRow(payload.new);
           }
         )
         .subscribe((status) => console.log("realtime:", status));
     }
 
-    loadInitial();
-    subscribeRealtime();
+    /* =========================
+       GIF MODAL + SEND GIF
+    ========================= */
+    function openGifModal() {
+      gifModal.classList.add("show");
+      gifSearch.value = "";
+      gifResults.textContent = "Loading trending GIFs...";
+      loadTrending();
+      gifSearch.focus();
+    }
+
+    function closeGifModal() {
+      gifModal.classList.remove("show");
+      messageInput.focus();
+    }
+
+    gifBtn.addEventListener("click", openGifModal);
+    gifClose.addEventListener("click", closeGifModal);
+    gifTrending.addEventListener("click", loadTrending);
+
+    gifModal.addEventListener("click", (e) => {
+      if (e.target === gifModal) closeGifModal();
+    });
+
+    async function sendGif(url){
+      if (!sb) return;
+
+      dbStatus.textContent = "DB: saving…";
+
+      const { error } = await sb.from("messages").insert({
+        room: ROOM,
+        username: USERNAME,
+        kind: "gif",
+        content: url,
+        source: "web"
+      });
+
+      console.log("INSERT gif error:", error);
+
+      if (error){
+        dbStatus.textContent = "DB: save failed ❌";
+        alert("GIF send failed: " + error.message);
+      } else {
+        dbStatus.textContent = "DB: saved ✅";
+        closeGifModal();
+      }
+    }
+
+    async function loadTrending() {
+      gifResults.textContent = "Loading trending GIFs...";
+      try {
+        const url = `https://api.giphy.com/v1/gifs/trending?api_key=${encodeURIComponent(GIPHY_API_KEY)}&limit=18&rating=pg-13`;
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (!res.ok) {
+          gifResults.textContent = "GIPHY error: " + (json?.message || json?.meta?.msg || "Unknown error");
+          return;
+        }
+        renderGifGrid(json.data || []);
+      } catch (err) {
+        gifResults.textContent = "Network error: " + err.message;
+      }
+    }
+
+    gifSearch.addEventListener("keydown", async (e) => {
+      if (e.key !== "Enter") return;
+
+      const q = gifSearch.value.trim();
+      if (!q) return loadTrending();
+
+      gifResults.textContent = "Searching...";
+      try {
+        const url = `https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(GIPHY_API_KEY)}&q=${encodeURIComponent(q)}&limit=18&rating=pg-13`;
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (!res.ok) {
+          gifResults.textContent = "GIPHY error: " + (json?.message || json?.meta?.msg || "Unknown error");
+          return;
+        }
+
+        const data = json.data || [];
+        if (!data.length) {
+          gifResults.textContent = "No results. Try another search.";
+          return;
+        }
+
+        renderGifGrid(data);
+      } catch (err) {
+        gifResults.textContent = "Network error: " + err.message;
+      }
+    });
+
+    function renderGifGrid(gifs) {
+      gifResults.innerHTML = "";
+      gifs.forEach(g => {
+        const imgUrl = g?.images?.fixed_width?.url;
+        if (!imgUrl) return;
+
+        const img = document.createElement("img");
+        img.src = imgUrl;
+        img.loading = "lazy";
+
+        img.addEventListener("click", () => sendGif(imgUrl));
+        gifResults.appendChild(img);
+      });
+    }
+
+    /* =========================
+       START
+    ========================= */
+    window.addEventListener("load", () => {
+      messageInput.focus();
+      loadInitial();
+      subscribeRealtime();
+      // quick debug
+      console.log("SUPABASE TEST:", window.supabase);
+    });
   </script>
 </body>
 </html>
