@@ -3,34 +3,48 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ma3dTribe Chat (Supabase)</title>
+  <title>Ma3dTribe Chat</title>
+
   <style>
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0b0f14;color:#e9eef6;}
     .wrap{max-width:860px;margin:0 auto;padding:16px;}
     .card{background:#111826;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;}
     .header{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;gap:10px;align-items:center;}
-    .dot{width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,.35);}
-    .title{font-weight:800;}
-    .status{margin-left:auto;font-size:12px;opacity:.85;}
+    .dot{width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,.35);flex:0 0 auto;}
+    .title{font-weight:900;}
+    .status{margin-left:auto;font-size:12px;opacity:.85;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);}
+    .linkBtn{background:transparent;border:0;color:#93c5fd;cursor:pointer;padding:0;font-size:12px;}
+    .linkBtn:hover{text-decoration:underline;}
+
     #chatMessages{height:58vh;overflow:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
-    .msg{max-width:78%;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10);line-height:1.25;word-wrap:break-word;}
+    .msg{max-width:78%;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10);line-height:1.25;white-space:pre-wrap;word-break:break-word;}
     .me{margin-left:auto;background:#1a2a42;}
     .them{margin-right:auto;background:#121b2b;opacity:.95;}
     .meta{font-size:12px;opacity:.7;margin-bottom:4px;}
+
     .composer{padding:12px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:10px;align-items:center;}
     #messageInput{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#0e1623;color:#e9eef6;outline:none;}
     .btn{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#0e1623;color:#e9eef6;cursor:pointer;}
+    .btn:hover{filter:brightness(1.08);}
     .btnPrimary{background:#2563eb;border-color:#2563eb;}
+
     .badge{position:fixed;right:10px;bottom:10px;background:#0e1623;border:1px solid rgba(255,255,255,.14);padding:6px 10px;border-radius:999px;font-size:12px;opacity:.9;}
+    .err{color:#fecaca;}
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <div class="card">
       <div class="header">
         <div class="dot"></div>
-        <div class="title">Ma3dTribe Chat (Supabase)</div>
-        <div id="dbStatus" class="status">DB: loading…</div>
+        <div class="title">Ma3dTribe Chat</div>
+
+        <div class="status">
+          <span class="pill">User: <b id="userDisplay">…</b> · <button id="changeName" class="linkBtn" type="button">Change</button></span>
+          <span class="pill"><span id="dbStatus">DB: loading…</span></span>
+        </div>
       </div>
 
       <div id="chatMessages">
@@ -47,40 +61,36 @@
     </div>
   </div>
 
-  <div class="badge">DEPLOY TEST: v2</div>
+  <div class="badge">CHAT v3 (Supabase)</div>
 
+  <!-- Supabase JS (UMD) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
   <script>
-    // ✅ Use your project URL + KEY
+    // =========================
+    // CONFIG
+    // =========================
     const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
-
-    // IMPORTANT:
-    // Use ONE of these (publishable is preferred). Paste your real key string.
-    // const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
-
     const ROOM = "ma3dtribe";
-    const USERNAME = (localStorage.getItem("ma3dtribe_username") || "DW").trim() || "DW";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const USER_STORAGE_KEY = "ma3dtribe_username";
 
-    const dbStatus = document.getElementById("dbStatus");
+    // =========================
+    // ELEMENTS
+    // =========================
     const chatMessages = document.getElementById("chatMessages");
     const messageInput = document.getElementById("messageInput");
     const sendBtn = document.getElementById("sendBtn");
+    const dbStatusEl = document.getElementById("dbStatus");
 
-    function scrollBottom(){ chatMessages.scrollTop = chatMessages.scrollHeight; }
+    const userDisplay = document.getElementById("userDisplay");
+    const changeNameBtn = document.getElementById("changeName");
 
-    function renderMsg(row){
-      const who = (row.username === USERNAME) ? "me" : "them";
-      const div = document.createElement("div");
-      div.className = `msg ${who}`;
-      div.innerHTML = `<div class="meta">${row.username}</div>${escapeHtml(row.content ?? "")}`;
-      chatMessages.appendChild(div);
-      scrollBottom();
-    }
-
-    function escapeHtml(str){
+    // =========================
+    // BASIC UTILS
+    // =========================
+    function esc(str){
       return String(str)
         .replaceAll("&","&amp;")
         .replaceAll("<","&lt;")
@@ -88,31 +98,84 @@
         .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
     }
+    function scrollBottom(){ chatMessages.scrollTop = chatMessages.scrollHeight; }
+
+    function setStatus(text, isError=false){
+      dbStatusEl.textContent = text;
+      dbStatusEl.className = isError ? "err" : "";
+    }
+
+    // =========================
+    // USERNAME
+    // =========================
+    function getUsername(){
+      let name = (localStorage.getItem(USER_STORAGE_KEY) || "").trim();
+      if (!name){
+        name = (prompt("Enter your chat name:") || "").trim() || ("Guest" + Math.floor(Math.random()*10000));
+        localStorage.setItem(USER_STORAGE_KEY, name);
+      }
+      return name;
+    }
+
+    let USERNAME = getUsername();
+    userDisplay.textContent = USERNAME;
+
+    changeNameBtn.addEventListener("click", () => {
+      const next = prompt("Change your chat name:", USERNAME);
+      if (next === null) return;
+      USERNAME = (next || "").trim() || "Guest";
+      localStorage.setItem(USER_STORAGE_KEY, USERNAME);
+      userDisplay.textContent = USERNAME;
+      messageInput.focus();
+    });
+
+    // =========================
+    // SUPABASE
+    // =========================
+    const supabase = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    if (!supabase){
+      setStatus("DB: supabase.js not loaded ❌", true);
+      chatMessages.innerHTML = `<div class="msg them"><div class="meta">System</div>Supabase library failed to load.</div>`;
+      throw new Error("Supabase library not loaded");
+    }
+
+    function render(row){
+      const whoClass = (row.username === USERNAME) ? "me" : "them";
+      const div = document.createElement("div");
+      div.className = `msg ${whoClass}`;
+      div.innerHTML = `<div class="meta">${esc(row.username || "Unknown")}</div>${esc(row.content ?? "")}`;
+      chatMessages.appendChild(div);
+      scrollBottom();
+    }
 
     async function loadInitial(){
-      dbStatus.textContent = "DB: loading…";
+      setStatus("DB: loading…");
+
       const { data, error } = await supabase
         .from("messages")
         .select("id, room, username, kind, content, created_at")
         .eq("room", ROOM)
         .order("created_at", { ascending: true })
-        .limit(100);
+        .limit(200);
 
       chatMessages.innerHTML = "";
 
       if (error){
         console.error("SELECT error:", error);
-        dbStatus.textContent = "DB: read failed ❌";
-        chatMessages.innerHTML = `<div class="msg them"><div class="meta">System</div>Read failed: ${escapeHtml(error.message)}</div>`;
+        setStatus("DB: read failed ❌", true);
+        chatMessages.innerHTML = `<div class="msg them"><div class="meta">System</div>Read failed: ${esc(error.message)}</div>`;
         return;
       }
 
-      dbStatus.textContent = "DB: ready ✅";
       if (!data || !data.length){
+        setStatus("DB: ready ✅");
         chatMessages.innerHTML = `<div class="msg them"><div class="meta">System</div>No messages yet. Say something.</div>`;
         return;
       }
-      data.forEach(renderMsg);
+
+      data.forEach(render);
+      setStatus("DB: ready ✅");
     }
 
     async function sendText(){
@@ -120,6 +183,7 @@
       if (!text) return;
 
       messageInput.value = "";
+      setStatus("DB: saving…");
 
       const { error } = await supabase.from("messages").insert({
         room: ROOM,
@@ -129,32 +193,31 @@
       });
 
       console.log("INSERT error:", error);
+
       if (error){
-        dbStatus.textContent = "DB: save failed ❌";
+        setStatus("DB: save failed ❌", true);
         alert("Save failed: " + error.message);
       } else {
-        dbStatus.textContent = "DB: saved ✅";
+        setStatus("DB: saved ✅");
       }
     }
 
     sendBtn.addEventListener("click", sendText);
     messageInput.addEventListener("keydown", (e) => { if (e.key === "Enter") sendText(); });
 
-    // ✅ Realtime: show messages from other users
     function subscribeRealtime(){
       supabase.channel("room-" + ROOM)
         .on("postgres_changes",
           { event: "INSERT", schema: "public", table: "messages", filter: `room=eq.${ROOM}` },
-          (payload) => {
-            // Avoid double-render if you also show locally
-            renderMsg(payload.new);
-          }
+          (payload) => render(payload.new)
         )
         .subscribe((status) => console.log("realtime:", status));
     }
 
+    // Start
     loadInitial();
     subscribeRealtime();
+    window.addEventListener("load", () => messageInput.focus());
   </script>
 </body>
 </html>
