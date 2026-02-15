@@ -23,53 +23,9 @@
       --red: #ff3b3b;
       --red-soft: rgba(255,59,59,.18);
       --red-glow: rgba(255,59,59,.25);
-      .site-header{
-  padding: 14px 16px;
-  display:flex;
-  align-items:center;
-}
-
-.brand{
-  display:inline-flex;
-  align-items:center;
-  text-decoration:none;
-}
-
-.brand-logo{
-  height: 48px;      /* desktop */
-  width: auto;
-  max-width: 100%;
-  display:block;
-}
-
-@media (max-width: 480px){
-  .brand-logo{ height: 36px; }  /* mobile */
-}
     }
 
     body {
-<header class="site-header">
-  <a class="brand" href="/" aria-label="MA3DTribe Home">
-    <picture>
-      <source
-        type="image/webp"
-        srcset="
-          /images/ma3dtribe-logo-300w.webp 300w,
-          /images/ma3dtribe-logo-600w.webp 600w,
-          /images/ma3dtribe-logo-1200w.webp 1200w
-        "
-        sizes="(max-width: 480px) 180px, (max-width: 768px) 240px, 320px"
-      />
-      <img
-        src="/images/ma3dtribe-logo-600w.webp"
-        alt="MA3DTribe Media"
-        class="brand-logo"
-        loading="eager"
-        decoding="async"
-      />
-    </picture>
-  </a>
-</header>
       margin: 0;
       font-family: Inter, system-ui, sans-serif;
       background: var(--bg);
@@ -89,20 +45,39 @@
       pointer-events: none;
     }
 
-    header {
-      text-align: center;
-      padding: 22px 16px 8px;
+    /* =========================
+       ✅ LOGO HEADER (Responsive, professional, low-bandwidth)
+    ========================= */
+    .site-header{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: linear-gradient(to bottom, rgba(28,23,24,.92), rgba(28,23,24,.55));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,.10);
     }
 
-    .site-logo{
-      max-height:72px;
-      width:auto;
-      height:auto;
-      display:inline-block;
+    .brand{
+      display:inline-flex;
+      align-items:center;
+      text-decoration:none;
+      gap: 10px;
     }
 
-    @media (max-width:600px){
-      .site-logo{ max-height:52px; }
+    .brand-logo{
+      height: 56px;      /* desktop */
+      width: auto;
+      max-width: min(520px, 92vw);
+      display:block;
+      filter: drop-shadow(0 12px 28px rgba(0,0,0,.35));
+    }
+
+    @media (max-width: 600px){
+      .brand-logo{ height: 42px; }  /* mobile */
     }
 
     main {
@@ -196,7 +171,7 @@
     }
 
     /* =========================
-       ✅ NEW: Live/Offline pill + hero status line
+       Live/Offline pill + hero status line
     ========================= */
     .statusbar{
       display:flex;
@@ -273,7 +248,7 @@
       transition: border-color .15s ease, box-shadow .15s ease;
     }
 
-    /* ✅ NEW: Glow the watch shell when live */
+    /* Glow the watch shell when live */
     .watch-shell.is-live{
       border-color: rgba(255,59,59,.28);
       box-shadow: 0 0 0 1px rgba(255,59,59,.10), 0 18px 60px rgba(0,0,0,.34);
@@ -323,12 +298,28 @@
 <body>
   <div class="bg-glow"></div>
 
+  <!-- ✅ Responsive logo header -->
   <header class="site-header">
-    <img
-      src="/images/IMG_4977.png"
-      alt="MA3DTribe Media"
-      class="site-logo"
-    />
+    <a class="brand" href="/" aria-label="MA3DTribe Home">
+      <picture>
+        <source
+          type="image/webp"
+          srcset="
+            /images/ma3dtribe-logo-300w.webp 300w,
+            /images/ma3dtribe-logo-600w.webp 600w,
+            /images/ma3dtribe-logo-1200w.webp 1200w
+          "
+          sizes="(max-width: 480px) 180px, (max-width: 768px) 240px, 360px"
+        />
+        <img
+          src="/images/ma3dtribe-logo-600w.webp"
+          alt="MA3DTribe Media"
+          class="brand-logo"
+          loading="eager"
+          decoding="async"
+        />
+      </picture>
+    </a>
   </header>
 
   <main>
@@ -339,12 +330,10 @@
 
         <h2>Music. Culture. Sports talk. Community.</h2>
 
-        <!-- ✅ Keep your subtext but give it an ID so it can change -->
         <p class="subtext" id="heroSubtext">
           When we’re live, the stream opens automatically. Pull up and feel the vibe.
         </p>
 
-        <!-- ✅ NEW: Always-visible LIVE/OFFLINE bar -->
         <div class="statusbar" id="livebar" data-state="offline">
           <span class="status-pill">
             <span class="status-dot" aria-hidden="true"></span>
@@ -432,7 +421,6 @@
       const manualBtn = document.getElementById("manualLoadBtn");
       const watchShell = document.getElementById("watchShell");
 
-      // ✅ new hero status elements
       const livebar = document.getElementById("livebar");
       const liveLabel = document.getElementById("liveLabel");
       const liveText = document.getElementById("liveText");
@@ -473,10 +461,8 @@
 
       manualBtn.addEventListener("click", loadPlayer);
 
-      // Default UI
       setLiveState(false);
 
-      // Your existing status check (kept) — now controls the hero bar too
       fetch(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`, { cache: "no-store" })
         .then(r => r.text())
         .then(t => {
@@ -502,6 +488,3 @@
   </script>
 </body>
 </html>
-
-
-
