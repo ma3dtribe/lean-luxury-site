@@ -69,28 +69,29 @@
     }
 
     sendBtn.addEventListener("click", async () => {
-      console.log("SEND CLICKED ✅");
-      const text = messageInput.value.trim();
-      if (!text) return;
+  const text = messageInput.value.trim();
+  if (!text) return;
 
-      addMessage(text);
-      messageInput.value = "";
+  addMessage(text);
+  messageInput.value = "";
 
-      const { error } = await supabase.from("messages").insert({
-        room: "ma3dtribe",
-        username: "DW",
-        kind: "text",
-        context: text,
-        source: "web"
-      });
+  const { error } = await supabase.from("messages").insert({
+    room: "ma3dtribe",
+    username: "DW",
+    kind: "text",
+    content: text
+  });
 
-      if (error) {
-        console.error(error);
-        dbStatus.textContent = "DB: save failed ❌";
-      } else {
-        dbStatus.textContent = "DB: saved ✅";
-      }
-    });
+  console.log("Insert result error:", error);
+
+  if (error) {
+    console.error(error);
+    dbStatus.textContent = "DB: save failed ❌";
+  } else {
+    dbStatus.textContent = "DB: saved ✅";
+  }
+});
+
   </script>
 </body>
 </html>
