@@ -23,9 +23,53 @@
       --red: #ff3b3b;
       --red-soft: rgba(255,59,59,.18);
       --red-glow: rgba(255,59,59,.25);
+      .site-header{
+  padding: 14px 16px;
+  display:flex;
+  align-items:center;
+}
+
+.brand{
+  display:inline-flex;
+  align-items:center;
+  text-decoration:none;
+}
+
+.brand-logo{
+  height: 48px;      /* desktop */
+  width: auto;
+  max-width: 100%;
+  display:block;
+}
+
+@media (max-width: 480px){
+  .brand-logo{ height: 36px; }  /* mobile */
+}
     }
 
     body {
+<header class="site-header">
+  <a class="brand" href="/" aria-label="MA3DTribe Home">
+    <picture>
+      <source
+        type="image/webp"
+        srcset="
+          /images/ma3dtribe-logo-300w.webp 300w,
+          /images/ma3dtribe-logo-600w.webp 600w,
+          /images/ma3dtribe-logo-1200w.webp 1200w
+        "
+        sizes="(max-width: 480px) 180px, (max-width: 768px) 240px, 320px"
+      />
+      <img
+        src="/images/ma3dtribe-logo-600w.webp"
+        alt="MA3DTribe Media"
+        class="brand-logo"
+        loading="eager"
+        decoding="async"
+      />
+    </picture>
+  </a>
+</header>
       margin: 0;
       font-family: Inter, system-ui, sans-serif;
       background: var(--bg);
