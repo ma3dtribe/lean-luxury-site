@@ -1,101 +1,160 @@
-</div>
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ma3dTribe Chat + GIPHY</title>
-
+  <title>Ma3dTribe Chat (Supabase)</title>
   <style>
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0b0f14;color:#e9eef6;}
     .wrap{max-width:860px;margin:0 auto;padding:16px;}
     .card{background:#111826;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;}
     .header{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;gap:10px;align-items:center;}
     .dot{width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,.35);}
-    .title{font-weight:700;}
-    .status{margin-left:10px;font-size:12px;opacity:.8;}
+    .title{font-weight:800;}
+    .status{margin-left:auto;font-size:12px;opacity:.85;}
     #chatMessages{height:58vh;overflow:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
-    .msg{max-width:78%;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10);}
+    .msg{max-width:78%;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10);line-height:1.25;word-wrap:break-word;}
     .me{margin-left:auto;background:#1a2a42;}
+    .them{margin-right:auto;background:#121b2b;opacity:.95;}
     .meta{font-size:12px;opacity:.7;margin-bottom:4px;}
-    .composer{padding:12px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:10px;}
-    #messageInput{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#0e1623;color:#e9eef6;}
+    .composer{padding:12px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:10px;align-items:center;}
+    #messageInput{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#0e1623;color:#e9eef6;outline:none;}
     .btn{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#0e1623;color:#e9eef6;cursor:pointer;}
     .btnPrimary{background:#2563eb;border-color:#2563eb;}
+    .badge{position:fixed;right:10px;bottom:10px;background:#0e1623;border:1px solid rgba(255,255,255,.14);padding:6px 10px;border-radius:999px;font-size:12px;opacity:.9;}
   </style>
 </head>
-
 <body>
-<div style="position:fixed;bottom:8px;right:8px;font:12px system-ui;background:#111;color:#0f0;padding:6px 8px;border-radius:8px;z-index:99999;">
-  DEPLOY TEST: v1
-</div>
   <div class="wrap">
     <div class="card">
       <div class="header">
         <div class="dot"></div>
-        <div class="title">Ma3dTribe Chat (Test)</div>
+        <div class="title">Ma3dTribe Chat (Supabase)</div>
         <div id="dbStatus" class="status">DB: loading…</div>
       </div>
 
       <div id="chatMessages">
-        <div class="msg">
+        <div class="msg them">
           <div class="meta">System</div>
-          Welcome. Type a message.
+          Loading messages…
         </div>
       </div>
 
       <div class="composer">
-        <input id="messageInput" type="text" placeholder="Type your message…" />
-        <button id="sendBtn" class="btn btnPrimary">Send</button>
+        <input id="messageInput" type="text" placeholder="Type your message…" autocomplete="off" />
+        <button id="sendBtn" class="btn btnPrimary" type="button">Send</button>
       </div>
     </div>
   </div>
 
+  <div class="badge">DEPLOY TEST: v2</div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script>
+    // ✅ Use your project URL + KEY
     const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // IMPORTANT:
+    // Use ONE of these (publishable is preferred). Paste your real key string.
+    // const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
+
+    const ROOM = "ma3dtribe";
+    const USERNAME = (localStorage.getItem("ma3dtribe_username") || "DW").trim() || "DW";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const dbStatus = document.getElementById("dbStatus");
     const chatMessages = document.getElementById("chatMessages");
     const messageInput = document.getElementById("messageInput");
     const sendBtn = document.getElementById("sendBtn");
 
-    dbStatus.textContent = "DB: ready ✅";
+    function scrollBottom(){ chatMessages.scrollTop = chatMessages.scrollHeight; }
 
-    function addMessage(text) {
+    function renderMsg(row){
+      const who = (row.username === USERNAME) ? "me" : "them";
       const div = document.createElement("div");
-      div.className = "msg me";
-      div.innerHTML = `<div class="meta">You</div>${text}`;
+      div.className = `msg ${who}`;
+      div.innerHTML = `<div class="meta">${row.username}</div>${escapeHtml(row.content ?? "")}`;
       chatMessages.appendChild(div);
+      scrollBottom();
     }
 
-    sendBtn.addEventListener("click", async () => {
-  const text = messageInput.value.trim();
-  if (!text) return;
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
 
-  addMessage(text);
-  messageInput.value = "";
+    async function loadInitial(){
+      dbStatus.textContent = "DB: loading…";
+      const { data, error } = await supabase
+        .from("messages")
+        .select("id, room, username, kind, content, created_at")
+        .eq("room", ROOM)
+        .order("created_at", { ascending: true })
+        .limit(100);
 
-  const { error } = await supabase.from("messages").insert({
-    room: "ma3dtribe",
-    username: "DW",
-    kind: "text",
-    content: text
-  });
+      chatMessages.innerHTML = "";
 
-  console.log("Insert result error:", error);
+      if (error){
+        console.error("SELECT error:", error);
+        dbStatus.textContent = "DB: read failed ❌";
+        chatMessages.innerHTML = `<div class="msg them"><div class="meta">System</div>Read failed: ${escapeHtml(error.message)}</div>`;
+        return;
+      }
 
-  if (error) {
-    console.error(error);
-    dbStatus.textContent = "DB: save failed ❌";
-  } else {
-    dbStatus.textContent = "DB: saved ✅";
-  }
-});
+      dbStatus.textContent = "DB: ready ✅";
+      if (!data || !data.length){
+        chatMessages.innerHTML = `<div class="msg them"><div class="meta">System</div>No messages yet. Say something.</div>`;
+        return;
+      }
+      data.forEach(renderMsg);
+    }
 
+    async function sendText(){
+      const text = (messageInput.value || "").trim();
+      if (!text) return;
+
+      messageInput.value = "";
+
+      const { error } = await supabase.from("messages").insert({
+        room: ROOM,
+        username: USERNAME,
+        kind: "text",
+        content: text
+      });
+
+      console.log("INSERT error:", error);
+      if (error){
+        dbStatus.textContent = "DB: save failed ❌";
+        alert("Save failed: " + error.message);
+      } else {
+        dbStatus.textContent = "DB: saved ✅";
+      }
+    }
+
+    sendBtn.addEventListener("click", sendText);
+    messageInput.addEventListener("keydown", (e) => { if (e.key === "Enter") sendText(); });
+
+    // ✅ Realtime: show messages from other users
+    function subscribeRealtime(){
+      supabase.channel("room-" + ROOM)
+        .on("postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages", filter: `room=eq.${ROOM}` },
+          (payload) => {
+            // Avoid double-render if you also show locally
+            renderMsg(payload.new);
+          }
+        )
+        .subscribe((status) => console.log("realtime:", status));
+    }
+
+    loadInitial();
+    subscribeRealtime();
   </script>
 </body>
 </html>
