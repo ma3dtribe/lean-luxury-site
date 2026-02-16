@@ -284,6 +284,48 @@
       font-weight: 900;
       margin-bottom: 6px;
     }
+      .tile-title {
+    font-weight: 900;
+    margin-bottom: 6px;
+  }
+
+  /* =========================
+     Social icons footer (bigger + centered)
+  ========================= */
+  .social-footer{
+    padding: 28px 0 40px;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,.18);
+  }
+
+  .social-footer .container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .social-icon{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 999px;
+    border: 2px solid rgba(255,255,255,.25);
+    background: rgba(255,255,255,.10);
+    text-decoration: none;
+    font-size: 36px;
+    line-height: 1;
+    transition: transform .12s ease, background .12s ease, border-color .12s ease;
+  }
+
+  .social-icon:hover{
+    transform: translateY(-2px) scale(1.05);
+    background: rgba(255,255,255,.18);
+    border-color: rgba(255,255,255,.45);
+  }
+</style>
   </style>
 </head>
 
@@ -481,6 +523,4 @@
     </div>
   </footer>
 </body>
-</html>
-
 </html>
