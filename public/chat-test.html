@@ -312,7 +312,79 @@ const chatCountEl = document.getElementById("chatCount");
     }
 
     const sb = getSbClient();
+/* =========================
+   PRESENCE (Viewer + Chatter Counter)
+========================= */
+const SESSION_KEY = "ma3dtribe_presence_session";
+let sessionId = localStorage.getItem(SESSION_KEY);
+if (!sessionId) {
+  sessionId = (crypto?.randomUUID?.() || (Date.now() + "-" + Math.random().toString(16).slice(2)));
+  localStorage.setItem(SESSION_KEY, sessionId);
+}
 
+let hasChatted = false;
+
+function recomputeCounts(channel){
+  if (!channel) return;
+  const state = channel.presenceState(); // { key: [metas...] }
+
+  let viewers = 0;
+  let chatters = 0;
+
+  for (const key in state) {
+    const metas = state[key] || [];
+    viewers += metas.length;
+    if (metas.some(m => m?.chatted === true)) chatters += 1;
+  }
+
+  if (viewCountEl) viewCountEl.textContent = String(viewers);
+  if (chatCountEl) chatCountEl.textContent = String(chatters);
+}
+
+let presenceChannel = null;
+
+async function startPresence(){
+  if (!sb) return;
+
+  presenceChannel = sb.channel(`presence:${ROOM}`, {
+    config: { presence: { key: sessionId } }
+  });
+
+  presenceChannel
+    .on("presence", { event: "sync" }, () => recomputeCounts(presenceChannel))
+    .on("presence", { event: "join" }, () => recomputeCounts(presenceChannel))
+    .on("presence", { event: "leave" }, () => recomputeCounts(presenceChannel));
+
+  await presenceChannel.subscribe(async (status) => {
+    if (status !== "SUBSCRIBED") return;
+
+    // viewer is "present" as soon as page is open
+    await presenceChannel.track({
+      username: USERNAME || "Guest",
+      chatted: false,
+      t: Date.now()
+    });
+
+    recomputeCounts(presenceChannel);
+  });
+
+  window.addEventListener("beforeunload", () => {
+    try { presenceChannel?.untrack(); } catch(e) {}
+  });
+}
+
+async function markChatted(){
+  if (!presenceChannel || hasChatted) return;
+  hasChatted = true;
+
+  await presenceChannel.track({
+    username: USERNAME || "Guest",
+    chatted: true,
+    t: Date.now()
+  });
+
+  recomputeCounts(presenceChannel);
+}
     /* =========================
        LOAD + REALTIME
     ========================= */
@@ -515,6 +587,7 @@ const chatCountEl = document.getElementById("chatCount");
       messageInput.focus();
       loadInitial();
       subscribeRealtime();
+      startPresence();
       // quick debug
       console.log("SUPABASE TEST:", window.supabase);
     });
