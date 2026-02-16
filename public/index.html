@@ -48,36 +48,24 @@
     /* =========================
        ✅ LOGO HEADER (Responsive, professional, low-bandwidth)
     ========================= */
-    .site-header{
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      padding: 14px 16px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background: linear-gradient(to bottom, rgba(28,23,24,.92), rgba(28,23,24,.55));
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255,255,255,.10);
-    }
+/* =========================
+   ✅ BANNER HEADER (Option B: same width as main content)
+========================= */
+.site-banner{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  max-width: 1100px;   /* same as main */
+  margin: 0 auto;      /* center it */
+  padding: 0 16px;     /* match main side padding */
+}
 
-    .brand{
-      display:inline-flex;
-      align-items:center;
-      text-decoration:none;
-      gap: 10px;
-    }
+.banner-img{
+  width: 100%;
+  height: auto;
+  display: block;      /* removes tiny gaps */
+}
 
-    .brand-logo{
-      height: 96px;      /* desktop */
-      width: auto;
-      max-width: min(720px, 92vw);
-      display:block;
-      filter: drop-shadow(0 12px 28px rgba(0,0,0,.35));
-    }
-
-    @media (max-width: 600px){
-      .brand-logo{ height: 42px; }  /* mobile */
     }
 
     main {
