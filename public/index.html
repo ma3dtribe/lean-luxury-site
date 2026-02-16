@@ -52,20 +52,20 @@
    ✅ BANNER HEADER (Option B: same width as main content)
 ========================= */
 /* Banner aligned EXACTLY like main */
+/* Perfect aligned banner container */
 .site-banner{
-  max-width: 1100px;
+  max-width: 1100px;  /* exactly matches main */
   margin: 0 auto;
-  padding: 0;        /* ✅ no side padding */
+  padding: 0;
 }
 
+/* Perfect header height for this banner image */
 .banner-img{
   width: 100%;
-  height: auto;     /* ✅ let the image decide its height */
-  display: block;   /* removes gaps */
+  height: clamp(170px, 29vw, 320px);
+  object-fit: contain;
+  display: block;
 }
-
-
-
 
     }
 
@@ -291,7 +291,7 @@
   <header class="site-banner">
   <a href="/" aria-label="MA3DTribe Home">
     <img
-      src="/images/ma3dtibebanner.png"
+      src="/images/ma3dtribebanner_cropped.webp"
       alt="MA3DTribe Media"
       class="banner-img"
       loading="eager"
@@ -299,7 +299,6 @@
     />
   </a>
 </header>
-
 
   <main>
     <!-- HERO -->
