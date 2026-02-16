@@ -602,13 +602,17 @@ async function markChatted(){
        START
     ========================= */
     window.addEventListener("load", () => {
-      messageInput.focus();
-      loadInitial();
-      subscribeRealtime();
-      startPresence();
-      // quick debug
-      console.log("SUPABASE TEST:", window.supabase);
-    });
+  messageInput.focus();
+  loadInitial();
+  subscribeRealtime();
+
+  refreshTwitchViewers();                  // ✅ run once on load
+  setInterval(refreshTwitchViewers, 30000); // ✅ refresh every 30 seconds
+
+  // quick debug
+  console.log("SUPABASE TEST:", window.supabase);
+});
+
   </script>
 </body>
 </html>
