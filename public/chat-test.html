@@ -271,6 +271,16 @@ const twViewCountEl = document.getElementById("twViewCount");
 
     function scrollBottom(){ chatMessages.scrollTop = chatMessages.scrollHeight; }
 
+    async function refreshTwitchViewers(){
+  try {
+    const res = await fetch("https://decapi.me/twitch/viewercount/ma3dtribe", { cache: "no-store" });
+    const text = await res.text();
+    const n = parseInt(text, 10);
+    if (twViewCountEl) twViewCountEl.textContent = isNaN(n) ? "0" : String(n);
+  } catch (e) {
+    if (twViewCountEl) twViewCountEl.textContent = "—";
+  }
+}
     function renderRow(row){
       const who = (row.username === USERNAME) ? "me" : "them";
       const bubble = document.createElement("div");
