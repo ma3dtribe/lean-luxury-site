@@ -445,11 +445,13 @@ async function markChatted(){
       console.log("INSERT text error:", error);
 
       if (error){
-        dbStatus.textContent = "DB: save failed ❌";
-        alert("Save failed: " + error.message);
-      } else {
-        dbStatus.textContent = "DB: saved ✅";
-      }
+  dbStatus.textContent = "DB: save failed ❌";
+  alert("Save failed: " + error.message);
+} else {
+  dbStatus.textContent = "DB: saved ✅";
+  markChatted(); // ✅ add this
+}
+
     }
 
     sendBtn.addEventListener("click", sendText);
@@ -510,13 +512,15 @@ async function markChatted(){
 
       console.log("INSERT gif error:", error);
 
-      if (error){
-        dbStatus.textContent = "DB: save failed ❌";
-        alert("GIF send failed: " + error.message);
-      } else {
-        dbStatus.textContent = "DB: saved ✅";
-        closeGifModal();
-      }
+     if (error){
+  dbStatus.textContent = "DB: save failed ❌";
+  alert("GIF send failed: " + error.message);
+} else {
+  dbStatus.textContent = "DB: saved ✅";
+  markChatted(); // ✅ add this
+  closeGifModal();
+}
+
     }
 
     async function loadTrending() {
