@@ -23,6 +23,8 @@
       --red: #ff3b3b;
       --red-soft: rgba(255,59,59,.18);
       --red-glow: rgba(255,59,59,.25);
+      --content-max: 1100px;
+      --content-pad: 16px;
     }
 
     body {
@@ -46,33 +48,34 @@
     }
 
     /* =========================
-       ✅ LOGO HEADER (Responsive, professional, low-bandwidth)
+       ✅ SHARED CONTENT WIDTH (banner + main match perfectly)
     ========================= */
-/* =========================
-   ✅ BANNER HEADER (Option B: same width as main content)
-========================= */
-/* Banner aligned EXACTLY like main */
-/* Perfect aligned banner container */
-.site-banner{
-  max-width: 1100px;  /* exactly matches main */
-  margin: 0 auto;
-  padding: 0;
-}
-
-/* Perfect header height for this banner image */
-.banner-img{
-  width: 100%;
-  height: clamp(170px, 29vw, 320px);
-  object-fit: contain;
-  display: block;
-}
-
+    .container{
+      max-width: var(--content-max);
+      margin: 0 auto;
+      padding: 0 var(--content-pad);
     }
 
-    main {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 14px 16px 70px;
+    /* =========================
+       ✅ BANNER HEADER (matches content width + "perfect" header height)
+       - Put ma3dtribebanner_cropped.webp in /public/images/
+       - URL path is /images/ma3dtribebanner_cropped.webp (NO /public)
+    ========================= */
+    .site-banner{
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+
+    .banner-img{
+      width: 100%;
+      height: clamp(180px, 29vw, 320px); /* "perfect" header height range */
+      object-fit: contain;               /* show full banner, no cut-off */
+      display: block;
+      filter: drop-shadow(0 12px 28px rgba(0,0,0,.35));
+    }
+
+    main{
+      padding: 14px 0 70px; /* padding handled by .container */
     }
 
     .hero {
@@ -287,105 +290,109 @@
 <body>
   <div class="bg-glow"></div>
 
-  <!-- ✅ Responsive logo header -->
+  <!-- ✅ Banner header aligned to same content width as main -->
   <header class="site-banner">
-  <a href="/" aria-label="MA3DTribe Home">
-    <img
-      src="/images/ma3dtribebanner_cropped.webp"
-      alt="MA3DTribe Media"
-      class="banner-img"
-      loading="eager"
-      decoding="async"
-    />
-  </a>
-</header>
+    <div class="container">
+      <a href="/" aria-label="MA3DTribe Home">
+        <img
+          src="/images/ma3dtribebanner_cropped.webp"
+          alt="MA3DTribe Media"
+          class="banner-img"
+          loading="eager"
+          decoding="async"
+        />
+      </a>
+    </div>
+  </header>
 
   <main>
-    <!-- HERO -->
-    <section class="hero">
-      <div>
-        <div class="pill">MA3DTribe Media</div>
+    <div class="container">
+      <!-- HERO -->
+      <section class="hero">
+        <div>
+          <div class="pill">MA3DTribe Media</div>
 
-        <h2>Music. Culture. Sports talk. Community.</h2>
+          <h2>Music. Culture. Sports talk. Community.</h2>
 
-        <p class="subtext" id="heroSubtext">
-          When we’re live, the stream opens automatically. Pull up and feel the vibe.
-        </p>
+          <p class="subtext" id="heroSubtext">
+            When we’re live, the stream opens automatically. Pull up and feel the vibe.
+          </p>
 
-        <div class="statusbar" id="livebar" data-state="offline">
-          <span class="status-pill">
-            <span class="status-dot" aria-hidden="true"></span>
-            <span id="liveLabel">OFFLINE</span>
-          </span>
-          <span class="status-text" id="liveText">
-            Currently off air. Tap “Load Player” when we go live.
-          </span>
+          <div class="statusbar" id="livebar" data-state="offline">
+            <span class="status-pill">
+              <span class="status-dot" aria-hidden="true"></span>
+              <span id="liveLabel">OFFLINE</span>
+            </span>
+            <span class="status-text" id="liveText">
+              Currently off air. Tap “Load Player” when we go live.
+            </span>
+          </div>
+
+          <div class="cta-row">
+            <a class="btn primary" href="#watch">▶ Watch</a>
+            <a class="btn" href="#chat">💬 Chat</a>
+            <a class="btn" href="#podcasts">✨ Shows</a>
+          </div>
         </div>
 
-        <div class="cta-row">
-          <a class="btn primary" href="#watch">▶ Watch</a>
-          <a class="btn" href="#chat">💬 Chat</a>
-          <a class="btn" href="#podcasts">✨ Shows</a>
+        <div class="card" style="margin:0;">
+          <h3 style="margin-bottom:6px;">Tonight’s energy</h3>
+          <div style="opacity:.78;font-size:13px;line-height:1.45;">
+            Reggae • R&amp;B • Afrobeats • Hip Hop<br/>
+            Heavy vibes. Real conversation.
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div class="card" style="margin:0;">
-        <h3 style="margin-bottom:6px;">Tonight’s energy</h3>
-        <div style="opacity:.78;font-size:13px;line-height:1.45;">
-          Reggae • R&amp;B • Afrobeats • Hip Hop<br/>
-          Heavy vibes. Real conversation.
+      <!-- WATCH -->
+      <section id="watch" class="card">
+        <div class="watch-shell" id="watchShell">
+          <div class="watch-head">
+            <div class="watch-title">Watch on Twitch</div>
+          </div>
+
+          <p id="watchDesc" class="watch-desc">
+            Checking stream status…
+          </p>
+
+          <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="btn" href="https://www.twitch.tv/ma3dtribe" target="_blank" rel="noopener">Open Twitch</a>
+            <button id="manualLoadBtn" class="btn" style="display:none;">Load Player</button>
+          </div>
         </div>
-      </div>
-    </section>
 
-    <!-- WATCH -->
-    <section id="watch" class="card">
-      <div class="watch-shell" id="watchShell">
-        <div class="watch-head">
-          <div class="watch-title">Watch on Twitch</div>
+        <div id="playerMount" style="margin-top:14px;"></div>
+      </section>
+
+      <!-- CHAT -->
+      <section id="chat" class="card">
+        <h3>Community Chat</h3>
+        <iframe
+          src="/chat-test.html"
+          style="width:100%; height:520px; border:0; border-radius:16px;"
+          loading="lazy">
+        </iframe>
+      </section>
+
+      <!-- SHOWS -->
+      <section id="podcasts" class="card">
+        <h3>Featured Shows</h3>
+        <div class="grid">
+          <div class="tile">
+            <div class="tile-title">Music</div>
+            <div style="opacity:.82;">R&amp;B, Hip Hop, Reggae, Afrobeats</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">Law</div>
+            <div style="opacity:.82;">Real conversations on legal topics &amp; culture</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">Sports</div>
+            <div style="opacity:.82;">Sports talk &amp; commentary</div>
+          </div>
         </div>
-
-        <p id="watchDesc" class="watch-desc">
-          Checking stream status…
-        </p>
-
-        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-          <a class="btn" href="https://www.twitch.tv/ma3dtribe" target="_blank" rel="noopener">Open Twitch</a>
-          <button id="manualLoadBtn" class="btn" style="display:none;">Load Player</button>
-        </div>
-      </div>
-
-      <div id="playerMount" style="margin-top:14px;"></div>
-    </section>
-
-    <!-- CHAT -->
-    <section id="chat" class="card">
-      <h3>Community Chat</h3>
-      <iframe
-        src="/chat-test.html"
-        style="width:100%; height:520px; border:0; border-radius:16px;"
-        loading="lazy">
-      </iframe>
-    </section>
-
-    <!-- SHOWS -->
-    <section id="podcasts" class="card">
-      <h3>Featured Shows</h3>
-      <div class="grid">
-        <div class="tile">
-          <div class="tile-title">Music</div>
-          <div style="opacity:.82;">R&amp;B, Hip Hop, Reggae, Afrobeats</div>
-        </div>
-        <div class="tile">
-          <div class="tile-title">Law</div>
-          <div style="opacity:.82;">Real conversations on legal topics &amp; culture</div>
-        </div>
-        <div class="tile">
-          <div class="tile-title">Sports</div>
-          <div style="opacity:.82;">Sports talk &amp; commentary</div>
-        </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 
   <!-- Auto-load Twitch ONLY if live -->
