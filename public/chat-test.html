@@ -601,17 +601,25 @@ async function markChatted(){
     /* =========================
        START
     ========================= */
-    window.addEventListener("load", () => {
-  messageInput.focus();
-  loadInitial();
-  subscribeRealtime();
+   /* =========================
+   START
+========================= */
+window.addEventListener("load", () => {
+  try { messageInput && messageInput.focus(); } catch(e) {}
 
-  refreshTwitchViewers();                  // ✅ run once on load
-  setInterval(refreshTwitchViewers, 30000); // ✅ refresh every 30 seconds
+  try { loadInitial(); } catch(e) { console.error("loadInitial failed", e); }
+  try { subscribeRealtime(); } catch(e) { console.error("subscribeRealtime failed", e); }
 
-  // quick debug
-  console.log("SUPABASE TEST:", window.supabase);
+  // Presence (web counters)
+  try { startPresence && startPresence(); } catch(e) { console.error("startPresence failed", e); }
+
+  // Twitch viewers
+  try { refreshTwitchViewers && refreshTwitchViewers(); } catch(e) { console.error("refreshTwitchViewers failed", e); }
+  setInterval(() => {
+    try { refreshTwitchViewers && refreshTwitchViewers(); } catch(e) { console.error("refreshTwitchViewers interval failed", e); }
+  }, 30000);
 });
+
 
   </script>
 </body>
