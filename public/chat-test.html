@@ -273,14 +273,27 @@ const twViewCountEl = document.getElementById("twViewCount");
 
     async function refreshTwitchViewers(){
   try {
-    const res = await fetch("https://decapi.me/twitch/viewercount/ma3dtribe", { cache: "no-store" });
-    const text = await res.text();
-    const n = parseInt(text, 10);
-    if (twViewCountEl) twViewCountEl.textContent = isNaN(n) ? "0" : String(n);
+    const target = "https://decapi.me/twitch/viewercount/ma3dtribe";
+    const res = await fetch(
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(target),
+      { cache: "no-store" }
+    );
+
+    const text = (await res.text()).trim();
+
+    // If offline, DecAPI often returns text like "Channel is offline"
+    if (/offline/i.test(text)) {
+      if (twViewCountEl) twViewCountEl.textContent = "0";
+      return;
+    }
+
+    const n = parseInt(text.replace(/[^\d]/g, ""), 10);
+    if (twViewCountEl) twViewCountEl.textContent = isNaN(n) ? "—" : String(n);
   } catch (e) {
     if (twViewCountEl) twViewCountEl.textContent = "—";
   }
 }
+
     function renderRow(row){
       const who = (row.username === USERNAME) ? "me" : "them";
       const bubble = document.createElement("div");
