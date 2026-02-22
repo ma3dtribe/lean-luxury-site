@@ -328,7 +328,7 @@ function renderRow(row, toTop = false){
   meta.className = "meta";
 
   const name = row.username || "Guest";
-  const time = formatChatTime(row.created_at);
+  const time = formatChatTime(row.created_at) || "";
   meta.textContent = time ? `${name} · ${time}` : name;
 
   bubble.appendChild(meta);
@@ -503,7 +503,8 @@ chatMessages.scrollTop = 0; // keep view at the top
   username: USERNAME,
   kind: "text",
   content: text,
-  source: "web"
+  source: "web",
+  created_at: new Date().toISOString()
 });
       console.log("INSERT text error:", error);
 
@@ -570,7 +571,8 @@ chatMessages.scrollTop = 0; // keep view at the top
   username: USERNAME,
   kind: "gif",
   content: url,
-  source: "web"
+  source: "web",
+  created_at: new Date().toISOString()
 });
 
       console.log("INSERT gif error:", error);
