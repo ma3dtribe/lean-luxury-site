@@ -821,15 +821,15 @@ gifSearch.addEventListener("keydown", async (e) => {
 
 function renderGifGrid(gifs) {
   gifResults.innerHTML = "";
-  gifs.forEach(g => {
+  (gifs || []).forEach(g => {
     const imgUrl = g?.images?.fixed_width?.url;
     if (!imgUrl) return;
 
     const img = document.createElement("img");
     img.src = imgUrl;
     img.loading = "lazy";
-
     img.addEventListener("click", () => sendGif(imgUrl));
+
     gifResults.appendChild(img);
   });
 }
