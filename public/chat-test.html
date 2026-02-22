@@ -687,9 +687,6 @@ gifBtn.addEventListener("click", openGifModal);
 gifClose.addEventListener("click", closeGifModal);
 gifTrending.addEventListener("click", loadTrending);
 
-stickerBtn.addEventListener("click", openStickers);
-stickerClose.addEventListener("click", closeStickers);
-
 gifModal.addEventListener("click", (e) => {
   if (e.target === gifModal) closeGifModal();
 });
@@ -718,6 +715,41 @@ async function sendGif(url){
   }
 }
 
+/* =========================
+   STICKERS
+========================= */
+function openStickers(){
+  if (!stickerModal || !stickerGrid) return;
+
+  stickerGrid.innerHTML = "";
+
+  STICKERS.forEach(src => {
+    const img = document.createElement("img");
+    img.src = src;
+    img.loading = "lazy";
+    img.style.width = "72px";
+    img.style.height = "72px";
+    img.style.objectFit = "contain";
+    img.style.cursor = "pointer";
+
+    img.addEventListener("click", async () => {
+      await sendSticker(src);
+      closeStickers();
+    });
+
+    stickerGrid.appendChild(img);
+  });
+
+  stickerModal.classList.add("show");
+  stickerModal.setAttribute("aria-hidden", "false");
+}
+
+function closeStickers(){
+  if (!stickerModal) return;
+  stickerModal.classList.remove("show");
+  stickerModal.setAttribute("aria-hidden", "true");
+}
+
 async function sendSticker(url){
   if (!sb) return;
 
@@ -741,37 +773,11 @@ async function sendSticker(url){
   }
 }
 
-function openStickers(){
-  if (!stickerModal || !stickerGrid) return;
-
-  stickerGrid.innerHTML = "";
-
-  STICKERS.forEach(src => {
-    const img = document.createElement("img");
-    img.src = src;
-    img.loading = "lazy";
-    img.style.width = "72px";
-    img.style.height = "72px";
-    img.style.objectFit = "contain";
-    img.style.cursor = "pointer";
-
-    img.addEventListener("click", () => {
-      sendSticker(src);
-      closeStickers();
-    });
-
-    stickerGrid.appendChild(img);
-  });
-
-  stickerModal.classList.add("show");
-  stickerModal.setAttribute("aria-hidden", "false");
-}
-
-function closeStickers(){
-  if (!stickerModal) return;
-  stickerModal.classList.remove("show");
-  stickerModal.setAttribute("aria-hidden", "true");
-}
+stickerBtn.addEventListener("click", openStickers);
+stickerClose.addEventListener("click", closeStickers);
+stickerModal.addEventListener("click", (e) => {
+  if (e.target === stickerModal) closeStickers();
+});
 
 async function loadTrending() {
   gifResults.textContent = "Loading trending GIFs...";
