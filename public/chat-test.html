@@ -293,15 +293,20 @@ const twViewCountEl = document.getElementById("twViewCount");
     if (twViewCountEl) twViewCountEl.textContent = "—";
   }
 }
-
-    function renderRow(row){
+function formatChatTime(iso){
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); // 08:42 PM
+}    function renderRow(row){
       const who = (row.username === USERNAME) ? "me" : "them";
       const bubble = document.createElement("div");
       bubble.className = `msg ${who}`;
 
       const meta = document.createElement("div");
       meta.className = "meta";
-      meta.textContent = row.username || "Guest";
+      const name = row.username || "Guest";
+const time = formatChatTime(row.created_at);
+meta.textContent = time ? `${name} · ${time}` : name;
       bubble.appendChild(meta);
 
       if ((row.kind || "").toLowerCase() === "gif") {
