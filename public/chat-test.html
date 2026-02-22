@@ -214,7 +214,17 @@
   opacity:.7;
   font-size:12px;
 }    
-  </style>
+    .ma3dBadge{
+  display:inline-block;
+  font-weight:900;
+  font-size:12px;
+  letter-spacing:.6px;
+  padding:3px 8px;
+  border-radius:999px;
+  color:#0b0f14;
+  background: linear-gradient(90deg, #38bdf8, #22c55e);
+  margin:0 2px;
+}  </style>
 </head>
 
 <body>
@@ -430,7 +440,15 @@ function renderRow(row, toTop = false){
     bubble.appendChild(img);
   } else {
     const div = document.createElement("div");
-    div.innerHTML = escapeHtml(row.content || "");
+    let safe = escapeHtml(row.content || "");
+
+// Render the custom MA3D token as a badge
+safe = safe.replaceAll(
+  escapeHtml(MA3D_TOKEN),
+  `<span class="ma3dBadge">MA3DTRIBE</span>`
+);
+
+div.innerHTML = safe;
     bubble.appendChild(div);
   }
 
@@ -737,15 +755,23 @@ chatMessages.scrollTop = 0; // keep view at the top
         gifResults.appendChild(img);
       });
       /* =========================
-   EMOJI PICKER (no libraries)
+
+    }
+    /* =========================
+   EMOJI PICKER + MA3DTRIBE (no libraries)
 ========================= */
+
+// Emoji list (Unicode = basically zero bandwidth)
 const EMOJIS = [
   "😀","😄","😁","😆","😂","🤣","😊","🙂",
   "😉","😎","😍","😘","😜","🤪","😅","🤝",
-  "🙏","👏","🔥","💯","🎶","🎧","🫡","✅",
-  "❤️","💙","💚","💛","⭐","🚀","🤔","😤",
-  "😮","😢","😭","😡","🤯","👀","🙌","🥳"
+  "🙏","👏","🔥","💯","🎶","🎧","✅","❤️",
+  "🎤","🎛️","💿","🪩","🌍","🏆","🚀","👀","🙌","🥳"
 ];
+
+// Custom “Ma3DTribe emoji” token (also zero bandwidth)
+// Users insert :ma3d: and it shows as a MA3D badge in chat
+const MA3D_TOKEN = ":ma3d:";
 
 function insertAtCursor(input, text){
   const start = input.selectionStart ?? input.value.length;
@@ -774,6 +800,20 @@ function closeEmoji(){
 function buildEmojiGrid(){
   if (!emojiGrid) return;
   emojiGrid.innerHTML = "";
+
+  // 1) Ma3DTribe custom emoji button (first)
+  const ma3dBtn = document.createElement("button");
+  ma3dBtn.type = "button";
+  ma3dBtn.className = "emojiBtn";
+  ma3dBtn.title = "Ma3DTribe";
+  ma3dBtn.textContent = "MA3D"; // shows in the picker
+  ma3dBtn.addEventListener("click", () => {
+    insertAtCursor(messageInput, ` ${MA3D_TOKEN} `);
+    closeEmoji();
+  });
+  emojiGrid.appendChild(ma3dBtn);
+
+  // 2) Regular emojis
   EMOJIS.forEach(e => {
     const b = document.createElement("button");
     b.type = "button";
@@ -787,29 +827,35 @@ function buildEmojiGrid(){
   });
 }
 
+// Build once
 buildEmojiGrid();
 
-emojiBtn?.addEventListener("click", () => {
-  // toggle
-  if (emojiPopup.classList.contains("show")) closeEmoji();
-  else openEmoji();
+// Make sure click handlers work (after page is ready)
+window.addEventListener("load", () => {
+  if (!emojiBtn || !emojiPopup || !emojiGrid) {
+    console.log("Emoji missing elements:", { emojiBtn, emojiPopup, emojiGrid, emojiClose });
+    return;
+  }
+
+  emojiBtn.addEventListener("click", () => {
+    if (emojiPopup.classList.contains("show")) closeEmoji();
+    else openEmoji();
+  });
+
+  emojiClose?.addEventListener("click", closeEmoji);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && emojiPopup.classList.contains("show")) closeEmoji();
+  });
+
+  // close if user clicks outside popup (but not the button)
+  document.addEventListener("click", (e) => {
+    if (!emojiPopup.classList.contains("show")) return;
+    const clickedInside = emojiPopup.contains(e.target);
+    const clickedBtn = emojiBtn.contains(e.target);
+    if (!clickedInside && !clickedBtn) closeEmoji();
+  });
 });
-
-emojiClose?.addEventListener("click", closeEmoji);
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && emojiPopup?.classList.contains("show")) closeEmoji();
-});
-
-// close if user clicks outside popup (but not the button)
-document.addEventListener("click", (e) => {
-  if (!emojiPopup?.classList.contains("show")) return;
-  const clickedInside = emojiPopup.contains(e.target);
-  const clickedBtn = emojiBtn?.contains(e.target);
-  if (!clickedInside && !clickedBtn) closeEmoji();
-});
-    }
-
     /* =========================
        START
     ========================= */
