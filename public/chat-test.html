@@ -293,10 +293,10 @@ const twViewCountEl = document.getElementById("twViewCount");
     if (twViewCountEl) twViewCountEl.textContent = "—";
   }
 }
+
 function formatChatTime(iso){
   if (!iso) return "";
   const d = new Date(iso);
-
   return d.toLocaleString([], {
     year: "numeric",
     month: "short",
@@ -306,33 +306,36 @@ function formatChatTime(iso){
     timeZoneName: "short"
   });
 }
-}    function renderRow(row){
-      const who = (row.username === USERNAME) ? "me" : "them";
-      const bubble = document.createElement("div");
-      bubble.className = `msg ${who}`;
 
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      const name = row.username || "Guest";
-const time = formatChatTime(row.created_at);
-meta.textContent = time ? `${name} · ${time}` : name;
-      bubble.appendChild(meta);
+function renderRow(row){
+  const who = (row.username === USERNAME) ? "me" : "them";
+  const bubble = document.createElement("div");
+  bubble.className = `msg ${who}`;
 
-      if ((row.kind || "").toLowerCase() === "gif") {
-        const img = document.createElement("img");
-        img.src = row.content || "";
-        img.alt = "gif";
-        img.loading = "lazy";
-        bubble.appendChild(img);
-      } else {
-        const div = document.createElement("div");
-        div.innerHTML = escapeHtml(row.content || "");
-        bubble.appendChild(div);
-      }
+  const meta = document.createElement("div");
+  meta.className = "meta";
 
-      chatMessages.appendChild(bubble);
-      scrollBottom();
-    }
+  const name = row.username || "Guest";
+  const time = formatChatTime(row.created_at);
+  meta.textContent = time ? `${name} · ${time}` : name;
+
+  bubble.appendChild(meta);
+
+  if ((row.kind || "").toLowerCase() === "gif") {
+    const img = document.createElement("img");
+    img.src = row.content || "";
+    img.alt = "gif";
+    img.loading = "lazy";
+    bubble.appendChild(img);
+  } else {
+    const div = document.createElement("div");
+    div.innerHTML = escapeHtml(row.content || "");
+    bubble.appendChild(div);
+  }
+
+  chatMessages.appendChild(bubble);
+  scrollBottom();
+}
 
     /* =========================
        SUPABASE CLIENT
