@@ -694,8 +694,33 @@ stickerClose.addEventListener("click", closeStickers);
       if (e.target === gifModal) closeGifModal();
     });
 
-    async function sendGif(url){
-      async function sendSticker(url){
+async function sendGif(url){
+  if (!sb) return;
+
+  dbStatus.textContent = "DB: saving…";
+
+  const { error } = await sb.from("messages").insert({
+    room: ROOM,
+    username: USERNAME,
+    kind: "gif",
+    content: url,
+    source: "web",
+    created_at: new Date().toISOString()
+  });
+
+  console.log("INSERT gif error:", error);
+
+  if (error){
+    dbStatus.textContent = "DB: save failed ❌";
+    alert("GIF send failed: " + error.message);
+  } else {
+    dbStatus.textContent = "DB: saved ✅";
+    markChatted();
+    closeGifModal();
+  }
+}
+
+async function sendSticker(url){
   if (!sb) return;
 
   dbStatus.textContent = "DB: saving…";
@@ -716,8 +741,9 @@ stickerClose.addEventListener("click", closeStickers);
     dbStatus.textContent = "DB: saved ✅";
     markChatted();
   }
-}      if (!sb) return;
-      function openStickers(){
+}
+
+function openStickers(){
   if (!stickerModal || !stickerGrid) return;
 
   stickerGrid.innerHTML = "";
