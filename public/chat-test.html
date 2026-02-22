@@ -296,7 +296,16 @@ const twViewCountEl = document.getElementById("twViewCount");
 function formatChatTime(iso){
   if (!iso) return "";
   const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); // 08:42 PM
+
+  return d.toLocaleString([], {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short"
+  });
+}
 }    function renderRow(row){
       const who = (row.username === USERNAME) ? "me" : "them";
       const bubble = document.createElement("div");
