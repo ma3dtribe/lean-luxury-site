@@ -467,13 +467,13 @@ async function markChatted(){
       dbStatus.textContent = "DB: saving…";
 
       const { error } = await sb.from("messages").insert({
-        room: ROOM,
-        username: USERNAME,
-        kind: "text",
-        content: text,
-        source: "web"
-      });
-
+  room: ROOM,
+  username: USERNAME,
+  kind: "text",
+  content: text,
+  source: "web",
+  created_at: new Date().toISOString()
+});
       console.log("INSERT text error:", error);
 
       if (error){
@@ -535,12 +535,13 @@ async function markChatted(){
       dbStatus.textContent = "DB: saving…";
 
       const { error } = await sb.from("messages").insert({
-        room: ROOM,
-        username: USERNAME,
-        kind: "gif",
-        content: url,
-        source: "web"
-      });
+  room: ROOM,
+  username: USERNAME,
+  kind: "gif",
+  content: url,
+  source: "web",
+  created_at: new Date().toISOString()
+});
 
       console.log("INSERT gif error:", error);
 
