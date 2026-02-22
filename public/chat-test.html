@@ -666,33 +666,32 @@ chatMessages.scrollTop = 0; // keep view at the top
         .subscribe((status) => console.log("realtime:", status));
     }
 
-    /* =========================
-       GIF MODAL + SEND GIF
-    ========================= */
-    function openGifModal() {
-      gifModal.classList.add("show");
-      gifSearch.value = "";
-      gifResults.textContent = "Loading trending GIFs...";
-      loadTrending();
-      gifSearch.focus();
-    }
+/* =========================
+   GIF MODAL + SEND GIF
+========================= */
+function openGifModal() {
+  gifModal.classList.add("show");
+  gifSearch.value = "";
+  gifResults.textContent = "Loading trending GIFs...";
+  loadTrending();
+  gifSearch.focus();
+}
 
-    function closeGifModal() {
-      gifModal.classList.remove("show");
-      messageInput.focus();
-    }
+function closeGifModal() {
+  gifModal.classList.remove("show");
+  messageInput.focus();
+}
 
-    gifBtn.addEventListener("click", openGifModal);
-    gifClose.addEventListener("click", closeGifModal);
-    gifTrending.addEventListener("click", loadTrending);
-    stickerBtn.addEventListener("click", openStickers);
+gifBtn.addEventListener("click", openGifModal);
+gifClose.addEventListener("click", closeGifModal);
+gifTrending.addEventListener("click", loadTrending);
+
+stickerBtn.addEventListener("click", openStickers);
 stickerClose.addEventListener("click", closeStickers);
-    stickerBtn.addEventListener("click", () => {
-  sendSticker("/stickers/ma3d.webp");
+
+gifModal.addEventListener("click", (e) => {
+  if (e.target === gifModal) closeGifModal();
 });
-    gifModal.addEventListener("click", (e) => {
-      if (e.target === gifModal) closeGifModal();
-    });
 
 async function sendGif(url){
   if (!sb) return;
@@ -707,8 +706,6 @@ async function sendGif(url){
     source: "web",
     created_at: new Date().toISOString()
   });
-
-  console.log("INSERT gif error:", error);
 
   if (error){
     dbStatus.textContent = "DB: save failed ❌";
@@ -774,77 +771,61 @@ function closeStickers(){
   stickerModal.classList.remove("show");
   stickerModal.setAttribute("aria-hidden", "true");
 }
-      dbStatus.textContent = "DB: saving…";
 
-      const { error } = await sb.from("messages").insert({
-  room: ROOM,
-  username: USERNAME,
-  kind: "gif",
-  content: url,
-  source: "web",
-  created_at: new Date().toISOString()
-});
+async function loadTrending() {
+  gifResults.textContent = "Loading trending GIFs...";
+  try {
+    const url = `https://api.giphy.com/v1/gifs/trending?api_key=${encodeURIComponent(GIPHY_API_KEY)}&limit=18&rating=pg-13`;
+    const res = await fetch(url);
+    const json = await res.json();
 
-      console.log("INSERT gif error:", error);
-
-     if (error){
-  dbStatus.textContent = "DB: save failed ❌";
-  alert("GIF send failed: " + error.message);
-} else {
-  dbStatus.textContent = "DB: saved ✅";
-  markChatted(); // ✅ add this
-  closeGifModal();
+    if (!res.ok) {
+      gifResults.textContent = "GIPHY error";
+      return;
+    }
+    renderGifGrid(json.data || []);
+  } catch (err) {
+    gifResults.textContent = "Network error: " + err.message;
+  }
 }
 
+gifSearch.addEventListener("keydown", async (e) => {
+  if (e.key !== "Enter") return;
+
+  const q = gifSearch.value.trim();
+  if (!q) return loadTrending();
+
+  gifResults.textContent = "Searching...";
+  try {
+    const url = `https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(GIPHY_API_KEY)}&q=${encodeURIComponent(q)}&limit=18&rating=pg-13`;
+    const res = await fetch(url);
+    const json = await res.json();
+
+    if (!res.ok) {
+      gifResults.textContent = "GIPHY error";
+      return;
     }
 
-    async function loadTrending() {
-      gifResults.textContent = "Loading trending GIFs...";
-      try {
-        const url = `https://api.giphy.com/v1/gifs/trending?api_key=${encodeURIComponent(GIPHY_API_KEY)}&limit=18&rating=pg-13`;
-        const res = await fetch(url);
-        const json = await res.json();
+    renderGifGrid(json.data || []);
+  } catch (err) {
+    gifResults.textContent = "Network error: " + err.message;
+  }
+});
 
-        if (!res.ok) {
-          gifResults.textContent = "GIPHY error: " + (json?.message || json?.meta?.msg || "Unknown error");
-          return;
-        }
-        renderGifGrid(json.data || []);
-      } catch (err) {
-        gifResults.textContent = "Network error: " + err.message;
-      }
-    }
+function renderGifGrid(gifs) {
+  gifResults.innerHTML = "";
+  gifs.forEach(g => {
+    const imgUrl = g?.images?.fixed_width?.url;
+    if (!imgUrl) return;
 
-    gifSearch.addEventListener("keydown", async (e) => {
-      if (e.key !== "Enter") return;
+    const img = document.createElement("img");
+    img.src = imgUrl;
+    img.loading = "lazy";
 
-      const q = gifSearch.value.trim();
-      if (!q) return loadTrending();
-
-      gifResults.textContent = "Searching...";
-      try {
-        const url = `https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(GIPHY_API_KEY)}&q=${encodeURIComponent(q)}&limit=18&rating=pg-13`;
-        const res = await fetch(url);
-        const json = await res.json();
-
-        if (!res.ok) {
-          gifResults.textContent = "GIPHY error: " + (json?.message || json?.meta?.msg || "Unknown error");
-          return;
-        }
-
-        const data = json.data || [];
-        if (!data.length) {
-          gifResults.textContent = "No results. Try another search.";
-          return;
-        }
-
-        renderGifGrid(data);
-      } catch (err) {
-        gifResults.textContent = "Network error: " + err.message;
-      }
-    });
-
-    function renderGifGrid(gifs) {
+    img.addEventListener("click", () => sendGif(imgUrl));
+    gifResults.appendChild(img);
+  });
+}
   gifResults.innerHTML = "";
   gifs.forEach(g => {
     const imgUrl = g?.images?.fixed_width?.url;
