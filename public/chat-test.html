@@ -257,7 +257,8 @@
       <div class="composer">
         <input id="messageInput" type="text" placeholder="Type your message…" autocomplete="off" />
         <button id="emojiBtn" class="btn" type="button">🙂</button>
-<button id="gifBtn" class="btn" type="button">GIF</button>
+        <button id="stickerBtn" class="btn" type="button">Stickers</button>
+        <button id="gifBtn" class="btn" type="button">GIF</button>
 <button id="sendBtn" class="btn btnPrimary" type="button">Send</button>
       </div>
     </div>
@@ -275,7 +276,16 @@
       <div id="gifResults"></div>
     </div>
   </div>
-<!-- EMOJI PICKER (lightweight, no libraries) -->
+  <!-- STICKERS MODAL -->
+<div id="stickerModal" class="emojiPopup" aria-hidden="true">
+  <div class="emojiHead">
+    <div class="emojiTitle">Stickers</div>
+    <button id="stickerClose" class="emojiClose" type="button">✕</button>
+  </div>
+  <div class="emojiGrid" id="stickerGrid"></div>
+  <div class="emojiHint">Click a sticker to send.</div>
+</div>
+  <!-- EMOJI PICKER (lightweight, no libraries) -->
 <div id="emojiPopup" class="emojiPopup" aria-hidden="true">
   <div class="emojiHead">
     <div class="emojiTitle">Smilies</div>
@@ -299,7 +309,13 @@
 const TWITCH_CLIENT_ID = "ag7cyjkqvjbpx6ql6v4uerk6jzmi2t";
     const GIPHY_API_KEY = "3zxGKg42FRkYfKmUrnjmobhQch37O33L";
     const USER_STORAGE_KEY = "ma3dtribe_username";
-
+    const STICKERS = [
+  "/stickers/ma3d.webp",
+  // Add more here as you upload them:
+  // "/stickers/pullup.webp",
+  // "/stickers/horn.webp",
+  // "/stickers/fire.webp",
+];
     /* =========================
        ELEMENTS
     ========================= */
@@ -317,6 +333,9 @@ const TWITCH_CLIENT_ID = "ag7cyjkqvjbpx6ql6v4uerk6jzmi2t";
     const gifTrending = document.getElementById("gifTrending");
     const gifSearch = document.getElementById("gifSearch");
     const gifResults = document.getElementById("gifResults");
+    const stickerModal = document.getElementById("stickerModal");
+const stickerGrid = document.getElementById("stickerGrid");
+const stickerClose = document.getElementById("stickerClose");
     const emojiBtn = document.getElementById("emojiBtn");
 const emojiPopup = document.getElementById("emojiPopup");
 const emojiGrid = document.getElementById("emojiGrid");
@@ -666,14 +685,67 @@ chatMessages.scrollTop = 0; // keep view at the top
     gifBtn.addEventListener("click", openGifModal);
     gifClose.addEventListener("click", closeGifModal);
     gifTrending.addEventListener("click", loadTrending);
-
+    stickerBtn.addEventListener("click", () => {
+  sendSticker("/stickers/ma3d.webp");
+});
     gifModal.addEventListener("click", (e) => {
       if (e.target === gifModal) closeGifModal();
     });
 
     async function sendGif(url){
-      if (!sb) return;
+      async function sendSticker(url){
+  if (!sb) return;
 
+  dbStatus.textContent = "DB: saving…";
+
+  const { error } = await sb.from("messages").insert({
+    room: ROOM,
+    username: USERNAME,
+    kind: "sticker",
+    content: url,
+    source: "web",
+    created_at: new Date().toISOString()
+  });
+
+  if (error){
+    dbStatus.textContent = "DB: save failed ❌";
+    alert("Sticker send failed: " + error.message);
+  } else {
+    dbStatus.textContent = "DB: saved ✅";
+    markChatted();
+  }
+}      if (!sb) return;
+      function openStickers(){
+  if (!stickerModal || !stickerGrid) return;
+
+  stickerGrid.innerHTML = "";
+
+  STICKERS.forEach(src => {
+    const img = document.createElement("img");
+    img.src = src;
+    img.loading = "lazy";
+    img.style.width = "72px";
+    img.style.height = "72px";
+    img.style.objectFit = "contain";
+    img.style.cursor = "pointer";
+
+    img.addEventListener("click", () => {
+      sendSticker(src);
+      closeStickers();
+    });
+
+    stickerGrid.appendChild(img);
+  });
+
+  stickerModal.classList.add("show");
+  stickerModal.setAttribute("aria-hidden", "false");
+}
+
+function closeStickers(){
+  if (!stickerModal) return;
+  stickerModal.classList.remove("show");
+  stickerModal.setAttribute("aria-hidden", "true");
+}
       dbStatus.textContent = "DB: saving…";
 
       const { error } = await sb.from("messages").insert({
