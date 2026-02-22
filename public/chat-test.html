@@ -314,6 +314,12 @@ function formatChatTime(ts){
 }
 
 function renderRow(row, toTop = false){
+  // Dedupe by DB id (important when initial load + realtime overlap)
+  if (row && row.id != null) {
+    if (renderedIds.has(row.id)) return;
+    renderedIds.add(row.id);
+  }
+
   const who = (row.username === USERNAME) ? "me" : "them";
   const bubble = document.createElement("div");
   bubble.className = `msg ${who}`;
@@ -366,7 +372,9 @@ function renderRow(row, toTop = false){
     }
 
     const sb = getSbClient();
-/* =========================
+        // Track which message IDs we've already rendered (prevents duplicates)
+    const renderedIds = new Set();
+    /* =========================
    PRESENCE (Viewer + Chatter Counter)
 ========================= */
 const SESSION_KEY = "ma3dtribe_presence_session";
@@ -447,12 +455,13 @@ async function markChatted(){
 
       dbStatus.textContent = "DB: loading…";
 
-      const { data, error } = await sb
+            const { data, error } = await sb
         .from("messages")
         .select("id, room, username, kind, content, created_at")
         .eq("room", ROOM)
         .order("created_at", { ascending: false })
-.limit(200);
+        .order("id", { ascending: false }) // tie-breaker for same timestamp
+        .limit(1000); // load more history so "missing" goes away
 
       if (error){
         console.error("SELECT error:", error);
@@ -465,7 +474,8 @@ async function markChatted(){
         return;
       }
 
-      chatMessages.innerHTML = "";
+            chatMessages.innerHTML = "";
+      renderedIds.clear();
       if (!data || !data.length){
         chatMessages.innerHTML = `
           <div class="msg them">
