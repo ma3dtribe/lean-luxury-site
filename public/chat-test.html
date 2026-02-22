@@ -742,21 +742,19 @@ chatMessages.scrollTop = 0; // keep view at the top
     });
 
     function renderGifGrid(gifs) {
-      gifResults.innerHTML = "";
-      gifs.forEach(g => {
-        const imgUrl = g?.images?.fixed_width?.url;
-        if (!imgUrl) return;
+  gifResults.innerHTML = "";
+  gifs.forEach(g => {
+    const imgUrl = g?.images?.fixed_width?.url;
+    if (!imgUrl) return;
 
-        const img = document.createElement("img");
-        img.src = imgUrl;
-        img.loading = "lazy";
+    const img = document.createElement("img");
+    img.src = imgUrl;
+    img.loading = "lazy";
 
-        img.addEventListener("click", () => sendGif(imgUrl));
-        gifResults.appendChild(img);
-      });
-      /* =========================
-
-    }
+    img.addEventListener("click", () => sendGif(imgUrl));
+    gifResults.appendChild(img);
+  });
+}
     /* =========================
    EMOJI PICKER + MA3DTRIBE (no libraries)
 ========================= */
