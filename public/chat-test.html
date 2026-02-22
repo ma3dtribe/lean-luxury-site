@@ -297,18 +297,13 @@ const twViewCountEl = document.getElementById("twViewCount");
 function formatChatTime(ts){
   if (!ts) return "";
 
-  // Supabase may return:
-  // "2026-02-22T17:13:00+00:00" (good)
-  // or "2026-02-22T17:13:00" (no timezone -> ambiguous)
   let s = String(ts);
-
-  // If there is NO timezone info, force-interpret as UTC by appending "Z"
-  // (prevents the browser from guessing wrong)
+  // If no timezone info, treat as UTC
   if (!/[zZ]$|[+\-]\d\d:\d\d$/.test(s)) s += "Z";
 
   const d = new Date(s);
 
-  // Force display in Eastern Time
+  // Show Eastern time in short format: "Feb 22 5:07 PM"
   return new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
     month: "short",
@@ -344,12 +339,12 @@ function renderRow(row, toTop = false){
     bubble.appendChild(div);
   }
 
-  cif (toTop) {
-  chatMessages.prepend(bubble);   // realtime/new message goes to top
-  chatMessages.scrollTop = 0;
-} else {
-  chatMessages.appendChild(bubble); // initial list keeps order
-}
+  if (toTop) {
+    chatMessages.prepend(bubble);   // new/realtime message -> top
+    chatMessages.scrollTop = 0;
+  } else {
+    chatMessages.appendChild(bubble); // initial load -> keep order
+  }
 }
 
     /* =========================
