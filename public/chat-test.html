@@ -298,6 +298,7 @@ function formatChatTime(iso){
   if (!iso) return "";
   const d = new Date(iso);
 
+  // Force display to Eastern Time
   return d.toLocaleString("en-US", {
     timeZone: "America/New_York",
     month: "short",
