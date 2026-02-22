@@ -294,18 +294,28 @@ const twViewCountEl = document.getElementById("twViewCount");
   }
 }
 
-function formatChatTime(iso){
-  if (!iso) return "";
-  const d = new Date(iso);
+function formatChatTime(ts){
+  if (!ts) return "";
 
-  // Force display to Eastern Time
-  return d.toLocaleString("en-US", {
+  // Supabase may return:
+  // "2026-02-22T17:13:00+00:00" (good)
+  // or "2026-02-22T17:13:00" (no timezone -> ambiguous)
+  let s = String(ts);
+
+  // If there is NO timezone info, force-interpret as UTC by appending "Z"
+  // (prevents the browser from guessing wrong)
+  if (!/[zZ]$|[+\-]\d\d:\d\d$/.test(s)) s += "Z";
+
+  const d = new Date(s);
+
+  // Force display in Eastern Time
+  return new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
     month: "short",
     day: "2-digit",
     hour: "numeric",
     minute: "2-digit"
-  }).replace(",", "");
+  }).format(d).replace(",", "");
 }
 
 function renderRow(row){
