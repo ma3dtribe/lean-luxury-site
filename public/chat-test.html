@@ -459,9 +459,8 @@ async function markChatted(){
         .from("messages")
         .select("id, room, username, kind, content, created_at")
         .eq("room", ROOM)
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false }) // tie-breaker for same timestamp
-        .limit(1000); // load more history so "missing" goes away
+                .order("id", { ascending: false }) // ✅ stable newest-first
+        .limit(1000);
 
       if (error){
         console.error("SELECT error:", error);
@@ -504,8 +503,7 @@ chatMessages.scrollTop = 0; // keep view at the top
   username: USERNAME,
   kind: "text",
   content: text,
-  source: "web",
-  created_at: new Date().toISOString()
+  source: "web"
 });
       console.log("INSERT text error:", error);
 
@@ -572,8 +570,7 @@ chatMessages.scrollTop = 0; // keep view at the top
   username: USERNAME,
   kind: "gif",
   content: url,
-  source: "web",
-  created_at: new Date().toISOString()
+  source: "web"
 });
 
       console.log("INSERT gif error:", error);
