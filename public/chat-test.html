@@ -318,7 +318,7 @@ function formatChatTime(ts){
   }).format(d).replace(",", "");
 }
 
-function renderRow(row){
+function renderRow(row, toTop = false){
   const who = (row.username === USERNAME) ? "me" : "them";
   const bubble = document.createElement("div");
   bubble.className = `msg ${who}`;
@@ -344,8 +344,12 @@ function renderRow(row){
     bubble.appendChild(div);
   }
 
-  chatMessages.prepend(bubble);
-chatMessages.scrollTop = 0;
+  cif (toTop) {
+  chatMessages.prepend(bubble);   // realtime/new message goes to top
+  chatMessages.scrollTop = 0;
+} else {
+  chatMessages.appendChild(bubble); // initial list keeps order
+}
 }
 
     /* =========================
@@ -474,7 +478,8 @@ async function markChatted(){
             No messages yet. Say something.
           </div>`;
       } else {
-        data.slice().reverse().forEach(renderRow);
+        data.forEach(row => renderRow(row, false));
+chatMessages.scrollTop = 0; // keep view at the top
       }
 
       dbStatus.textContent = "DB: ready ✅";
@@ -522,7 +527,7 @@ async function markChatted(){
           { event: "INSERT", schema: "public", table: "messages", filter: `room=eq.${ROOM}` },
           (payload) => {
             // Render new row arriving from DB
-            if (payload && payload.new) renderRow(payload.new);
+            if (payload && payload.new) renderRow(payload.new, true);
           }
         )
         .subscribe((status) => console.log("realtime:", status));
