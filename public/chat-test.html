@@ -432,15 +432,18 @@ function renderRow(row, toTop = false){
 
   bubble.appendChild(meta);
 
-  if ((row.kind || "").toLowerCase() === "gif") {
-    const img = document.createElement("img");
-    img.src = row.content || "";
-    img.alt = "gif";
-    img.loading = "lazy";
-    bubble.appendChild(img);
-  } else {
-    const div = document.createElement("div");
-    let safe = escapeHtml(row.content || "");
+  const kind = (row.kind || "").toLowerCase();
+
+if (kind === "gif" || kind === "sticker") {
+  const img = document.createElement("img");
+  img.src = row.content || "";
+  img.alt = kind;
+  img.loading = "lazy";
+  img.style.maxWidth = kind === "sticker" ? "96px" : "320px"; // stickers smaller
+  bubble.appendChild(img);
+} else {
+  const div = document.createElement("div");
+  let safe = escapeHtml(row.content || "");
 
 // Render the custom MA3D token as a badge
 safe = safe.replaceAll(
