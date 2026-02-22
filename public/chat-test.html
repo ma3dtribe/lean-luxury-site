@@ -155,6 +155,65 @@
       border:1px solid rgba(255,255,255,.10);
     }
     #gifResults img:hover{transform:translateY(-1px);transition:.08s;}
+/* EMOJI PICKER */
+.emojiPopup{
+  position: fixed;
+  right: 18px;
+  bottom: 92px; /* sits above the composer */
+  width: 320px;
+  max-width: calc(100vw - 36px);
+  background: #0f1623;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 14px;
+  box-shadow: 0 20px 80px rgba(0,0,0,.55);
+  display: none;
+  z-index: 9999;
+}
+
+.emojiPopup.show{ display:block; }
+
+.emojiHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 12px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+.emojiTitle{ font-weight:800; opacity:.95; }
+.emojiClose{
+  background:transparent;
+  border:0;
+  color:#e9eef6;
+  opacity:.75;
+  cursor:pointer;
+  font-size:16px;
+}
+.emojiClose:hover{ opacity:1; }
+
+.emojiGrid{
+  padding:10px;
+  display:grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap:8px;
+}
+.emojiBtn{
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+  border-radius: 12px;
+  cursor:pointer;
+  height:36px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px; /* emoji size */
+  line-height:1;
+}
+.emojiBtn:hover{ filter:brightness(1.12); }
+.emojiHint{
+  padding: 0 12px 12px;
+  opacity:.7;
+  font-size:12px;
+}    
   </style>
 </head>
 
@@ -187,8 +246,9 @@
 
       <div class="composer">
         <input id="messageInput" type="text" placeholder="Type your message…" autocomplete="off" />
-        <button id="gifBtn" class="btn" type="button">GIF</button>
-        <button id="sendBtn" class="btn btnPrimary" type="button">Send</button>
+        <button id="emojiBtn" class="btn" type="button">🙂</button>
+<button id="gifBtn" class="btn" type="button">GIF</button>
+<button id="sendBtn" class="btn btnPrimary" type="button">Send</button>
       </div>
     </div>
   </div>
@@ -205,7 +265,15 @@
       <div id="gifResults"></div>
     </div>
   </div>
-
+<!-- EMOJI PICKER (lightweight, no libraries) -->
+<div id="emojiPopup" class="emojiPopup" aria-hidden="true">
+  <div class="emojiHead">
+    <div class="emojiTitle">Smilies</div>
+    <button id="emojiClose" class="emojiClose" type="button">✕</button>
+  </div>
+  <div class="emojiGrid" id="emojiGrid"></div>
+  <div class="emojiHint">Click to insert. Esc to close.</div>
+</div>
   <!-- ✅ Supabase UMD (gives window.supabase). Keep EXACTLY ONE copy of this. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
@@ -239,7 +307,11 @@ const TWITCH_CLIENT_ID = "ag7cyjkqvjbpx6ql6v4uerk6jzmi2t";
     const gifTrending = document.getElementById("gifTrending");
     const gifSearch = document.getElementById("gifSearch");
     const gifResults = document.getElementById("gifResults");
-const viewCountEl = document.getElementById("viewCount");
+    const emojiBtn = document.getElementById("emojiBtn");
+const emojiPopup = document.getElementById("emojiPopup");
+const emojiGrid = document.getElementById("emojiGrid");
+const emojiClose = document.getElementById("emojiClose");
+    const viewCountEl = document.getElementById("viewCount");
 const chatCountEl = document.getElementById("chatCount");
 const twViewCountEl = document.getElementById("twViewCount");
 
@@ -664,6 +736,78 @@ chatMessages.scrollTop = 0; // keep view at the top
         img.addEventListener("click", () => sendGif(imgUrl));
         gifResults.appendChild(img);
       });
+      /* =========================
+   EMOJI PICKER (no libraries)
+========================= */
+const EMOJIS = [
+  "😀","😄","😁","😆","😂","🤣","😊","🙂",
+  "😉","😎","😍","😘","😜","🤪","😅","🤝",
+  "🙏","👏","🔥","💯","🎶","🎧","🫡","✅",
+  "❤️","💙","💚","💛","⭐","🚀","🤔","😤",
+  "😮","😢","😭","😡","🤯","👀","🙌","🥳"
+];
+
+function insertAtCursor(input, text){
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? input.value.length;
+  const before = input.value.slice(0, start);
+  const after = input.value.slice(end);
+  input.value = before + text + after;
+  const pos = start + text.length;
+  input.setSelectionRange(pos, pos);
+  input.focus();
+}
+
+function openEmoji(){
+  if (!emojiPopup) return;
+  emojiPopup.classList.add("show");
+  emojiPopup.setAttribute("aria-hidden", "false");
+}
+
+function closeEmoji(){
+  if (!emojiPopup) return;
+  emojiPopup.classList.remove("show");
+  emojiPopup.setAttribute("aria-hidden", "true");
+  messageInput.focus();
+}
+
+function buildEmojiGrid(){
+  if (!emojiGrid) return;
+  emojiGrid.innerHTML = "";
+  EMOJIS.forEach(e => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "emojiBtn";
+    b.textContent = e;
+    b.addEventListener("click", () => {
+      insertAtCursor(messageInput, e);
+      closeEmoji();
+    });
+    emojiGrid.appendChild(b);
+  });
+}
+
+buildEmojiGrid();
+
+emojiBtn?.addEventListener("click", () => {
+  // toggle
+  if (emojiPopup.classList.contains("show")) closeEmoji();
+  else openEmoji();
+});
+
+emojiClose?.addEventListener("click", closeEmoji);
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && emojiPopup?.classList.contains("show")) closeEmoji();
+});
+
+// close if user clicks outside popup (but not the button)
+document.addEventListener("click", (e) => {
+  if (!emojiPopup?.classList.contains("show")) return;
+  const clickedInside = emojiPopup.contains(e.target);
+  const clickedBtn = emojiBtn?.contains(e.target);
+  if (!clickedInside && !clickedBtn) closeEmoji();
+});
     }
 
     /* =========================
