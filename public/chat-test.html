@@ -344,8 +344,8 @@ function renderRow(row){
     bubble.appendChild(div);
   }
 
-  chatMessages.appendChild(bubble);
-  scrollBottom();
+  chatMessages.prepend(bubble);
+chatMessages.scrollTop = 0;
 }
 
     /* =========================
