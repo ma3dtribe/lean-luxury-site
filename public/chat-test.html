@@ -452,8 +452,8 @@ async function markChatted(){
         .from("messages")
         .select("id, room, username, kind, content, created_at")
         .eq("room", ROOM)
-        .order("created_at", { ascending: true })
-        .limit(200);
+        .order("created_at", { ascending: false })
+.limit(200);
 
       if (error){
         console.error("SELECT error:", error);
@@ -474,7 +474,7 @@ async function markChatted(){
             No messages yet. Say something.
           </div>`;
       } else {
-        data.forEach(renderRow);
+        data.slice().reverse().forEach(renderRow);
       }
 
       dbStatus.textContent = "DB: ready ✅";
