@@ -70,7 +70,20 @@
     }
     .me{margin-left:auto;background:#1a2a42;}
     .them{margin-right:auto;background:#121b2b;opacity:.95;}
-    .meta{font-size:12px;opacity:.7;margin-bottom:4px;}
+    .meta{
+  font-size:12px;
+  opacity:.85;
+  margin-bottom:4px;
+}
+
+.meta .uname{
+  font-weight:800;
+  color:#93c5fd;
+  background:rgba(147,197,253,.12);
+  padding:2px 6px;
+  border-radius:999px;
+  margin-right:6px;
+}
     .msg img{
       max-width:320px;width:100%;
       border-radius:12px;display:block;
@@ -329,7 +342,9 @@ function renderRow(row, toTop = false){
 
   const name = row.username || "Guest";
   const time = formatChatTime(row.created_at) || "";
-  meta.textContent = time ? `${name} · ${time}` : name;
+  meta.innerHTML = time
+  ? `<span class="uname">${escapeHtml(name)}</span> · ${escapeHtml(time)}`
+  : `<span class="uname">${escapeHtml(name)}</span>`;
 
   bubble.appendChild(meta);
 
