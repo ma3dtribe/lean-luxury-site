@@ -313,9 +313,7 @@ const TWITCH_CLIENT_ID = "ag7cyjkqvjbpx6ql6v4uerk6jzmi2t";
   "/stickers/ma3d.webp",
   "/stickers/pull1.webp",
   "/stickers/pull2.webp",
-  "/stickers/horn.webp",
-  "/stickers/fire.webp"
-];
+ ];
     /* =========================
        ELEMENTS
     ========================= */
@@ -688,7 +686,7 @@ function openStickers(){
 
   stickerGrid.innerHTML = "";
 
-  STICKERS.forEach(src => {
+  stickers.forEach(src => {
     const img = document.createElement("img");
     img.src = src;
     img.loading = "lazy";
@@ -860,7 +858,7 @@ function openStickers(){
 
   stickerGrid.innerHTML = "";
 
-  STICKERS.forEach(src => {
+  stickers.forEach(src => {
     const img = document.createElement("img");
     img.src = src;
     img.loading = "lazy";
