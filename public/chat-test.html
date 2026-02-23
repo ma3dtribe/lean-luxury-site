@@ -668,8 +668,66 @@ chatMessages.scrollTop = 0; // keep view at the top
     }
 
 /* =========================
-   GIF MODAL + SEND GIF
+   GIF MODAL + STICKERS
 ========================= */
+function openGifModal() {
+  gifModal.classList.add("show");
+  gifSearch.value = "";
+  gifResults.textContent = "Loading trending GIFs...";
+  loadTrending();
+  gifSearch.focus();
+}
+
+function closeGifModal() {
+  gifModal.classList.remove("show");
+  messageInput.focus();
+}
+
+function openStickers(){
+  if (!stickerModal || !stickerGrid) return;
+
+  stickerGrid.innerHTML = "";
+
+  STICKERS.forEach(src => {
+    const img = document.createElement("img");
+    img.src = src;
+    img.loading = "lazy";
+    img.style.width = "72px";
+    img.style.height = "72px";
+    img.style.objectFit = "contain";
+    img.style.cursor = "pointer";
+
+    img.addEventListener("click", () => {
+      sendSticker(src);
+      closeStickers();
+    });
+
+    stickerGrid.appendChild(img);
+  });
+
+  stickerModal.classList.add("show");
+  stickerModal.setAttribute("aria-hidden", "false");
+}
+
+function closeStickers(){
+  if (!stickerModal) return;
+  stickerModal.classList.remove("show");
+  stickerModal.setAttribute("aria-hidden", "true");
+}
+
+gifBtn.addEventListener("click", openGifModal);
+gifClose.addEventListener("click", closeGifModal);
+gifTrending.addEventListener("click", loadTrending);
+
+stickerBtn.addEventListener("click", openStickers);
+stickerClose.addEventListener("click", closeStickers);
+
+gifModal.addEventListener("click", (e) => {
+  if (e.target === gifModal) closeGifModal();
+});
+// =========================
+// GIFS + STICKERS (clean)
+// =========================
 function openGifModal() {
   gifModal.classList.add("show");
   gifSearch.value = "";
@@ -715,70 +773,6 @@ async function sendGif(url){
   }
 }
 
-/* =========================
-   STICKERS
-========================= */
-function openStickers(){
-  if (!stickerModal || !stickerGrid) return;
-
-  stickerGrid.innerHTML = "";
-
-  STICKERS.forEach(src => {
-    const img = document.createElement("img");
-    img.src = src;
-    img.loading = "lazy";
-    img.style.width = "72px";
-    img.style.height = "72px";
-    img.style.objectFit = "contain";
-    img.style.cursor = "pointer";
-
-    img.addEventListener("click", async () => {
-      await sendSticker(src);
-      closeStickers();
-    });
-
-    stickerGrid.appendChild(img);
-  });
-
-  stickerModal.classList.add("show");
-  stickerModal.setAttribute("aria-hidden", "false");
-}
-
-function closeStickers(){
-  if (!stickerModal) return;
-  stickerModal.classList.remove("show");
-  stickerModal.setAttribute("aria-hidden", "true");
-}
-
-async function sendSticker(url){
-  if (!sb) return;
-
-  dbStatus.textContent = "DB: saving…";
-
-  const { error } = await sb.from("messages").insert({
-    room: ROOM,
-    username: USERNAME,
-    kind: "sticker",
-    content: url,
-    source: "web",
-    created_at: new Date().toISOString()
-  });
-
-  if (error){
-    dbStatus.textContent = "DB: save failed ❌";
-    alert("Sticker send failed: " + error.message);
-  } else {
-    dbStatus.textContent = "DB: saved ✅";
-    markChatted();
-  }
-}
-
-stickerBtn.addEventListener("click", openStickers);
-stickerClose.addEventListener("click", closeStickers);
-stickerModal.addEventListener("click", (e) => {
-  if (e.target === stickerModal) closeStickers();
-});
-
 async function loadTrending() {
   gifResults.textContent = "Loading trending GIFs...";
   try {
@@ -821,19 +815,6 @@ gifSearch.addEventListener("keydown", async (e) => {
 
 function renderGifGrid(gifs) {
   gifResults.innerHTML = "";
-  (gifs || []).forEach(g => {
-    const imgUrl = g?.images?.fixed_width?.url;
-    if (!imgUrl) return;
-
-    const img = document.createElement("img");
-    img.src = imgUrl;
-    img.loading = "lazy";
-    img.addEventListener("click", () => sendGif(imgUrl));
-
-    gifResults.appendChild(img);
-  });
-}
-  gifResults.innerHTML = "";
   gifs.forEach(g => {
     const imgUrl = g?.images?.fixed_width?.url;
     if (!imgUrl) return;
@@ -841,16 +822,66 @@ function renderGifGrid(gifs) {
     const img = document.createElement("img");
     img.src = imgUrl;
     img.loading = "lazy";
-
     img.addEventListener("click", () => sendGif(imgUrl));
     gifResults.appendChild(img);
   });
 }
-    /* =========================
-   EMOJI PICKER + MA3DTRIBE (no libraries)
-========================= */
 
-// Emoji list (Unicode = basically zero bandwidth)
+// ----- Stickers -----
+stickerBtn.addEventListener("click", openStickers);
+stickerClose.addEventListener("click", closeStickers);
+
+async function sendSticker(url){
+  if (!sb) return;
+
+  dbStatus.textContent = "DB: saving…";
+
+  const { error } = await sb.from("messages").insert({
+    room: ROOM,
+    username: USERNAME,
+    kind: "sticker",
+    content: url,
+    source: "web",
+    created_at: new Date().toISOString()
+  });
+
+  if (error){
+    dbStatus.textContent = "DB: save failed ❌";
+    alert("Sticker send failed: " + error.message);
+  } else {
+    dbStatus.textContent = "DB: saved ✅";
+    markChatted();
+    closeStickers();
+  }
+}
+
+function openStickers(){
+  if (!stickerModal || !stickerGrid) return;
+
+  stickerGrid.innerHTML = "";
+
+  STICKERS.forEach(src => {
+    const img = document.createElement("img");
+    img.src = src;
+    img.loading = "lazy";
+    img.style.width = "72px";
+    img.style.height = "72px";
+    img.style.objectFit = "contain";
+    img.style.cursor = "pointer";
+
+    img.addEventListener("click", () => sendSticker(src));
+    stickerGrid.appendChild(img);
+  });
+
+  stickerModal.classList.add("show");
+  stickerModal.setAttribute("aria-hidden", "false");
+}
+
+function closeStickers(){
+  if (!stickerModal) return;
+  stickerModal.classList.remove("show");
+  stickerModal.setAttribute("aria-hidden", "true");
+}
 const EMOJIS = [
   "😀","😄","😁","😆","😂","🤣","😊","🙂",
   "😉","😎","😍","😘","😜","🤪","😅","🤝",
