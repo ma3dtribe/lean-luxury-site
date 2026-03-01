@@ -270,8 +270,7 @@ input, textarea, button{ max-width:100%; }
 }
 
 /* Prevent hidden modals from blocking taps */
-#emojiPopup, #stickerModal, #gifModal{ pointer-events:none; }
-#emojiPopup.show, #stickerModal.show, #gifModal.show{ pointer-events:auto; }
+#emojiPopup, #stickerModal, #gifModal{ pointer-events:auto; }
 
 /* MOBILE: shrink GIF modal + popups */
 @media (max-width: 520px){
@@ -856,11 +855,6 @@ function renderGifGrid(gifs) {
 }
 
 // ----- Stickers -----
-stickerClose.addEventListener("click", closeStickers);
-stickerBtn.addEventListener("click", () => {
-  if (stickerModal.classList.contains("show")) closeStickers();
-  else openStickers();
-});
     async function sendSticker(url){
   if (!sb) return;
 
@@ -899,7 +893,11 @@ function openStickers(){
     img.style.objectFit = "contain";
     img.style.cursor = "pointer";
 
-    img.addEventListener("click", () => sendSticker(src));
+    img.addEventListener("click", (e) => {
+      e.stopPropagation();
+      sendSticker(src);
+    });
+
     stickerGrid.appendChild(img);
   });
 
@@ -911,7 +909,22 @@ function closeStickers(){
   if (!stickerModal) return;
   stickerModal.classList.remove("show");
   stickerModal.setAttribute("aria-hidden", "true");
-}
+  stickerBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (stickerModal.classList.contains("show")) {
+    closeStickers();
+  } else {
+    openStickers();
+  }
+});
+
+stickerClose.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  closeStickers();
+});
 
 const EMOJIS = [
   "😀","😄","😁","😆","😂","🤣","😊","🙂",
@@ -996,13 +1009,17 @@ stickerBtn.addEventListener("click", () => {
 emojiClose.addEventListener("click", closeEmoji);
 stickerClose.addEventListener("click", closeStickers);
 
-// Click outside closes both
 document.addEventListener("click", (e) => {
   if (emojiPopup.classList.contains("show")) {
-    if (!emojiPopup.contains(e.target) && !emojiBtn.contains(e.target)) closeEmoji();
+    if (!emojiPopup.contains(e.target) && !emojiBtn.contains(e.target)) {
+      closeEmoji();
+    }
   }
+
   if (stickerModal.classList.contains("show")) {
-    if (!stickerModal.contains(e.target) && !stickerBtn.contains(e.target)) closeStickers();
+    if (!stickerModal.contains(e.target) && !stickerBtn.contains(e.target)) {
+      closeStickers();
+    }
   }
 });
 
