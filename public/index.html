@@ -416,7 +416,38 @@
 
   <main>
     <div class="container">
-      <!-- HERO -->
+         <!-- WATCH + CHAT (side-by-side) -->
+<section class="watch-chat" id="watch">
+  <!-- WATCH -->
+  <div class="card">
+    <div class="watch-shell" id="watchShell">
+      <div class="watch-head">
+        <div class="watch-title">Watch on Twitch</div>
+      </div>
+
+      <p id="watchDesc" class="watch-desc">
+        Checking stream status…
+      </p>
+
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn" href="https://www.twitch.tv/ma3dtribe" target="_blank" rel="noopener">Open Twitch</a>
+        <button id="manualLoadBtn" class="btn" style="display:none;">Load Player</button>
+      </div>
+    </div>
+
+    <div id="playerMount" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="card" id="chat">
+    <h3>Community Chat</h3>
+    <iframe
+      src="/chat-test.html"
+      style="width:100%; border:0; border-radius:16px;"
+      loading="lazy">
+    </iframe>
+  </div>
+</section>      <!-- HERO -->
       <section class="hero">
         <div>
           <div class="pill">MA3DTribe Media</div>
@@ -452,40 +483,6 @@
           </div>
         </div>
       </section>
-
-      <!-- WATCH + CHAT (side-by-side) -->
-<section class="watch-chat" id="watch">
-  <!-- WATCH -->
-  <div class="card">
-    <div class="watch-shell" id="watchShell">
-      <div class="watch-head">
-        <div class="watch-title">Watch on Twitch</div>
-      </div>
-
-      <p id="watchDesc" class="watch-desc">
-        Checking stream status…
-      </p>
-
-      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-        <a class="btn" href="https://www.twitch.tv/ma3dtribe" target="_blank" rel="noopener">Open Twitch</a>
-        <button id="manualLoadBtn" class="btn" style="display:none;">Load Player</button>
-      </div>
-    </div>
-
-    <div id="playerMount" style="margin-top:14px;"></div>
-  </div>
-
-  <!-- CHAT -->
-  <div class="card" id="chat">
-    <h3>Community Chat</h3>
-    <iframe
-      src="/chat-test.html"
-      style="width:100%; border:0; border-radius:16px;"
-      loading="lazy">
-    </iframe>
-  </div>
-</section>
-
 
       <!-- SHOWS -->
       <section id="podcasts" class="card">
