@@ -143,9 +143,14 @@ input, textarea, button{ max-width:100%; }
       display:none;
       position:fixed;inset:0;
       background:rgba(0,0,0,.75);
-      z-index:9999;
+      z-index:99999;
         }
-    #gifModal.show{display:block;pointer-events:auto;}
+    #gifModal.show{
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding: 6vh 12px;
+}
     .modalBox{
       background:#0f1623;
       border:1px solid rgba(255,255,255,.12);
