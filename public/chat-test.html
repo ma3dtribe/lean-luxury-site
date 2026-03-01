@@ -22,18 +22,20 @@ input, textarea, button{ max-width:100%; }
 
 .presRow{
   display:flex;
-  gap:10px;
+  gap:8px;
   align-items:center;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
 }
 
 .presRow .pill,
 .presRow .viewerBtn{
-  height:36px;
+  height:30px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-width:140px;
+  padding:0 10px;
+  min-width:auto;
+  font-size:13px;
   font-weight:600;
 }
 
@@ -421,15 +423,15 @@ input, textarea, button{ max-width:100%; }
   </div>
 
   <!-- COUNTERS (all in one row) -->
-  <div class="presRow">
-    <span class="pill">Twitch — 👀 <b id="twViewCount">0</b></span>
+<div class="presRow">
+  <button id="viewerBtn" class="viewerBtn" type="button" aria-haspopup="dialog" aria-controls="viewerModal">
+    Web — 👀 <b id="viewCount">0</b>
+  </button>
 
-    <button id="viewerBtn" class="viewerBtn" type="button" aria-haspopup="dialog" aria-controls="viewerModal">
-      Web — 👀 <b id="viewCount">0</b>
-    </button>
+  <span class="pill">💬 Chat — <b id="chatCount">0</b></span>
 
-    <span class="pill">💬 Chatters — <b id="chatCount">0</b></span>
-  </div>
+  <span class="pill">Twitch — 👀 <b id="twViewCount">0</b></span>
+</div>
 </div>
 
       <div id="chatMessages">
