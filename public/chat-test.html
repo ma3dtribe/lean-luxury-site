@@ -205,6 +205,9 @@ input, textarea, button{ max-width:100%; }
   box-shadow: 0 20px 80px rgba(0,0,0,.55);
   display: none;
   z-index: 9999;
+  .emojiPopup{
+  max-height: 52vh;
+  overflow: auto;
 }
 
 .emojiPopup.show{ display:block; }
@@ -261,8 +264,59 @@ input, textarea, button{ max-width:100%; }
   color:#0b0f14;
   background: linear-gradient(90deg, #38bdf8, #22c55e);
   margin:0 2px;
-}  </style>
-</head>
+/* Mobile sizing for GIF modal */
+@media (max-width: 520px){
+  #gifModal.show{
+    padding: 10px;            /* less outer padding */
+    align-items: stretch;
+  }
+
+  .modalBox{
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 10px;
+    border-radius: 14px;
+  }
+
+  .modalTop{
+    flex-wrap: wrap;          /* stack controls nicely */
+    gap: 8px;
+  }
+
+  #gifSearch{
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  #gifResults{
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on phones */
+    max-height: 55vh;         /* don’t take over the screen */
+  }
+    
+  /* Mobile sizing for Emoji + Stickers popups */
+@media (max-width: 520px){
+  .emojiPopup{
+    left: 12px;
+    right: 12px;
+    bottom: 90px;
+    width: auto;              /* fill the screen width with margins */
+    max-width: none;
+    border-radius: 14px;
+  }
+
+  .emojiGrid{
+    grid-template-columns: repeat(6, 1fr); /* fewer columns so buttons are bigger */
+    gap: 8px;
+  }
+
+  .emojiBtn{
+    height: 42px;             /* easier to tap */
+    border-radius: 12px;
+    font-size: 22px;
+  }
+  }</style>
+  }</head>
 
 <body>
   <div class="wrap">
