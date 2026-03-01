@@ -193,10 +193,10 @@ input, textarea, button{ max-width:100%; }
     }
     #gifResults img:hover{transform:translateY(-1px);transition:.08s;}
 /* EMOJI PICKER */
-.emojiPopup{
+..emojiPopup{
   position: fixed;
   right: 18px;
-  bottom: 92px; /* sits above the composer */
+  bottom: 92px;
   width: 320px;
   max-width: calc(100vw - 36px);
   background: #0f1623;
@@ -205,11 +205,9 @@ input, textarea, button{ max-width:100%; }
   box-shadow: 0 20px 80px rgba(0,0,0,.55);
   display: none;
   z-index: 9999;
-  .emojiPopup{
   max-height: 52vh;
   overflow: auto;
 }
-
 .emojiPopup.show{ display:block; }
 
 .emojiHead{
@@ -356,8 +354,12 @@ input, textarea, button{ max-width:100%; }
 #stickerModal.show{
   z-index: 200001;
 } 
-  }</style>
-  }</head>
+    @media (max-width: 520px){
+  #gifResults img{ border-radius:10px; }
+  .modalBox{ max-height: 82vh; overflow:auto; }
+}
+  </style>
+  </head>
 
 <body>
   <div class="wrap">
@@ -597,10 +599,12 @@ if (kind === "gif" || kind === "sticker") {
   let safe = escapeHtml(row.content || "");
 
 // Render the custom MA3D token as a badge
-safe = safe.replaceAll(
-  escapeHtml(MA3D_TOKEN),
-  `<span class="ma3dBadge">MA3DTRIBE</span>`
-);
+if (typeof MA3D_TOKEN !== "undefined" && MA3D_TOKEN) {
+  safe = safe.replaceAll(
+    escapeHtml(MA3D_TOKEN),
+    `<span class="ma3dBadge">MA3DTRIBE</span>`
+  );
+}
 
 div.innerHTML = safe;
     bubble.appendChild(div);
