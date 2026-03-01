@@ -11,13 +11,20 @@
 img, video, canvas{ max-width:100%; height:auto; }
 pre, code{ white-space: pre-wrap; overflow-wrap: anywhere; }
 input, textarea, button{ max-width:100%; }
-    .presence{
+.presence{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  font-size:12px;
+  opacity:.9;
+  margin: 8px 16px 6px;
+}
+
+.presRow{
   display:flex;
   gap:10px;
   align-items:center;
-  font-size:12px;
-  opacity:.9;
-  margin: 8px 16px 6px; /* lines it up with the card padding */
+  flex-wrap:wrap;
 }
 .presence b{ font-weight:900; }
     .viewerBtn{
@@ -408,7 +415,6 @@ input, textarea, button{ max-width:100%; }
     </button>
     · 💬 <b id="chatCount">0</b>
   </span>
-</div>
 </div>
 
       <div id="chatMessages">
