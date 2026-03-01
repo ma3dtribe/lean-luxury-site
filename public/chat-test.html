@@ -1031,16 +1031,7 @@ document.addEventListener("click", (e) => {
   if (emojiPopup.classList.contains("show")) {
     if (!emojiPopup.contains(e.target) && !emojiBtn.contains(e.target)) closeEmoji();
   }
-  if (stickerModal.classList.contains("show")) {
-    if (!stickerModal.contains(e.target) && !stickerBtn.contains(e.target)) closeStickers();
-  }
-});
-
-// Esc closes both
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") { closeEmoji(); closeStickers(); }
-});
-
+ 
   if (stickerModal.classList.contains("show")) {
     if (!stickerModal.contains(e.target) && !stickerBtn.contains(e.target)) {
       closeStickers();
