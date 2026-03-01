@@ -270,7 +270,8 @@ input, textarea, button{ max-width:100%; }
 }
 
 /* Prevent hidden modals from blocking taps */
-#emojiPopup, #stickerModal, #gifModal{ pointer-events:auto; }
+#emojiPopup, #stickerModal, #gifModal{ pointer-events:none; }
+#emojiPopup.show, #stickerModal.show, #gifModal.show{ pointer-events:auto; }
 
 /* MOBILE: shrink GIF modal + popups */
 @media (max-width: 520px){
@@ -909,7 +910,9 @@ function closeStickers(){
   if (!stickerModal) return;
   stickerModal.classList.remove("show");
   stickerModal.setAttribute("aria-hidden", "true");
-  stickerBtn.addEventListener("click", (e) => {
+}
+
+stickerBtn.addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
 
