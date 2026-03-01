@@ -314,7 +314,23 @@ input, textarea, button{ max-width:100%; }
     height: 42px;             /* easier to tap */
     border-radius: 12px;
     font-size: 22px;
-  }
+   /* ✅ Prevent hidden popups from blocking taps/clicks */
+#emojiPopup,
+#stickerModal{
+  pointer-events: none;   /* can't steal clicks when hidden */
+}
+
+#emojiPopup.show,
+#stickerModal.show{
+  pointer-events: auto;   /* clickable only when visible */
+  z-index: 100000;        /* above everything */
+}
+
+/* ✅ Keep the composer buttons above the page */
+.composer, .btn-row{
+  position: relative;
+  z-index: 100001;
+}
   }</style>
   }</head>
 
@@ -756,41 +772,6 @@ chatMessages.scrollTop = 0; // keep view at the top
         )
         .subscribe((status) => console.log("realtime:", status));
     }
-
-/* =========================
-   GIF MODAL + STICKERS
-========================= */
-
-function closeGifModal() {
-  gifModal.classList.remove("show");
-  messageInput.focus();
-}
-
-function openStickers(){
-  if (!stickerModal || !stickerGrid) return;
-
-  stickerGrid.innerHTML = "";
-
-  stickers.forEach(src => {
-    const img = document.createElement("img");
-    img.src = src;
-    img.loading = "lazy";
-    img.style.width = "72px";
-    img.style.height = "72px";
-    img.style.objectFit = "contain";
-    img.style.cursor = "pointer";
-
-    img.addEventListener("click", () => {
-      sendSticker(src);
-      closeStickers();
-    });
-
-    stickerGrid.appendChild(img);
-  });
-
-  stickerModal.classList.add("show");
-  stickerModal.setAttribute("aria-hidden", "false");
-}
 
 function closeStickers(){
   if (!stickerModal) return;
