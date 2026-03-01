@@ -331,6 +331,31 @@ input, textarea, button{ max-width:100%; }
   position: relative;
   z-index: 100001;
 }
+    /* ✅ Fix: hidden popups/overlays should NOT block taps */
+#emojiPopup,
+#stickerModal,
+#gifModal{
+  pointer-events: none;     /* when hidden, cannot steal clicks */
+}
+
+#emojiPopup.show,
+#stickerModal.show,
+#gifModal.show{
+  pointer-events: auto;     /* only clickable when open */
+}
+
+/* ✅ Ensure the buttons stay on top */
+.composer,
+.btn-row{
+  position: relative;
+  z-index: 200000;
+}
+
+/* ✅ Make sure popups sit above the UI when opened */
+#emojiPopup.show,
+#stickerModal.show{
+  z-index: 200001;
+} 
   }</style>
   }</head>
 
