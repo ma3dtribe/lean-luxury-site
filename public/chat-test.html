@@ -996,28 +996,50 @@ function buildEmojiGrid(){
 
 // Build once
 buildEmojiGrid();
+
 // Emoji button opens/closes popup
-emojiBtn.addEventListener("click", () => {
+emojiBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
   if (emojiPopup.classList.contains("show")) closeEmoji();
   else openEmoji();
 });
 
 // Sticker button opens/closes popup
-stickerBtn.addEventListener("click", () => {
+stickerBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
   if (stickerModal.classList.contains("show")) closeStickers();
   else openStickers();
 });
 
 // Close buttons
-emojiClose.addEventListener("click", closeEmoji);
-stickerClose.addEventListener("click", closeStickers);
+emojiClose.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  closeEmoji();
+});
 
+stickerClose.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  closeStickers();
+});
+
+// Click outside closes both
 document.addEventListener("click", (e) => {
   if (emojiPopup.classList.contains("show")) {
-    if (!emojiPopup.contains(e.target) && !emojiBtn.contains(e.target)) {
-      closeEmoji();
-    }
+    if (!emojiPopup.contains(e.target) && !emojiBtn.contains(e.target)) closeEmoji();
   }
+  if (stickerModal.classList.contains("show")) {
+    if (!stickerModal.contains(e.target) && !stickerBtn.contains(e.target)) closeStickers();
+  }
+});
+
+// Esc closes both
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { closeEmoji(); closeStickers(); }
+});
 
   if (stickerModal.classList.contains("show")) {
     if (!stickerModal.contains(e.target) && !stickerBtn.contains(e.target)) {
