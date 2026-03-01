@@ -549,7 +549,7 @@ body{ width: 100%; overflow-x: hidden; }
         mount.dataset.loaded = "1";
 
         const iframe = document.createElement("iframe");
-        iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}`;
+        iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true`;
         iframe.width = "100%";
         iframe.height = "420";
         iframe.allowFullscreen = true;
@@ -560,30 +560,44 @@ body{ width: 100%; overflow-x: hidden; }
       }
 
       manualBtn.addEventListener("click", loadPlayer);
+setInterval(() => {
+  fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
+    .then(r => r.text())
+    .then(t => {
+      const text = (t || "").toLowerCase();
+      const isLive = !text.includes("offline");
 
+      if (isLive && !mount.dataset.loaded) {
+        setLiveState(true);
+        desc.textContent = "We’re live — loading the stream now.";
+        loadPlayer();
+      }
+    })
+    .catch(() => {});
+}, 60000);      
       setLiveState(false);
 
-      fetch(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`, { cache: "no-store" })
-        .then(r => r.text())
-        .then(t => {
-          const text = (t || "").toLowerCase();
-          const isLive = !text.includes("offline");
+      fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
+  .then(r => r.text())
+  .then(t => {
+    const text = (t || "").toLowerCase();
+    const isLive = !text.includes("offline");
 
-          if (isLive) {
-            setLiveState(true);
-            desc.textContent = "We’re live — loading the stream now.";
-            loadPlayer();
-          } else {
-            setLiveState(false);
-            desc.textContent = "Currently off air. You can still open Twitch or load the player.";
-            manualBtn.style.display = "inline-flex";
-          }
-        })
-        .catch(() => {
-          setLiveState(false);
-          desc.textContent = "Status unavailable. Open Twitch or load the player.";
-          manualBtn.style.display = "inline-flex";
-        });
+    if (isLive) {
+      setLiveState(true);
+      desc.textContent = "We’re live — loading the stream now.";
+      loadPlayer();
+    } else {
+      setLiveState(false);
+      desc.textContent = "Currently off air. You can still open Twitch or load the player.";
+      manualBtn.style.display = "inline-flex";
+    }
+  })
+  .catch(() => {
+    setLiveState(false);
+    desc.textContent = "Status unavailable. Open Twitch or load the player.";
+    manualBtn.style.display = "inline-flex";
+  });
     })();
    </script>
   <!-- Social icons footer (bottom of page) -->
