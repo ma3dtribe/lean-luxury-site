@@ -98,10 +98,19 @@ input, textarea, button{ max-width:100%; }
     }
 
     .composer{
-      padding:12px;border-top:1px solid rgba(255,255,255,.08);
-      display:flex;gap:10px;align-items:center;
-    }
-    #messageInput{
+  padding:12px;
+  border-top:1px solid rgba(255,255,255,.08);
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+#messageInput{
+  flex: 1 1 260px;
+  min-width: 0;
+}
+      #messageInput{
       flex:1;
       padding:12px;border-radius:12px;
       border:1px solid rgba(255,255,255,.14);
@@ -114,6 +123,7 @@ input, textarea, button{ max-width:100%; }
       border:1px solid rgba(255,255,255,.14);
       background:#0e1623;color:#e9eef6;cursor:pointer;
       user-select:none;
+      white-space: nowrap;
     }
     .btn:hover{filter:brightness(1.08);}
     .btnPrimary{background:#2563eb;border-color:#2563eb;}
