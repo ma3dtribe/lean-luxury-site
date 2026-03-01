@@ -380,6 +380,9 @@ input, textarea, button{ max-width:100%; }
 @media (max-width: 520px){
   .msg img{ max-width: 240px; }
 }  
+.presence{ position:relative; z-index:50; pointer-events:auto; }
+.presence *{ pointer-events:auto; }
+.viewerBtn{ position:relative; z-index:60; }    
   </style>
   </head>
 
@@ -710,7 +713,8 @@ function recomputeCounts(channel){
   if (viewCountEl) viewCountEl.textContent = String(viewers);
   if (chatCountEl) chatCountEl.textContent = String(chatters);
   
-  updateViewersUI(channel);}
+  updateViewersUI(channel);
+}
 
 let presenceChannel = null;
 
