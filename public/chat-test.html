@@ -777,17 +777,12 @@ function buildViewerRowsFromPresence(channel){
     }
   }
 
-  const map = new Map();
-  for (const r of rows){
-    const prev = map.get(r.name);
-    if (!prev || r.t > prev.t) map.set(r.name, r);
-  }
-
-  return Array.from(map.values()).sort((a,b) => {
+    return rows.sort((a,b) => {
     if (a.chatted !== b.chatted) return a.chatted ? -1 : 1;
     return (b.t || 0) - (a.t || 0);
   });
-}
+  
+  }
 
 function renderViewerList(rows){
   if (!viewerList) return;
