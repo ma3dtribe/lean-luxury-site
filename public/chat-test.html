@@ -855,17 +855,17 @@ viewerModal?.addEventListener("click", (e) => {
             <div class="meta">System</div>
             No messages yet. Say something.
           </div>`;
-      } else {
+   } else {
         data.forEach(row => renderRow(row, false));
-chatMessages.scrollTop = 0; // keep view at the top
+        chatMessages.scrollTop = 0; // keep view at the top
       }
+}
 
-      async function sendText(){
-      if (!sb) return;
+async function sendText(){
+  if (!sb) return;
 
-      const text = (messageInput.value || "").trim();
-      if (!text) return;
-
+  const text = (messageInput.value || "").trim();
+  if (!text) return;
       messageInput.value = "";
       
       const { error } = await sb.from("messages").insert({
