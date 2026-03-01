@@ -392,7 +392,10 @@
 /* Prevent horizontal growth */
 html, body{
   overflow-x: hidden;
-    </style>
+  *{ box-sizing: border-box; }
+body{ width: 100%; overflow-x: hidden; }
+.container{ width: 100%; overflow-x: hidden; } 
+  </style>
   
 </head>
 
@@ -443,10 +446,11 @@ html, body{
   <div class="card" id="chat">
     <h3>Community Chat</h3>
     <iframe
-      src="/chat-test.html"
-      style="width:100%; border:0; border-radius:16px;"
-      loading="lazy">
-    </iframe>
+  src="/chat-test.html"
+  style="width:100%; max-width:100%; border:0; border-radius:16px; display:block; overflow:hidden;"
+  loading="lazy"
+  scrolling="no">
+</iframe>
   </div>
 </section>      <!-- HERO -->
       <section class="hero">
