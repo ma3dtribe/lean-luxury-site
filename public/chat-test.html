@@ -20,7 +20,78 @@ input, textarea, button{ max-width:100%; }
   margin: 8px 16px 6px; /* lines it up with the card padding */
 }
 .presence b{ font-weight:900; }
-    body{
+    .viewerBtn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:2px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  color:#e9eef6;
+  cursor:pointer;
+}
+.viewerBtn b{ font-weight:900; }
+.viewerBtn:hover{ background:rgba(255,255,255,.10); }
+
+/* Viewer modal */
+.vModal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.72);
+  z-index:100001;
+  pointer-events:auto;
+}
+.vModal.show{ display:block; }
+
+.vBox{
+  background:#0f1623;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  max-width:520px;
+  margin:10vh auto;
+  padding:12px;
+  box-shadow:0 20px 80px rgba(0,0,0,.55);
+}
+
+.vTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:6px 6px 10px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+
+.vClose{
+  border:0;
+  background:transparent;
+  color:#e9eef6;
+  font-size:18px;
+  cursor:pointer;
+  opacity:.85;
+}
+.vClose:hover{ opacity:1; }
+
+.vList{
+  padding:10px 6px 6px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  max-height:52vh;
+  overflow:auto;
+}
+
+.vItem{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+}
+.vTag{ font-size:12px; opacity:.85; }    body{
       margin:0;
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
       background:#0b0f14;
@@ -327,7 +398,13 @@ input, textarea, button{ max-width:100%; }
         </div>
       </div>
 <div class="presence">
-  <span>Web — 👀 <b id="viewCount">0</b> · 💬 <b id="chatCount">0</b></span>
+  <span>
+    Web —
+    <button id="viewerBtn" class="viewerBtn" type="button" aria-haspopup="dialog" aria-controls="viewerModal">
+      👀 <b id="viewCount">0</b>
+    </button>
+    · 💬 <b id="chatCount">0</b>
+  </span>
   <span class="sep">|</span>
   <span>Twitch — 👀 <b id="twViewCount">0</b></span>
 </div>
@@ -371,7 +448,8 @@ input, textarea, button{ max-width:100%; }
   <div class="emojiGrid" id="stickerGrid"></div>
   <div class="emojiHint">Click a sticker to send.</div>
 </div>
-  <!-- EMOJI PICKER (lightweight, no libraries) -->
+
+<!-- EMOJI PICKER (lightweight, no libraries) -->
 <div id="emojiPopup" class="emojiPopup" aria-hidden="true">
   <div class="emojiHead">
     <div class="emojiTitle">Smilies</div>
@@ -380,9 +458,20 @@ input, textarea, button{ max-width:100%; }
   <div class="emojiGrid" id="emojiGrid"></div>
   <div class="emojiHint">Click to insert. Esc to close.</div>
 </div>
-  <!-- ✅ Supabase UMD (gives window.supabase). Keep EXACTLY ONE copy of this. -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
+<!-- VIEWERS MODAL -->
+<div id="viewerModal" class="vModal" aria-hidden="true">
+  <div class="vBox" role="dialog" aria-modal="true" aria-label="Viewers online">
+    <div class="vTop">
+      <b>Viewers online</b>
+      <button id="viewerClose" class="vClose" type="button">✕</button>
+    </div>
+    <div id="viewerList" class="vList"></div>
+  </div>
+</div>
+
+<!-- ✅ Supabase UMD (gives window.supabase). Keep EXACTLY ONE copy of this. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script>
     /* =========================
        CONFIG
@@ -428,7 +517,10 @@ const emojiClose = document.getElementById("emojiClose");
     const viewCountEl = document.getElementById("viewCount");
 const chatCountEl = document.getElementById("chatCount");
 const twViewCountEl = document.getElementById("twViewCount");
-
+    const viewerBtn = document.getElementById("viewerBtn");
+const viewerModal = document.getElementById("viewerModal");
+const viewerClose = document.getElementById("viewerClose");
+const viewerList = document.getElementById("viewerList");
     /* =========================
        USERNAME
     ========================= */
@@ -617,7 +709,8 @@ function recomputeCounts(channel){
 
   if (viewCountEl) viewCountEl.textContent = String(viewers);
   if (chatCountEl) chatCountEl.textContent = String(chatters);
-}
+  
+  updateViewersUI(channel);}
 
 let presenceChannel = null;
 
@@ -662,7 +755,73 @@ async function markChatted(){
   });
 
   recomputeCounts(presenceChannel);
+} 
+let latestViewerRows = [];
+
+function buildViewerRowsFromPresence(channel){
+  const state = channel?.presenceState?.() || {};
+  const rows = [];
+
+  for (const key in state){
+    const metas = state[key] || [];
+    for (const m of metas){
+      rows.push({
+        name: (m.username || "Guest").toString(),
+        chatted: !!m.chatted,
+        t: Number(m.t || 0)
+      });
+    }
+  }
+
+  const map = new Map();
+  for (const r of rows){
+    const prev = map.get(r.name);
+    if (!prev || r.t > prev.t) map.set(r.name, r);
+  }
+
+  return Array.from(map.values()).sort((a,b) => {
+    if (a.chatted !== b.chatted) return a.chatted ? -1 : 1;
+    return (b.t || 0) - (a.t || 0);
+  });
 }
+
+function renderViewerList(rows){
+  if (!viewerList) return;
+
+  if (!rows.length){
+    viewerList.innerHTML = `<div style="opacity:.8;padding:8px 2px;">No one is online yet.</div>`;
+    return;
+  }
+
+  viewerList.innerHTML = rows.map(r => `
+    <div class="vItem">
+      <div><b>${escapeHtml(r.name)}</b></div>
+      <div class="vTag">${r.chatted ? "💬 chatted" : "👀 viewing"}</div>
+    </div>
+  `).join("");
+}
+
+function updateViewersUI(channel){
+  latestViewerRows = buildViewerRowsFromPresence(channel);
+}
+
+function openViewerModal(){
+  renderViewerList(latestViewerRows);
+  viewerModal?.classList.add("show");
+  viewerModal?.setAttribute("aria-hidden","false");
+}
+
+function closeViewerModal(){
+  viewerModal?.classList.remove("show");
+  viewerModal?.setAttribute("aria-hidden","true");
+}
+
+viewerBtn?.addEventListener("click", openViewerModal);
+viewerClose?.addEventListener("click", closeViewerModal);
+
+viewerModal?.addEventListener("click", (e) => {
+  if (e.target === viewerModal) closeViewerModal();
+});    
     /* =========================
        LOAD + REALTIME
     ========================= */
