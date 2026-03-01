@@ -192,8 +192,8 @@ input, textarea, button{ max-width:100%; }
       border:1px solid rgba(255,255,255,.10);
     }
     #gifResults img:hover{transform:translateY(-1px);transition:.08s;}
-/* EMOJI PICKER */
-..emojiPopup{
+/* EMOJI + STICKERS POPUPS */
+.emojiPopup{
   position: fixed;
   right: 18px;
   bottom: 92px;
@@ -204,12 +204,13 @@ input, textarea, button{ max-width:100%; }
   border-radius: 14px;
   box-shadow: 0 20px 80px rgba(0,0,0,.55);
   display: none;
-  z-index: 9999;
+  z-index: 100000;
   max-height: 52vh;
   overflow: auto;
 }
 .emojiPopup.show{ display:block; }
 
+/* head/close */
 .emojiHead{
   display:flex;
   align-items:center;
@@ -228,6 +229,7 @@ input, textarea, button{ max-width:100%; }
 }
 .emojiClose:hover{ opacity:1; }
 
+/* grid/buttons */
 .emojiGrid{
   padding:10px;
   display:grid;
@@ -243,16 +245,19 @@ input, textarea, button{ max-width:100%; }
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:20px; /* emoji size */
+  font-size:20px;
   line-height:1;
 }
 .emojiBtn:hover{ filter:brightness(1.12); }
+
 .emojiHint{
   padding: 0 12px 12px;
   opacity:.7;
   font-size:12px;
-}    
-    .ma3dBadge{
+}
+
+/* badge */
+.ma3dBadge{
   display:inline-block;
   font-weight:900;
   font-size:12px;
@@ -262,102 +267,48 @@ input, textarea, button{ max-width:100%; }
   color:#0b0f14;
   background: linear-gradient(90deg, #38bdf8, #22c55e);
   margin:0 2px;
-/* Mobile sizing for GIF modal */
+}
+
+/* Prevent hidden modals from blocking taps */
+#emojiPopup, #stickerModal, #gifModal{ pointer-events:none; }
+#emojiPopup.show, #stickerModal.show, #gifModal.show{ pointer-events:auto; }
+
+/* MOBILE: shrink GIF modal + popups */
 @media (max-width: 520px){
-  #gifModal.show{
-    padding: 10px;            /* less outer padding */
-    align-items: stretch;
-  }
+  #gifModal.show{ padding:10px; align-items:stretch; }
 
   .modalBox{
-    width: 100%;
-    max-width: none;
-    margin: 0;
-    padding: 10px;
-    border-radius: 14px;
+    width:100%;
+    max-width:none;
+    margin:0;
+    padding:10px;
+    border-radius:14px;
+    max-height: 82vh;
+    overflow:auto;
   }
 
-  .modalTop{
-    flex-wrap: wrap;          /* stack controls nicely */
-    gap: 8px;
-  }
-
-  #gifSearch{
-    width: 100%;
-    flex: 1 1 100%;
-  }
+  .modalTop{ flex-wrap:wrap; gap:8px; }
+  #gifSearch{ width:100%; flex:1 1 100%; }
 
   #gifResults{
-    grid-template-columns: repeat(2, 1fr); /* 2 columns on phones */
-    max-height: 55vh;         /* don’t take over the screen */
+    grid-template-columns:repeat(2,1fr);
+    max-height:55vh;
   }
-    
-  /* Mobile sizing for Emoji + Stickers popups */
-@media (max-width: 520px){
+
   .emojiPopup{
-    left: 12px;
-    right: 12px;
-    bottom: 90px;
-    width: auto;              /* fill the screen width with margins */
-    max-width: none;
-    border-radius: 14px;
+    left:12px;
+    right:12px;
+    bottom:84px;
+    width:auto;
+    max-width:none;
   }
 
-  .emojiGrid{
-    grid-template-columns: repeat(6, 1fr); /* fewer columns so buttons are bigger */
-    gap: 8px;
-  }
-
-  .emojiBtn{
-    height: 42px;             /* easier to tap */
-    border-radius: 12px;
-    font-size: 22px;
-   /* ✅ Prevent hidden popups from blocking taps/clicks */
-#emojiPopup,
-#stickerModal{
-  pointer-events: none;   /* can't steal clicks when hidden */
+  .emojiGrid{ grid-template-columns:repeat(6,1fr); }
+  .emojiBtn{ height:42px; font-size:22px; }
 }
-
-#emojiPopup.show,
-#stickerModal.show{
-  pointer-events: auto;   /* clickable only when visible */
-  z-index: 100000;        /* above everything */
-}
-
-/* ✅ Keep the composer buttons above the page */
-.composer, .btn-row{
-  position: relative;
-  z-index: 100001;
-}
-    /* ✅ Fix: hidden popups/overlays should NOT block taps */
-#emojiPopup,
-#stickerModal,
-#gifModal{
-  pointer-events: none;     /* when hidden, cannot steal clicks */
-}
-
-#emojiPopup.show,
-#stickerModal.show,
-#gifModal.show{
-  pointer-events: auto;     /* only clickable when open */
-}
-
-/* ✅ Ensure the buttons stay on top */
-.composer,
-.btn-row{
-  position: relative;
-  z-index: 200000;
-}
-
-/* ✅ Make sure popups sit above the UI when opened */
-#emojiPopup.show,
-#stickerModal.show{
-  z-index: 200001;
-} 
-    @media (max-width: 520px){
-  #gifResults img{ border-radius:10px; }
-  .modalBox{ max-height: 82vh; overflow:auto; }
-}
+@media (max-width: 520px){
+  .msg img{ max-width: 240px; }
+}  
   </style>
   </head>
 
@@ -802,22 +753,6 @@ chatMessages.scrollTop = 0; // keep view at the top
         .subscribe((status) => console.log("realtime:", status));
     }
 
-function closeStickers(){
-  if (!stickerModal) return;
-  stickerModal.classList.remove("show");
-  stickerModal.setAttribute("aria-hidden", "true");
-}
-
-gifBtn.addEventListener("click", openGifModal);
-gifClose.addEventListener("click", closeGifModal);
-gifTrending.addEventListener("click", loadTrending);
-
-stickerBtn.addEventListener("click", openStickers);
-stickerClose.addEventListener("click", closeStickers);
-
-gifModal.addEventListener("click", (e) => {
-  if (e.target === gifModal) closeGifModal();
-});
 // =========================
 // GIFS + STICKERS (clean)
 // =========================
@@ -921,10 +856,12 @@ function renderGifGrid(gifs) {
 }
 
 // ----- Stickers -----
-stickerBtn.addEventListener("click", openStickers);
 stickerClose.addEventListener("click", closeStickers);
-
-async function sendSticker(url){
+stickerBtn.addEventListener("click", () => {
+  if (stickerModal.classList.contains("show")) closeStickers();
+  else openStickers();
+});
+    async function sendSticker(url){
   if (!sb) return;
 
   dbStatus.textContent = "DB: saving…";
@@ -975,6 +912,7 @@ function closeStickers(){
   stickerModal.classList.remove("show");
   stickerModal.setAttribute("aria-hidden", "true");
 }
+
 const EMOJIS = [
   "😀","😄","😁","😆","😂","🤣","😊","🙂",
   "😉","😎","😍","😘","😜","🤪","😅","🤝",
@@ -1042,32 +980,35 @@ function buildEmojiGrid(){
 
 // Build once
 buildEmojiGrid();
+// Emoji button opens/closes popup
+emojiBtn.addEventListener("click", () => {
+  if (emojiPopup.classList.contains("show")) closeEmoji();
+  else openEmoji();
+});
 
-// Make sure click handlers work (after page is ready)
-window.addEventListener("load", () => {
-  if (!emojiBtn || !emojiPopup || !emojiGrid) {
-    console.log("Emoji missing elements:", { emojiBtn, emojiPopup, emojiGrid, emojiClose });
-    return;
+// Sticker button opens/closes popup
+stickerBtn.addEventListener("click", () => {
+  if (stickerModal.classList.contains("show")) closeStickers();
+  else openStickers();
+});
+
+// Close buttons
+emojiClose.addEventListener("click", closeEmoji);
+stickerClose.addEventListener("click", closeStickers);
+
+// Click outside closes both
+document.addEventListener("click", (e) => {
+  if (emojiPopup.classList.contains("show")) {
+    if (!emojiPopup.contains(e.target) && !emojiBtn.contains(e.target)) closeEmoji();
   }
+  if (stickerModal.classList.contains("show")) {
+    if (!stickerModal.contains(e.target) && !stickerBtn.contains(e.target)) closeStickers();
+  }
+});
 
-  emojiBtn.addEventListener("click", () => {
-    if (emojiPopup.classList.contains("show")) closeEmoji();
-    else openEmoji();
-  });
-
-  emojiClose?.addEventListener("click", closeEmoji);
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && emojiPopup.classList.contains("show")) closeEmoji();
-  });
-
-  // close if user clicks outside popup (but not the button)
-  document.addEventListener("click", (e) => {
-    if (!emojiPopup.classList.contains("show")) return;
-    const clickedInside = emojiPopup.contains(e.target);
-    const clickedBtn = emojiBtn.contains(e.target);
-    if (!clickedInside && !clickedBtn) closeEmoji();
-  });
+// Esc closes both
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { closeEmoji(); closeStickers(); }
 });
     /* =========================
        START
