@@ -26,8 +26,20 @@ input, textarea, button{ max-width:100%; }
   align-items:center;
   flex-wrap:wrap;
 }
+
+.presRow .pill,
+.presRow .viewerBtn{
+  height:36px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:140px;
+  font-weight:600;
+}
+
 .presence b{ font-weight:900; }
-    .viewerBtn{
+
+.viewerBtn{
   display:inline-flex;
   align-items:center;
   gap:6px;
@@ -37,6 +49,7 @@ input, textarea, button{ max-width:100%; }
   background:rgba(255,255,255,.06);
   color:#e9eef6;
   cursor:pointer;
+}
 }
 .viewerBtn b{ font-weight:900; }
 .viewerBtn:hover{ background:rgba(255,255,255,.10); }
@@ -399,22 +412,24 @@ input, textarea, button{ max-width:100%; }
     <div class="dot"></div>
   </div>
 
-  <div class="rightHead">
-    <span class="pill">Twitch — 👀 <b id="twViewCount">0</b></span>
   </div>
-</div>
 <div class="presence">
-  <span class="pill">
-    User: <b id="userDisplay">...</b> · <button id="changeName" class="linkBtn" type="button">Change</button>
-  </span>
+  <!-- USERNAME (on its own line) -->
+  <div class="userLine pill">
+    User: <b id="userDisplay">...</b>
+    <button id="changeName" class="linkBtn" type="button">Change</button>
+  </div>
 
-  <span>
-    Web —
+  <!-- COUNTERS (all in one row) -->
+  <div class="presRow">
+    <span class="pill">Twitch — 👀 <b id="twViewCount">0</b></span>
+
     <button id="viewerBtn" class="viewerBtn" type="button" aria-haspopup="dialog" aria-controls="viewerModal">
-      👀 <b id="viewCount">0</b>
+      Web — 👀 <b id="viewCount">0</b>
     </button>
-    · 💬 <b id="chatCount">0</b>
-  </span>
+
+    <span class="pill">💬 Chatters — <b id="chatCount">0</b></span>
+  </div>
 </div>
 
       <div id="chatMessages">
