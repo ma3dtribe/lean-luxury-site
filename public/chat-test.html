@@ -130,8 +130,6 @@ input, textarea, button{ max-width:100%; }
       padding:0;font-size:13px;
     }
     .linkBtn:hover{text-decoration:underline;}
-    .status{font-size:13px;opacity:.85}
-
     #chatMessages{
   height:50vh;
   overflow:auto;
@@ -399,6 +397,10 @@ input, textarea, button{ max-width:100%; }
   </div>
 </div>
 <div class="presence">
+  <span class="pill">
+    User: <b id="userDisplay">...</b> · <button id="changeName" class="linkBtn" type="button">Change</button>
+  </span>
+
   <span>
     Web —
     <button id="viewerBtn" class="viewerBtn" type="button" aria-haspopup="dialog" aria-controls="viewerModal">
@@ -406,8 +408,7 @@ input, textarea, button{ max-width:100%; }
     </button>
     · 💬 <b id="chatCount">0</b>
   </span>
-  <span class="sep">|</span>
-  <span>Twitch — 👀 <b id="twViewCount">0</b></span>
+</div>
 </div>
 
       <div id="chatMessages">
@@ -493,7 +494,6 @@ const TWITCH_CLIENT_ID = "ag7cyjkqvjbpx6ql6v4uerk6jzmi2t";
     /* =========================
        ELEMENTS
     ========================= */
-    const dbStatus = document.getElementById("dbStatus");
     const chatMessages = document.getElementById("chatMessages");
     const messageInput = document.getElementById("messageInput");
     const sendBtn = document.getElementById("sendBtn");
@@ -668,7 +668,6 @@ div.innerHTML = safe;
     ========================= */
     function getSbClient(){
       if (!window.supabase) {
-        dbStatus.textContent = "DB: library not loaded ❌";
         chatMessages.innerHTML = `
           <div class="msg them">
             <div class="meta">System</div>
@@ -825,9 +824,7 @@ viewerModal?.addEventListener("click", (e) => {
     async function loadInitial(){
       if (!sb) return;
 
-      dbStatus.textContent = "DB: loading…";
-
-            const { data, error } = await sb
+         const { data, error } = await sb
         .from("messages")
         .select("id, room, username, kind, content, created_at")
         .eq("room", ROOM)
@@ -836,8 +833,7 @@ viewerModal?.addEventListener("click", (e) => {
 
       if (error){
         console.error("SELECT error:", error);
-        dbStatus.textContent = "DB: read failed ❌";
-        chatMessages.innerHTML = `
+          chatMessages.innerHTML = `
           <div class="msg them">
             <div class="meta">System</div>
             Read failed: ${escapeHtml(error.message)}
@@ -858,18 +854,14 @@ viewerModal?.addEventListener("click", (e) => {
 chatMessages.scrollTop = 0; // keep view at the top
       }
 
-      dbStatus.textContent = "DB: ready ✅";
-    }
-
-    async function sendText(){
+      async function sendText(){
       if (!sb) return;
 
       const text = (messageInput.value || "").trim();
       if (!text) return;
 
       messageInput.value = "";
-      dbStatus.textContent = "DB: saving…";
-
+      
       const { error } = await sb.from("messages").insert({
   room: ROOM,
   username: USERNAME,
@@ -881,10 +873,9 @@ chatMessages.scrollTop = 0; // keep view at the top
       console.log("INSERT text error:", error);
 
       if (error){
-  dbStatus.textContent = "DB: save failed ❌";
-  alert("Save failed: " + error.message);
+    alert("Save failed: " + error.message);
 } else {
-  dbStatus.textContent = "DB: saved ✅";
+  
   markChatted(); // ✅ add this
 }
 
@@ -936,9 +927,7 @@ gifModal.addEventListener("click", (e) => {
 async function sendGif(url){
   if (!sb) return;
 
-  dbStatus.textContent = "DB: saving…";
-
-  const { error } = await sb.from("messages").insert({
+    const { error } = await sb.from("messages").insert({
     room: ROOM,
     username: USERNAME,
     kind: "gif",
@@ -948,10 +937,10 @@ async function sendGif(url){
   });
 
   if (error){
-    dbStatus.textContent = "DB: save failed ❌";
+    
     alert("GIF send failed: " + error.message);
   } else {
-    dbStatus.textContent = "DB: saved ✅";
+    
     markChatted();
     closeGifModal();
   }
@@ -1015,9 +1004,7 @@ function renderGifGrid(gifs) {
     async function sendSticker(url){
   if (!sb) return;
 
-  dbStatus.textContent = "DB: saving…";
-
-  const { error } = await sb.from("messages").insert({
+   const { error } = await sb.from("messages").insert({
     room: ROOM,
     username: USERNAME,
     kind: "sticker",
@@ -1027,10 +1014,8 @@ function renderGifGrid(gifs) {
   });
 
   if (error){
-    dbStatus.textContent = "DB: save failed ❌";
     alert("Sticker send failed: " + error.message);
   } else {
-    dbStatus.textContent = "DB: saved ✅";
     markChatted();
     closeStickers();
   }
