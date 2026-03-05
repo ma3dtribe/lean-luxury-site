@@ -1045,6 +1045,7 @@ function renderGifGrid(gifs) {
 }
 
 function openStickers(){
+  stickerModal.style.pointerEvents = "auto";
   if (!stickerModal || !stickerGrid) return;
 
   stickerGrid.innerHTML = "";
@@ -1075,23 +1076,6 @@ function closeStickers(){
   stickerModal.classList.remove("show");
   stickerModal.setAttribute("aria-hidden", "true");
 }
-
-stickerBtn.addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-
-  if (stickerModal.classList.contains("show")) {
-    closeStickers();
-  } else {
-    openStickers();
-  }
-});
-
-stickerClose.addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  closeStickers();
-});
 
 const EMOJIS = [
   "😀","😄","😁","😆","😂","🤣","😊","🙂",
@@ -1170,10 +1154,10 @@ emojiBtn.addEventListener("click", (e) => {
 });
 
 // Sticker button opens/closes popup
-stickerBtn.addEventListener("click", (e) => {
+stickerBtn?.addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
-  if (stickerModal.classList.contains("show")) closeStickers();
+  if (stickerModal?.classList.contains("show")) closeStickers();
   else openStickers();
 });
 
