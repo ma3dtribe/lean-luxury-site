@@ -636,32 +636,7 @@ html, body{ width:100%; overflow-x:hidden; }
       const manualBtn = document.getElementById("manualLoadBtn");
       const watchShell = document.getElementById("watchShell");
 
-      const livebar = document.getElementById("livebar");
-      const liveLabel = document.getElementById("liveLabel");
-      const liveText = document.getElementById("liveText");
-      const heroSubtext = document.getElementById("heroSubtext");
-
-      function setLiveState(isLive){
-        if (!livebar || !liveLabel || !liveText) return;
-
-        if (isLive){
-          livebar.dataset.state = "live";
-          liveLabel.textContent = "LIVE NOW";
-          liveText.textContent = "We’re live right now — pull up and join the chat.";
-          if (heroSubtext) heroSubtext.textContent = "We’re live right now. Pull up and join the conversation.";
-          if (watchShell) watchShell.classList.add("is-live");
-          manualBtn?.classList.add("live-glow");
-        } else {
-          livebar.dataset.state = "offline";
-          liveLabel.textContent = "OFFLINE";
-          liveText.textContent = "Currently off air. Tap “Load Player” when we go live.";
-          if (heroSubtext) heroSubtext.textContent = "When we’re live, the stream opens automatically. Pull up and feel the vibe.";
-          if (watchShell) watchShell.classList.remove("is-live");
-          manualBtn?.classList.remove("live-glow");
-        }
-      }
-
-      function loadPlayer() {
+       function loadPlayer() {
         if (mount.dataset.loaded) return;
         mount.dataset.loaded = "1";
         
@@ -766,6 +741,12 @@ setInterval(() => {
   function startAuto(){
     stopAuto();
     timer = setInterval(() => go(i + 1), 6000);
+const viewport = document.getElementById("bbViewport");
+
+viewport?.addEventListener("mouseenter", stopAuto);
+viewport?.addEventListener("mouseleave", startAuto);
+viewport?.addEventListener("touchstart", stopAuto);
+viewport?.addEventListener("touchend", startAuto);    
   }
   function stopAuto(){
     if (timer) clearInterval(timer);
@@ -776,7 +757,29 @@ setInterval(() => {
   }
 
   render();
-  startAuto();
+startAuto();
+
+// Swipe support (mobile)
+let startX = null;
+
+const viewport = document.getElementById("bbViewport");
+
+viewport?.addEventListener("touchstart", (e) => {
+  startX = e.touches[0].clientX;
+}, { passive: true });
+
+viewport?.addEventListener("touchend", (e) => {
+  if (startX == null) return;
+  const endX = e.changedTouches[0].clientX;
+  const dx = endX - startX;
+  startX = null;
+
+  if (Math.abs(dx) > 40) {
+    if (dx < 0) next();
+    else prev();
+  }
+}, { passive: true });
+  
 })();
   </script>
   <!-- Social icons footer (bottom of page) -->
