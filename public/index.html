@@ -555,7 +555,9 @@ body{ width: 100%; overflow-x: hidden; }
       function loadPlayer() {
         if (mount.dataset.loaded) return;
         mount.dataset.loaded = "1";
-
+        
+        manualBtn.style.display = "none";
+        
         const iframe = document.createElement("iframe");
         iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true`;
         iframe.width = "100%";
