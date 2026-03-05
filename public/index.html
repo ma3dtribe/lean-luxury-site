@@ -146,7 +146,14 @@
       background: rgba(255,255,255,.14);
       font-weight: 800;
     }
-
+/* LIVE button glow (green = GO) */
+.btn.live-glow{
+  background: rgba(34,197,94,.18);
+  border-color: rgba(34,197,94,.45);
+  box-shadow: 0 0 0 1px rgba(34,197,94,.15), 0 0 18px rgba(34,197,94,.45);
+  color:#eafff2;
+  font-weight:900;
+}
     .card {
       border-radius: 18px;
       padding: 18px;
@@ -426,7 +433,7 @@ body{ width: 100%; overflow-x: hidden; }
   <div class="card">
     <div class="watch-shell" id="watchShell">
       <div class="watch-head">
-        <div class="watch-title">Watch on Twitch</div>
+        <div class="watch-title">LOAD MA3D Vibes</div>
       </div>
 
       <p id="watchDesc" class="watch-desc">
@@ -434,9 +441,8 @@ body{ width: 100%; overflow-x: hidden; }
       </p>
 
       <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-        <a class="btn" href="https://www.twitch.tv/ma3dtribe" target="_blank" rel="noopener">Open Twitch</a>
-        <button id="manualLoadBtn" class="btn" style="display:none;">Load Player</button>
-      </div>
+  <button id="manualLoadBtn" class="btn" style="display:none;">LOAD MA3D Vibes</button>
+</div>
     </div>
 
     <div id="playerMount" style="margin-top:14px;"></div>
@@ -535,12 +541,14 @@ body{ width: 100%; overflow-x: hidden; }
           liveText.textContent = "We’re live right now — pull up and join the chat.";
           if (heroSubtext) heroSubtext.textContent = "We’re live right now. Pull up and join the conversation.";
           if (watchShell) watchShell.classList.add("is-live");
+          manualBtn.classList.add("live-glow");
         } else {
           livebar.dataset.state = "offline";
           liveLabel.textContent = "OFFLINE";
           liveText.textContent = "Currently off air. Tap “Load Player” when we go live.";
           if (heroSubtext) heroSubtext.textContent = "When we’re live, the stream opens automatically. Pull up and feel the vibe.";
           if (watchShell) watchShell.classList.remove("is-live");
+          manualBtn.classList.remove("live-glow");
         }
       }
 
@@ -589,13 +597,13 @@ setInterval(() => {
       loadPlayer();
     } else {
       setLiveState(false);
-      desc.textContent = "Currently off air. You can still open Twitch or load the player.";
+      desc.textContent = "Currently off air. Tap “LOAD MA3D Vibes” when we go live.";
       manualBtn.style.display = "inline-flex";
     }
   })
   .catch(() => {
     setLiveState(false);
-    desc.textContent = "Status unavailable. Open Twitch or load the player.";
+    desc.textContent = "Status unavailable. Tap “LOAD MA3D Vibes” to start the stream.";
     manualBtn.style.display = "inline-flex";
   });
     })();
