@@ -541,14 +541,14 @@ body{ width: 100%; overflow-x: hidden; }
           liveText.textContent = "We’re live right now — pull up and join the chat.";
           if (heroSubtext) heroSubtext.textContent = "We’re live right now. Pull up and join the conversation.";
           if (watchShell) watchShell.classList.add("is-live");
-          manualBtn.classList.add("live-glow");
+          manualBtn?.classList.add("live-glow");
         } else {
           livebar.dataset.state = "offline";
           liveLabel.textContent = "OFFLINE";
           liveText.textContent = "Currently off air. Tap “Load Player” when we go live.";
           if (heroSubtext) heroSubtext.textContent = "When we’re live, the stream opens automatically. Pull up and feel the vibe.";
           if (watchShell) watchShell.classList.remove("is-live");
-          manualBtn.classList.remove("live-glow");
+          manualBtn?.classList.remove("live-glow");
         }
       }
 
@@ -584,7 +584,7 @@ setInterval(() => {
       }
     })
     .catch(() => {});
-}, 60000);      
+}, 10000);      
       setLiveState(false);
 
       fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
@@ -611,7 +611,7 @@ setInterval(() => {
     })();
    </script>
   <!-- Social icons footer (bottom of page) -->
-  <<footer class="social-footer">
+  <footer class="social-footer">
   <div class="container social-wrap">
     <div class="social-title">MA3DTribe Social Media Accounts</div>
 
