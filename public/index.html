@@ -665,14 +665,13 @@ setInterval(() => {
       const isLive = !text.includes("offline");
 
       if (isLive && !mount.dataset.loaded) {
-        setLiveState(true);
         desc.textContent = "We’re live — loading the stream now.";
         loadPlayer();
       }
     })
     .catch(() => {});
 }, 10000);      
-      setLiveState(false);
+      
 
       fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
   .then(r => r.text())
@@ -681,17 +680,14 @@ setInterval(() => {
     const isLive = !text.includes("offline");
 
     if (isLive) {
-      setLiveState(true);
       desc.textContent = "We’re live — loading the stream now.";
       loadPlayer();
     } else {
-      setLiveState(false);
-      desc.textContent = "Currently off air. Tap “LOAD MA3D Vibes” when we go live.";
+     desc.textContent = "Currently off air. Tap “LOAD MA3D Vibes” when we go live.";
       manualBtn.style.display = "inline-flex";
     }
   })
   .catch(() => {
-    setLiveState(false);
     desc.textContent = "Status unavailable. Tap “LOAD MA3D Vibes” to start the stream.";
     manualBtn.style.display = "inline-flex";
   });
@@ -699,8 +695,9 @@ setInterval(() => {
     /* =========================
    BILLBOARD SLIDER
 ========================= */
-window.addEventListener("DOMContentLoaded", function initBillboard(){
+document.addEventListener("DOMContentLoaded", function initBillboard(){
   const track = document.getElementById("bbTrack");
+  const viewport = document.getElementById("bbViewport");
   const prevBtn = document.getElementById("bbPrev");
   const nextBtn = document.getElementById("bbNext");
   const dotsWrap = document.getElementById("bbDots");
@@ -742,15 +739,18 @@ window.addEventListener("DOMContentLoaded", function initBillboard(){
   nextBtn?.addEventListener("click", next);
 
   function startAuto(){
-    stopAuto();
-    timer = setInterval(() => go(i + 1), 6000);
-const viewport = document.getElementById("bbViewport");
+  stopAuto();
+  timer = setInterval(() => {
+    i = (i + 1) % slides.length;
+    render();
+  }, 6000);
+}
 
 viewport?.addEventListener("mouseenter", stopAuto);
 viewport?.addEventListener("mouseleave", startAuto);
 viewport?.addEventListener("touchstart", stopAuto);
 viewport?.addEventListener("touchend", startAuto);    
-  }
+  
   function stopAuto(){
     if (timer) clearInterval(timer);
     timer = null;
@@ -764,8 +764,6 @@ startAuto();
 
 // Swipe support (mobile)
 let startX = null;
-
-const viewport = document.getElementById("bbViewport");
 
 viewport?.addEventListener("touchstart", (e) => {
   startX = e.touches[0].clientX;
@@ -782,7 +780,7 @@ viewport?.addEventListener("touchend", (e) => {
     else prev();
   }
 }, { passive: true });
-  
+startAuto();  
 });
   </script>
   <!-- Social icons footer (bottom of page) -->
