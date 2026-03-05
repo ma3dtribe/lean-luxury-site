@@ -396,6 +396,111 @@
   justify-content: center;
   align-items: center;
 }
+/* =========================
+   BILLBOARD
+========================= */
+
+.billboard{
+  margin: 18px 0 22px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.bb-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+
+.bb-title{
+  margin:0;
+  font-size:16px;
+  font-weight:900;
+}
+
+.bb-actions{
+  display:flex;
+  gap:8px;
+}
+
+.bb-nav{
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(0,0,0,.25);
+  color:white;
+  width:36px;
+  height:32px;
+  border-radius:8px;
+  font-size:18px;
+  cursor:pointer;
+}
+
+.bb-viewport{
+  overflow:hidden;
+  border-radius:14px;
+}
+
+.bb-track{
+  display:flex;
+  transition:transform .35s ease;
+}
+
+.bb-slide{
+  min-width:100%;
+  display:block;
+  text-decoration:none;
+  color:inherit;
+  position:relative;
+}
+
+.bb-slide img{
+  width:100%;
+  aspect-ratio:16/9;
+  object-fit:cover;
+  display:block;
+  border-radius:12px;
+}
+
+.bb-caption{
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:10px;
+  padding:10px 12px;
+  border-radius:10px;
+  background:rgba(0,0,0,.6);
+  backdrop-filter:blur(4px);
+}
+
+.bb-cap-title{
+  font-weight:900;
+  font-size:14px;
+}
+
+.bb-cap-sub{
+  font-size:12px;
+  opacity:.85;
+}
+
+.bb-dots{
+  display:flex;
+  justify-content:center;
+  gap:6px;
+  margin-top:10px;
+}
+
+.bb-dot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.3);
+}
+
+.bb-dot.active{
+  background:white;
+}
 /* Prevent horizontal growth */
 html, body{
   overflow-x: hidden;
@@ -458,42 +563,48 @@ body{ width: 100%; overflow-x: hidden; }
   scrolling="no">
 </iframe>
   </div>
-</section>      <!-- HERO -->
-      <section class="hero">
-        <div>
-          <div class="pill">MA3DTribe Media</div>
+</section>     <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
+<section class="billboard" aria-label="MA3DTribe Billboard">
+  <div class="bb-top">
+    <h2 class="bb-title">Billboard</h2>
+    <div class="bb-actions">
+      <button class="bb-nav" id="bbPrev" type="button" aria-label="Previous ad">‹</button>
+      <button class="bb-nav" id="bbNext" type="button" aria-label="Next ad">›</button>
+    </div>
+  </div>
 
-          <h2>Music. Culture. Sports talk. Community.</h2>
+  <div class="bb-viewport" id="bbViewport" tabindex="0" aria-roledescription="carousel">
+    <div class="bb-track" id="bbTrack">
 
-          <p class="subtext" id="heroSubtext">
-            When we’re live, the stream opens automatically. Pull up and feel the vibe.
-          </p>
-
-          <div class="statusbar" id="livebar" data-state="offline">
-            <span class="status-pill">
-              <span class="status-dot" aria-hidden="true"></span>
-              <span id="liveLabel">OFFLINE</span>
-            </span>
-            <span class="status-text" id="liveText">
-              Currently off air. Tap “Load Player” when we go live.
-            </span>
-          </div>
-
-          <div class="cta-row">
-            <a class="btn primary" href="#watch">▶ Watch</a>
-            <a class="btn" href="#chat">💬 Chat</a>
-            <a class="btn" href="#podcasts">✨ Shows</a>
-          </div>
+      <a class="bb-slide" href="#" aria-label="Tonight • Live DJ Set">
+        <img src="/ads/ad1.webp" alt="Tonight • Live DJ Set flyer" loading="lazy" />
+        <div class="bb-caption">
+          <div class="bb-cap-title">Tonight • Live DJ Set</div>
+          <div class="bb-cap-sub">Reggae • R&amp;B • Afrobeats • Hip Hop</div>
         </div>
+      </a>
 
-        <div class="card" style="margin:0;">
-          <h3 style="margin-bottom:6px;">Tonight’s energy</h3>
-          <div style="opacity:.78;font-size:13px;line-height:1.45;">
-            Reggae • R&amp;B • Afrobeats • Hip Hop<br/>
-            Heavy vibes. Real conversation.
-          </div>
+      <a class="bb-slide" href="#" aria-label="Podcast Drop">
+        <img src="/ads/ad2.webp" alt="Podcast Drop flyer" loading="lazy" />
+        <div class="bb-caption">
+          <div class="bb-cap-title">Podcast Drop</div>
+          <div class="bb-cap-sub">Culture + real talk</div>
         </div>
-      </section>
+      </a>
+
+      <a class="bb-slide" href="#" aria-label="Featured Show">
+        <img src="/ads/ad3.webp" alt="Featured Show flyer" loading="lazy" />
+        <div class="bb-caption">
+          <div class="bb-cap-title">Featured Show</div>
+          <div class="bb-cap-sub">Tap for details</div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <div class="bb-dots" id="bbDots" aria-label="Billboard navigation dots"></div>
+</section>
 
       <!-- SHOWS -->
       <section id="podcasts" class="card">
@@ -609,7 +720,67 @@ setInterval(() => {
     manualBtn.style.display = "inline-flex";
   });
     })();
-   </script>
+    /* =========================
+   BILLBOARD SLIDER
+========================= */
+(function initBillboard(){
+  const track = document.getElementById("bbTrack");
+  const prevBtn = document.getElementById("bbPrev");
+  const nextBtn = document.getElementById("bbNext");
+  const dotsWrap = document.getElementById("bbDots");
+
+  if (!track || !dotsWrap) return;
+
+  const slides = Array.from(track.querySelectorAll(".bb-slide"));
+  if (!slides.length) return;
+
+  let i = 0;
+  let timer = null;
+
+  // build dots
+  dotsWrap.innerHTML = "";
+  const dots = slides.map((_, idx) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "bb-dot" + (idx === 0 ? " active" : "");
+    b.addEventListener("click", () => go(idx, true));
+    dotsWrap.appendChild(b);
+    return b;
+  });
+
+  function render(){
+    track.style.transform = `translateX(${-i * 100}%)`;
+    dots.forEach((d, idx) => d.classList.toggle("active", idx === i));
+  }
+
+  function go(nextIndex, userAction=false){
+    i = (nextIndex + slides.length) % slides.length;
+    render();
+    if (userAction) restartAuto();
+  }
+
+  function next(){ go(i + 1, true); }
+  function prev(){ go(i - 1, true); }
+
+  prevBtn?.addEventListener("click", prev);
+  nextBtn?.addEventListener("click", next);
+
+  function startAuto(){
+    stopAuto();
+    timer = setInterval(() => go(i + 1), 6000);
+  }
+  function stopAuto(){
+    if (timer) clearInterval(timer);
+    timer = null;
+  }
+  function restartAuto(){
+    startAuto();
+  }
+
+  render();
+  startAuto();
+})();
+  </script>
   <!-- Social icons footer (bottom of page) -->
   <footer class="social-footer">
   <div class="container social-wrap">
