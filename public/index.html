@@ -401,7 +401,8 @@
 ========================= */
 
 .billboard{
-  margin: 18px 0 22px;
+  margin-top: 16px;
+  margin-bottom: 0;
   background: rgba(255,255,255,.04);
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 18px;
@@ -549,19 +550,7 @@ html, body{ width:100%; overflow-x:hidden; }
     </div>
 
     <div id="playerMount" style="margin-top:14px;"></div>
-  </div>
 
-  <!-- CHAT -->
-  <div class="card" id="chat">
-    <h3>Community Chat</h3>
-    <iframe
-  src="/chat-test.html"
-  style="width:100%; max-width:100%; border:0; border-radius:16px; display:block; overflow:hidden;"
-  loading="lazy"
-  scrolling="no">
-</iframe>
-  </div>
-</section>     <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
 <section class="billboard" aria-label="MA3DTribe Billboard">
   <div class="bb-top">
     <h2 class="bb-title">Billboard</h2>
@@ -575,7 +564,7 @@ html, body{ width:100%; overflow-x:hidden; }
     <div class="bb-track" id="bbTrack">
 
       <a class="bb-slide" href="#" aria-label="Tonight • Live DJ Set">
-        <img src="/ads/ad1.webp" alt="Tonight • Live DJ Set flyer" loading="lazy" />
+        <img src="/ads/ad1.webp" alt="Tonight • Live DJ Set flyer" loading="eager" />
         <div class="bb-caption">
           <div class="bb-cap-title">Tonight • Live DJ Set</div>
           <div class="bb-cap-sub">Reggae • R&amp;B • Afrobeats • Hip Hop</div>
@@ -603,7 +592,21 @@ html, body{ width:100%; overflow-x:hidden; }
 
   <div class="bb-dots" id="bbDots" aria-label="Billboard navigation dots"></div>
 </section>
+ 
+  </div>
 
+  <!-- CHAT -->
+  <div class="card" id="chat">
+    <h3>Community Chat</h3>
+    <iframe
+  src="/chat-test.html"
+  style="width:100%; max-width:100%; border:0; border-radius:16px; display:block; overflow:hidden;"
+  loading="lazy"
+  scrolling="no">
+</iframe>
+  </div>
+</section>     <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
+      
       <!-- SHOWS -->
       <section id="podcasts" class="card">
         <h3>Featured Shows</h3>
@@ -696,7 +699,7 @@ setInterval(() => {
     /* =========================
    BILLBOARD SLIDER
 ========================= */
-(function initBillboard(){
+window.addEventListener("DOMContentLoaded", function initBillboard(){
   const track = document.getElementById("bbTrack");
   const prevBtn = document.getElementById("bbPrev");
   const nextBtn = document.getElementById("bbNext");
@@ -780,7 +783,7 @@ viewport?.addEventListener("touchend", (e) => {
   }
 }, { passive: true });
   
-})();
+});
   </script>
   <!-- Social icons footer (bottom of page) -->
   <footer class="social-footer">
