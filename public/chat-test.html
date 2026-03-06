@@ -691,8 +691,8 @@ function cleanDisplayText(text){
   bubble.appendChild(meta);
 
   const kind = (row.kind || "").toLowerCase();
-
-if (kind === "gif" || kind === "sticker") {
+if (kind === "text" && shouldHideMessage(row.content || "")) return;
+  if (kind === "gif" || kind === "sticker") {
   const img = document.createElement("img");
   img.src = row.content || "";
   img.alt = kind;
