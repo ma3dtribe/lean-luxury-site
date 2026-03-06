@@ -904,10 +904,29 @@ viewerModal?.addEventListener("click", (e) => {
 }
 
 async function sendText(){
+
+/* PROFANITY FILTER */
+const BANNED_WORDS = [
+  "fuck",
+  "shit",
+  "bitch",
+  "asshole",
+  "nigger",
+  "faggot"
+];
+
+function containsProfanity(text){
+  const t = text.toLowerCase();
+  return BANNED_WORDS.some(word => t.includes(word));
+}  
   if (!sb) return;
 
   const text = (messageInput.value || "").trim();
   if (!text) return;
+if (containsProfanity(text)){
+  alert("Please keep the chat respectful.");
+  return;
+}  
       messageInput.value = "";
       
       const { error } = await sb.from("messages").insert({
