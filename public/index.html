@@ -307,8 +307,15 @@
 }
 
 #chat iframe{
-  height: 620px !important;
+  height: 700px !important;
+  min-height: 700px;
+  width: 100%;
+  display: block;
 }
+
+#chat{
+  overflow: visible;
+}    
 #calendarCard iframe{
   width: 100%;
   height: 520px;
@@ -324,8 +331,9 @@
     height: 260px;
   }
   #chat iframe{
-    height: 520px !important;
-  }
+  height: 640px !important;
+  min-height: 640px;
+}
 
     }
 
@@ -658,12 +666,12 @@ html, body{ width:100%; overflow-x:hidden; }
   <!-- CHAT -->
   <div class="card" id="chat">
     <h3>Community Chat</h3>
-    <iframe
-      src="/chat-test.html"
-      style="width:100%; max-width:100%; border:0; border-radius:16px; display:block; overflow:hidden;"
-      loading="lazy"
-      scrolling="no">
-    </iframe>
+   <iframe
+  src="/chat-test.html"
+  style="width:100%; max-width:100%; border:0; border-radius:16px; display:block;"
+  loading="lazy"
+  scrolling="yes">
+</iframe>
   </div>
 
   <!-- CALENDAR -->
