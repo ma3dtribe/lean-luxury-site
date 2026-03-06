@@ -714,6 +714,18 @@ function shouldHideMessage(text){
   bubble.appendChild(meta);
 
   const kind = (row.kind || "").toLowerCase();
+const rawText = String(row.content || "").trim().toLowerCase();
+
+if (
+  kind === "text" &&
+  (
+    rawText.includes("sip time") ||
+    rawText.includes("wowmidnight") ||
+    rawText.includes("pew pew") ||
+    rawText.includes("redness")
+  )
+) return;
+  
 if (kind === "text" && shouldHideMessage(row.content || "")) return;
   if (kind === "gif" || kind === "sticker") {
   const img = document.createElement("img");
