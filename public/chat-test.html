@@ -396,7 +396,23 @@ input, textarea, button{ max-width:100%; }
 }
 @media (max-width: 520px){
   .msg img{ max-width: 240px; }
-}  
+
+  .composer{
+    padding:12px 12px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .btn-row{
+    padding-bottom:6px;
+  }
+
+  .btn{
+    min-height:40px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+}
+    
 .presence{ position:relative; z-index:50; pointer-events:auto; }
 .presence *{ pointer-events:auto; }
 .viewerBtn{ position:relative; z-index:60; } 
