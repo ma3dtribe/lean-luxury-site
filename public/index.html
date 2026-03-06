@@ -485,6 +485,60 @@
 *{ box-sizing: border-box; }
 html, body{ width:100%; overflow-x:hidden; }
 .container{ width:100%; overflow-x:hidden; } 
+
+/* =========================
+   GOOGLE SHEETS CALENDAR
+========================= */    
+    
+#ma3dCalendar{
+  margin-top:16px;
+}
+
+#calendarGrid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
+.cal-item{
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+  border-radius:16px;
+  padding:14px;
+}
+
+.cal-date{
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  opacity:.78;
+  margin-bottom:6px;
+}
+
+.cal-title{
+  font-size:17px;
+  font-weight:900;
+  margin-bottom:4px;
+}
+
+.cal-time{
+  font-size:13px;
+  opacity:.82;
+  margin-bottom:6px;
+}
+
+.cal-details{
+  font-size:13px;
+  opacity:.78;
+  line-height:1.45;
+}
+
+.cal-link{
+  display:inline-flex;
+  margin-top:10px;
+  text-decoration:none;
+}    
   </style>
   
 </head>
@@ -575,6 +629,10 @@ html, body{ width:100%; overflow-x:hidden; }
   scrolling="no">
 </iframe>
   </div>
+<div class="card" id="ma3dCalendar">
+  <h3>Upcoming Shows</h3>
+  <div id="calendarGrid">Loading schedule...</div>
+</div>  
 </section>     <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
       
       <!-- SHOWS -->
@@ -752,6 +810,57 @@ viewport?.addEventListener("touchend", (e) => {
 }, { passive: true });
 startAuto();  
 });
+    
+/* =========================
+   GOOGLE SHEETS CALENDAR
+========================= */
+
+const CALENDAR_CSV_URL = "https://docs.google.com/spreadsheets/d/18V5J5fQpKZ2i6PF8qIO9gwlEkjMr4EBcDf8UDODm8cs/export?format=csv&gid=0";
+
+async function loadCalendar(){
+  const grid = document.getElementById("calendarGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "Loading schedule...";
+
+  try {
+    const res = await fetch(CALENDAR_CSV_URL, { cache: "no-store" });
+    const text = await res.text();
+
+    const lines = text.trim().split("\n");
+    const rows = lines.slice(1).map(line => {
+      const cols = line.split(",");
+      return {
+        date: (cols[0] || "").trim(),
+        start: (cols[1] || "").trim(),
+        end: (cols[2] || "").trim(),
+        title: (cols[3] || "").trim(),
+        details: (cols[4] || "").trim(),
+        link: (cols[5] || "").trim()
+      };
+    }).filter(row => row.date && row.title);
+
+    if (!rows.length){
+      grid.innerHTML = "<div class='cal-item'>No upcoming shows yet.</div>";
+      return;
+    }
+
+    grid.innerHTML = rows.map(row => `
+      <div class="cal-item">
+        <div class="cal-date">${row.date}</div>
+        <div class="cal-title">${row.title}</div>
+        <div class="cal-time">${row.start}${row.end ? " – " + row.end : ""}</div>
+        <div class="cal-details">${row.details || ""}</div>
+        ${row.link ? `<a class="btn cal-link" href="${row.link}" target="_blank">Open</a>` : ""}
+      </div>
+    `).join("");
+  } catch (e){
+    grid.innerHTML = "<div class='cal-item'>Could not load schedule.</div>";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadCalendar);  
+    
   </script>
   <!-- Social icons footer (bottom of page) -->
   <footer class="social-footer">
