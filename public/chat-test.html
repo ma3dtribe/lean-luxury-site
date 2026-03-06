@@ -792,6 +792,23 @@ div.innerHTML = safe;
     const sb = getSbClient();
         // Track which message IDs we've already rendered (prevents duplicates)
     const renderedIds = new Set();
+
+async function loadStickers(){
+  if (!sb) return;
+
+  const { data, error } = await sb
+    .from("stickers")
+    .select("image_url")
+    .eq("active", true)
+    .order("sort_order", { ascending: true });
+
+  if (error){
+    console.error("Sticker load failed:", error);
+    return;
+  }
+
+  stickers = (data || []).map(row => row.image_url).filter(Boolean);
+}    
     /* =========================
    PRESENCE (Viewer + Chatter Counter)
 ========================= */
