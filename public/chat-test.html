@@ -668,6 +668,29 @@ function cleanDisplayText(text){
   s = s.replace(/\s+/g, " ").trim();
 
   return s;
+
+function shouldHideMessage(text){
+  const s = cleanDisplayText(text || "").trim().toLowerCase();
+  if (!s) return true;
+
+  const BLOCKED_EMOTE_WORDS = [
+    "sip",
+    "time",
+    "sip time",
+    "pew",
+    "pew pew",
+    "redness"
+  ];
+
+  if (BLOCKED_EMOTE_WORDS.includes(s)) return true;
+
+  const parts = s.split(/\s+/).filter(Boolean);
+  if (!parts.length) return true;
+
+  if (parts.every(p => BLOCKED_EMOTE_WORDS.includes(p))) return true;
+
+  return false;
+}  
 }function renderRow(row, toTop = false){
   // Dedupe by DB id (important when initial load + realtime overlap)
   if (row && row.id != null) {
