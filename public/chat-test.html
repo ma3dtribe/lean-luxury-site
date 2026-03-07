@@ -674,17 +674,13 @@ function formatChatTime(ts){
 function cleanDisplayText(text){
   let s = String(text || "");
 
-  // remove odd replacement characters and invisible characters
   s = s.replace(/�/g, "");
   s = s.replace(/[\u200B-\u200D\uFEFF]/g, "");
-
-  // remove most non-standard symbols but keep normal punctuation, letters, numbers, spaces, and emojis
   s = s.replace(/[^\p{L}\p{N}\p{P}\p{Z}\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "");
-
-  // collapse extra spaces
   s = s.replace(/\s+/g, " ").trim();
 
   return s;
+}
 
 function shouldHideMessage(text){
   const s = cleanDisplayText(text || "").trim().toLowerCase();
@@ -731,19 +727,6 @@ function shouldHideMessage(text){
   bubble.appendChild(meta);
 
   const kind = (row.kind || "").toLowerCase();
-const rawText = String(row.content || "").trim().toLowerCase();
-
-if (
-  kind === "text" &&
-  (
-    rawText.includes("sip time") ||
-    rawText.includes("wowmidnight") ||
-    rawText.includes("pew pew") ||
-    rawText.includes("redness")
-  )
-) return;
-  
-if (kind === "text" && shouldHideMessage(row.content || "")) return;
   if (kind === "gif" || kind === "sticker") {
   const img = document.createElement("img");
   img.src = row.content || "";
