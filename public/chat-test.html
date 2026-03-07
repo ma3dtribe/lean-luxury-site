@@ -746,7 +746,7 @@ if (kind === "text" && shouldHideMessage(row.content || "")) return;
   img.src = row.content || "";
   img.alt = kind;
   img.loading = "lazy";
-  img.style.maxWidth = kind === "sticker" ? "96px" : "320px"; // stickers smaller
+  img.style.maxWidth = kind === "sticker" ? "160px" : "320px";
   bubble.appendChild(img);
 } else {
   const div = document.createElement("div");
@@ -1188,8 +1188,8 @@ async function openStickers(){
     const img = document.createElement("img");
     img.src = src;
     img.loading = "lazy";
-    img.style.width = "72px";
-    img.style.height = "72px";
+    img.style.width = "110px";
+    img.style.height = "110px";
     img.style.objectFit = "contain";
     img.style.cursor = "pointer";
 
