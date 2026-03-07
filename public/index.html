@@ -283,6 +283,12 @@
   line-height: 1.45;
 }
 
+.watch-shell.collapsed-head .watch-head,
+.watch-shell.collapsed-head #watchDesc,
+.watch-shell.collapsed-head #manualLoadBtn{
+  display: none !important;
+}
+    
 /* =========================
    Watch + Chat side-by-side (no scrolling)
 ========================= */
@@ -709,7 +715,8 @@ html, body{ width:100%; overflow-x:hidden; }
         mount.dataset.loaded = "1";
         
         manualBtn.style.display = "none";
-        
+         watchShell.classList.add("collapsed-head");
+         
         const iframe = document.createElement("iframe");
         iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true`;
         iframe.width = "100%";
@@ -748,11 +755,13 @@ setInterval(() => {
       desc.textContent = "We’re live — loading the stream now.";
       loadPlayer();
     } else {
-     desc.textContent = "Currently off air. Tap “LOAD MA3D Vibes” when we go live.";
-      manualBtn.style.display = "inline-flex";
-    }
+     watchShell.classList.remove("collapsed-head");
+  desc.textContent = "Currently off air. Tap “LOAD MA3D Vibes” when we go live.";
+  manualBtn.style.display = "inline-flex";
+}
   })
   .catch(() => {
+    watchShell.classList.remove("collapsed-head");
     desc.textContent = "Status unavailable. Tap “LOAD MA3D Vibes” to start the stream.";
     manualBtn.style.display = "inline-flex";
   });
