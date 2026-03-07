@@ -183,10 +183,12 @@ input, textarea, button{ max-width:100%; }
   text-shadow:0 0 6px rgba(56,189,248,.45);
 }
     .msg img{
-      max-width:320px;width:100%;
-      border-radius:12px;display:block;
-      border:1px solid rgba(255,255,255,.10);
-    }
+  max-width:100%;
+  width:auto;
+  border-radius:12px;
+  display:block;
+  border:1px solid rgba(255,255,255,.10);
+}
 
 .composer{
   padding:14px 12px 20px;
@@ -286,8 +288,8 @@ input, textarea, button{ max-width:100%; }
   position: fixed;
   right: 18px;
   bottom: 92px;
-  width: 320px;
-  max-width: calc(100vw - 36px);
+  width: 420px;
+  max-width: calc(100vw - 20px);
   background: #0f1623;
   border: 1px solid rgba(255,255,255,.14);
   border-radius: 14px;
@@ -322,8 +324,8 @@ input, textarea, button{ max-width:100%; }
 .emojiGrid{
   padding:10px;
   display:grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap:8px;
+  grid-template-columns: repeat(4, 1fr);
+  gap:10px;
 }
 .emojiBtn{
   border:1px solid rgba(255,255,255,.10);
@@ -392,11 +394,12 @@ input, textarea, button{ max-width:100%; }
     max-width:none;
   }
 
-  .emojiGrid{ grid-template-columns:repeat(6,1fr); }
+  .emojiGrid{ grid-template-columns:repeat(3,1fr); }
   .emojiBtn{ height:42px; font-size:22px; }
 }
 @media (max-width: 520px){
-  .msg img{ max-width: 240px; }
+  .msg img{ max-width: 300px; }
+}
 
   .composer{
     padding:12px 12px calc(18px + env(safe-area-inset-bottom));
@@ -746,7 +749,7 @@ if (kind === "text" && shouldHideMessage(row.content || "")) return;
   img.src = row.content || "";
   img.alt = kind;
   img.loading = "lazy";
-  img.style.maxWidth = kind === "sticker" ? "160px" : "320px";
+  img.style.maxWidth = kind === "sticker" ? "200px" : "320px";
   bubble.appendChild(img);
 } else {
   const div = document.createElement("div");
@@ -1188,8 +1191,8 @@ async function openStickers(){
     const img = document.createElement("img");
     img.src = src;
     img.loading = "lazy";
-    img.style.width = "110px";
-    img.style.height = "110px";
+    img.style.width = "170px";
+    img.style.height = "170px";
     img.style.objectFit = "contain";
     img.style.cursor = "pointer";
 
