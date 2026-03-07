@@ -309,7 +309,9 @@
 }
 
 #playerMount iframe{
-  height: 520px;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
 }
 
 #chat iframe{
@@ -625,7 +627,7 @@ html, body{ width:100%; overflow-x:hidden; }
 </div>
     </div>
 
-    <div id="playerMount" style="margin-top:14px;"></div>
+    <div id="playerMount" style="margin-top:14px; aspect-ratio:16/9;"></div>
 
 <section class="billboard" aria-label="MA3DTribe Billboard">
   <div class="bb-top">
@@ -720,7 +722,7 @@ html, body{ width:100%; overflow-x:hidden; }
         const iframe = document.createElement("iframe");
         iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true`;
         iframe.width = "100%";
-        iframe.height = "420";
+        iframe.height = "1000";
         iframe.allowFullscreen = true;
         iframe.style.border = "0";
         iframe.style.borderRadius = "18px";
