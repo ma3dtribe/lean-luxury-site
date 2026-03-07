@@ -703,8 +703,9 @@ function shouldHideMessage(text){
   if (parts.every(p => BLOCKED_EMOTE_WORDS.includes(p))) return true;
 
   return false;
-}  
-}function renderRow(row, toTop = false){
+}
+
+function renderRow(row, toTop = false){
   // Dedupe by DB id (important when initial load + realtime overlap)
   if (row && row.id != null) {
     if (renderedIds.has(row.id)) return;
