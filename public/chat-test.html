@@ -728,16 +728,34 @@ function renderRow(row, toTop = false){
   bubble.appendChild(meta);
 
   const kind = (row.kind || "").toLowerCase();
-  if (kind === "gif" || kind === "sticker") {
+if (kind === "gif") {
   const img = document.createElement("img");
   img.src = row.content || "";
-  img.alt = kind;
+  img.alt = "gif";
   img.loading = "lazy";
-  img.style.maxWidth = kind === "sticker" ? "200px" : "320px";
+  img.style.maxWidth = "320px";
   bubble.appendChild(img);
+
 } else {
   const div = document.createElement("div");
+
   let safe = escapeHtml(cleanDisplayText(row.content || ""));
+
+  // render stickers inside sentences
+  safe = safe.replace(/\[sticker:(.*?)\]/g, (match, url) => {
+    return `<img src="${url}" style="max-width:200px;border-radius:10px;margin:4px 0;">`;
+  });
+
+  if (typeof MA3D_TOKEN !== "undefined" && MA3D_TOKEN) {
+    safe = safe.replaceAll(
+      escapeHtml(MA3D_TOKEN),
+      `<span class="ma3dBadge">MA3DTRIBE</span>`
+    );
+  }
+
+  div.innerHTML = safe;
+  bubble.appendChild(div);
+}
 
 // Render the custom MA3D token as a badge
 if (typeof MA3D_TOKEN !== "undefined" && MA3D_TOKEN) {
@@ -1180,9 +1198,9 @@ async function openStickers(){
     img.style.cursor = "pointer";
 
     img.addEventListener("click", (e) => {
-      e.stopPropagation();
-      sendSticker(src);
-    });
+  e.stopPropagation();
+  insertAtCursor(messageInput, ` [sticker:${src}] `);
+});
 
     stickerGrid.appendChild(img);
   });
