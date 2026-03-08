@@ -706,7 +706,6 @@ function shouldHideMessage(text){
 }
 
 function renderRow(row, toTop = false){
-  // Dedupe by DB id (important when initial load + realtime overlap)
   if (row && row.id != null) {
     if (renderedIds.has(row.id)) return;
     renderedIds.add(row.id);
@@ -722,58 +721,57 @@ function renderRow(row, toTop = false){
   const name = row.username || "Guest";
   const time = formatChatTime(row.created_at) || "";
   meta.innerHTML = time
-  ? `<span class="uname">${escapeHtml(name)}</span> · ${escapeHtml(time)}`
-  : `<span class="uname">${escapeHtml(name)}</span>`;
+    ? `<span class="uname">${escapeHtml(name)}</span> · ${escapeHtml(time)}`
+    : `<span class="uname">${escapeHtml(name)}</span>`;
 
   bubble.appendChild(meta);
 
   const kind = (row.kind || "").toLowerCase();
-if (kind === "gif") {
-  const img = document.createElement("img");
-  img.src = row.content || "";
-  img.alt = "gif";
-  img.loading = "lazy";
-  img.style.maxWidth = "320px";
-  bubble.appendChild(img);
+  const rawText = String(row.content || "").trim().toLowerCase();
 
-} else {
-  const div = document.createElement("div");
+  if (
+    kind === "text" &&
+    (
+      rawText.includes("sip time") ||
+      rawText.includes("wowmidnight") ||
+      rawText.includes("pew pew") ||
+      rawText.includes("redness")
+    )
+  ) return;
 
-  let safe = escapeHtml(cleanDisplayText(row.content || ""));
+  if (kind === "text" && shouldHideMessage(row.content || "")) return;
 
-  // render stickers inside sentences
-  safe = safe.replace(/\[sticker:(.*?)\]/g, (match, url) => {
-    return `<img src="${url}" style="max-width:200px;border-radius:10px;margin:4px 0;">`;
-  });
+  if (kind === "gif") {
+    const img = document.createElement("img");
+    img.src = row.content || "";
+    img.alt = "gif";
+    img.loading = "lazy";
+    img.style.maxWidth = "320px";
+    bubble.appendChild(img);
+  } else {
+    const div = document.createElement("div");
+    let safe = escapeHtml(cleanDisplayText(row.content || ""));
 
-  if (typeof MA3D_TOKEN !== "undefined" && MA3D_TOKEN) {
-    safe = safe.replaceAll(
-      escapeHtml(MA3D_TOKEN),
-      `<span class="ma3dBadge">MA3DTRIBE</span>`
-    );
-  }
+    safe = safe.replace(/\[sticker:(.*?)\]/g, (match, url) => {
+      return `<img src="${url}" style="max-width:200px;border-radius:10px;margin:4px 0;">`;
+    });
 
-  div.innerHTML = safe;
-  bubble.appendChild(div);
-}
+    if (typeof MA3D_TOKEN !== "undefined" && MA3D_TOKEN) {
+      safe = safe.replaceAll(
+        escapeHtml(MA3D_TOKEN),
+        `<span class="ma3dBadge">MA3DTRIBE</span>`
+      );
+    }
 
-// Render the custom MA3D token as a badge
-if (typeof MA3D_TOKEN !== "undefined" && MA3D_TOKEN) {
-  safe = safe.replaceAll(
-    escapeHtml(MA3D_TOKEN),
-    `<span class="ma3dBadge">MA3DTRIBE</span>`
-  );
-}
-
-div.innerHTML = safe;
+    div.innerHTML = safe;
     bubble.appendChild(div);
   }
 
   if (toTop) {
-    chatMessages.prepend(bubble);   // new/realtime message -> top
+    chatMessages.prepend(bubble);
     chatMessages.scrollTop = 0;
   } else {
-    chatMessages.appendChild(bubble); // initial load -> keep order
+    chatMessages.appendChild(bubble);
   }
 }
 
