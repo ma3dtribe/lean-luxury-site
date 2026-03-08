@@ -1204,11 +1204,14 @@ async function openStickers(){
     img.style.objectFit = "contain";
     img.style.cursor = "pointer";
 
-    img.addEventListener("click", (e) => {
+img.addEventListener("click", async (e) => {
+  e.preventDefault();
   e.stopPropagation();
-  insertAtCursor(messageInput, ` [sticker:${src}] `);
+  await sendSticker(src);
+  messageInput.value = "";
+  messageInput.focus();
 });
-
+    
     stickerGrid.appendChild(img);
   });
 
