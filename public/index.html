@@ -605,6 +605,32 @@ html, body{ width:100%; overflow-x:hidden; }
 /* =========================
    MISSION + CALENDAR LAYOUT
 ========================= */
+
+.info-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:22px;
+  margin-top:22px;
+  align-items:stretch;
+}
+
+.info-row .card{
+  height:100%;
+}
+
+@media (max-width:980px){
+  .info-row{
+    grid-template-columns:1fr;
+  }
+
+  #calendarCard{
+    order:1;
+  }
+
+  #missionCard{
+    order:2;
+  }
+}    
 #missionCard,
 #calendarCard{
   margin-bottom:0;
@@ -792,15 +818,32 @@ html, body{ width:100%; overflow-x:hidden; }
   </div>
 
 <!-- MISSION -->
-<div class="card" id="missionCard">
-  <div class="mission-eyebrow">Mission & Vision</div>
-  <h3>Why MA3DTribe Exists</h3>
 
-  <p class="mission-text">
-    Our Mission and Vision is to create a space where music lovers feel at home and build a timeless soundscape that honors the past, celebrates the present, and inspires the future — plus host talk radio shows on law, sports, education, and more to spark meaningful conversations.
-  </p>
+  <h3>MA3DTribe Calendar</h3>
+
+    <iframe
+      src="https://calendar.google.com/calendar/embed?src=ma3dlegacy%40gmail.com&ctz=America%2FNew_York&mode=AGENDA&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0"
+      frameborder="0"
+      scrolling="no">
+    </iframe>
 </div>
-  
+</div>
+
+</div>  
+</section>     <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
+
+<!-- MISSION + CALENDAR ROW -->
+<div class="info-row">
+  <!-- MISSION -->
+  <div class="card" id="missionCard">
+    <div class="mission-eyebrow">Mission & Vision</div>
+    <h3>Why MA3DTribe Exists</h3>
+
+    <p class="mission-text">
+      Our Mission and Vision is to create a space where music lovers feel at home and build a timeless soundscape that honors the past, celebrates the present, and inspires the future — plus host talk radio shows on law, sports, education, and more to spark meaningful conversations.
+    </p>
+  </div>
+
   <!-- CALENDAR -->
   <div class="card" id="calendarCard">
     <h3>MA3DTribe Calendar</h3>
@@ -812,9 +855,6 @@ html, body{ width:100%; overflow-x:hidden; }
     </iframe>
   </div>
 </div>
-
-</div>  
-</section>     <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
       
       <!-- SHOWS -->
          </div>
