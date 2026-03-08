@@ -583,7 +583,52 @@ html, body{ width:100%; overflow-x:hidden; }
   display:inline-flex;
   margin-top:10px;
   text-decoration:none;
-}    
+}   
+
+.cal-link{
+  display:inline-flex;
+  margin-top:10px;
+  text-decoration:none;
+}
+
+/* =========================
+   MISSION + CALENDAR LAYOUT
+========================= */
+#missionCard{
+  border: 1px solid rgba(255,59,59,.22);
+  background:
+    radial-gradient(700px 240px at 18% 12%, rgba(255,59,59,.12), transparent 60%),
+    rgba(255,255,255,.035);
+  box-shadow:
+    0 0 0 1px rgba(255,59,59,.05),
+    0 18px 50px rgba(0,0,0,.30);
+}
+
+.mission-eyebrow{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 10px;
+  margin-bottom:10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#ffd6d6;
+  background:rgba(255,59,59,.12);
+  border:1px solid rgba(255,59,59,.22);
+}
+
+.mission-text{
+  margin:0;
+  color:var(--muted);
+  line-height:1.75;
+  font-size:15px;
+}
+
+/* rest of the block... */
+
+</style>    
   </style>
   
 </head>
@@ -682,6 +727,16 @@ html, body{ width:100%; overflow-x:hidden; }
 </iframe>
   </div>
 
+<!-- MISSION -->
+<div class="card" id="missionCard">
+  <div class="mission-eyebrow">Mission & Vision</div>
+  <h3>Why MA3DTribe Exists</h3>
+
+  <p class="mission-text">
+    Our Mission and Vision is to create a space where music lovers feel at home and build a timeless soundscape that honors the past, celebrates the present, and inspires the future — plus host talk radio shows on law, sports, education, and more to spark meaningful conversations.
+  </p>
+</div>
+  
   <!-- CALENDAR -->
   <div class="card" id="calendarCard">
     <h3>MA3DTribe Calendar</h3>
