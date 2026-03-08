@@ -555,6 +555,7 @@ const TWITCH_CLIENT_ID = "ag7cyjkqvjbpx6ql6v4uerk6jzmi2t";
     const GIPHY_API_KEY = "3zxGKg42FRkYfKmUrnjmobhQch37O33L";
     const USER_STORAGE_KEY = "ma3dtribe_username";
     let stickers = [];
+    let pendingStickers = [];
     
     /* =========================
        ELEMENTS
@@ -1013,28 +1014,40 @@ function containsProfanity(text){
   if (!sb) return;
 
   const text = (messageInput.value || "").trim();
-  if (!text) return;
+const stickerMatches = (messageInput.value.match(/\[sticker\]/g) || []).length;  
+ if (!text && !stickerMatches) return;  
 if (containsProfanity(text)){
   alert("Please keep the chat respectful.");
   return;
 }  
-      messageInput.value = "";
-      
-      const { error } = await sb.from("messages").insert({
+            
+let contentToSend = text;
+
+if (stickerMatches && pendingStickers.length){
+  let i = 0;
+  contentToSend = text.replace(/\[sticker\]/g, () => {
+    const url = pendingStickers[i++] || "";
+    return `[sticker:${url}]`;
+  });
+}
+
+const { error } = await sb.from("messages").insert({
   room: ROOM,
   username: USERNAME,
   kind: "text",
-  content: text,
+  content: contentToSend,
   source: "web",
   created_at: new Date().toISOString()
 });
-      console.log("INSERT text error:", error);
-
-      if (error){
-    alert("Save failed: " + error.message);
-} else {
   
-  markChatted(); // ✅ add this
+ console.log("INSERT text error:", error);
+
+if (error){
+  alert("Save failed: " + error.message);
+} else {
+  messageInput.value = "";
+  pendingStickers = [];
+  markChatted();
 }
 
     }
@@ -1204,14 +1217,15 @@ async function openStickers(){
     img.style.objectFit = "contain";
     img.style.cursor = "pointer";
 
-img.addEventListener("click", async (e) => {
+img.addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
-  await sendSticker(src);
-  messageInput.value = "";
-  messageInput.focus();
+
+  pendingStickers.push(src);
+  insertAtCursor(messageInput, " [sticker] ");
+  closeStickers();
 });
-    
+        
     stickerGrid.appendChild(img);
   });
 
