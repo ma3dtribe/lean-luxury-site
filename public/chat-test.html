@@ -748,12 +748,21 @@ function renderRow(row, toTop = false){
     img.loading = "lazy";
     img.style.maxWidth = "320px";
     bubble.appendChild(img);
+
+  } else if (kind === "sticker") {
+    const img = document.createElement("img");
+    img.src = row.content || "";
+    img.alt = "sticker";
+    img.loading = "lazy";
+    img.style.maxWidth = "200px";
+    bubble.appendChild(img);
+
   } else {
     const div = document.createElement("div");
-    let safe = escapeHtml(cleanDisplayText(row.content || ""));
+    let safe = escapeHtml(String(row.content || ""));
 
     safe = safe.replace(/\[sticker:(.*?)\]/g, (match, url) => {
-      return `<img src="${url}" style="max-width:200px;border-radius:10px;margin:4px 0;">`;
+      return `<img src="${url}" style="max-width:200px;border-radius:10px;margin:4px 0;display:block;">`;
     });
 
     if (typeof MA3D_TOKEN !== "undefined" && MA3D_TOKEN) {
