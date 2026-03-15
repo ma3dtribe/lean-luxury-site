@@ -826,11 +826,11 @@ html, body{ width:100%; overflow-x:hidden; }
 </div>
     </div>
 
-    <div id="playerMount" style="margin-top:14px;">
-  <div id="explicitWarning" class="explicit-warning" style="display:none;">
-    ⚠️ Explicit Content – Viewer Discretion Advised
-  </div>
+<div id="explicitWarning" class="explicit-warning" style="display:none; margin-top:14px;">
+  ⚠️ Explicit Content – Viewer Discretion Advised
 </div>
+
+<div id="playerMount" style="margin-top:10px;"></div>
 
   </div>
 
@@ -965,7 +965,7 @@ iframe.style.height = "auto";
         iframe.style.borderRadius = "18px";
 
         mount.appendChild(iframe);
-         document.getElementById("explicitWarning").style.display = "block";
+document.getElementById("explicitWarning").style.display = "block";
        }
 
       manualBtn.addEventListener("click", loadPlayer);
