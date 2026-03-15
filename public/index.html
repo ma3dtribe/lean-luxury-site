@@ -763,7 +763,22 @@ html, body{ width:100%; overflow-x:hidden; }
   max-width:none;
   text-wrap:pretty;
 }
-
+.explicit-warning{
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #ffe3e3;
+  background: rgba(255,59,59,.12);
+  border: 1px solid rgba(255,59,59,.24);
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px rgba(255,59,59,.04);
+}
+    
 /* rest of the block... */
 
 </style>    
@@ -811,7 +826,11 @@ html, body{ width:100%; overflow-x:hidden; }
 </div>
     </div>
 
-    <div id="playerMount" style="margin-top:14px; aspect-ratio:16/9;"></div>
+    <div id="playerMount" style="margin-top:14px;">
+  <div id="explicitWarning" class="explicit-warning" style="display:none;">
+    ⚠️ Explicit Content – Viewer Discretion Advised
+  </div>
+</div>
 
   </div>
 
@@ -945,7 +964,8 @@ html, body{ width:100%; overflow-x:hidden; }
         iframe.style.borderRadius = "18px";
 
         mount.appendChild(iframe);
-      }
+         document.getElementById("explicitWarning").style.display = "block";
+       }
 
       manualBtn.addEventListener("click", loadPlayer);
 setInterval(() => {
