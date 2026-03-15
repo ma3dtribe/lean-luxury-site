@@ -954,6 +954,7 @@ html, body{ width:100%; overflow-x:hidden; }
         
         manualBtn.style.display = "none";
          watchShell.classList.add("collapsed-head");
+         watchShell.style.display = "none";
          
         const iframe = document.createElement("iframe");
         iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true`;
@@ -994,17 +995,20 @@ setInterval(() => {
     if (isLive) {
       desc.textContent = "We’re live — loading the stream now.";
       loadPlayer();
-    } else {
-     watchShell.classList.remove("collapsed-head");
+} else {
+  watchShell.style.display = "";
+  watchShell.classList.remove("collapsed-head");
   desc.textContent = "Currently off air. Tap “LOAD MA3D Vibes” when we go live.";
   manualBtn.style.display = "inline-flex";
 }
+    
   })
-  .catch(() => {
-    watchShell.classList.remove("collapsed-head");
-    desc.textContent = "Status unavailable. Tap “LOAD MA3D Vibes” to start the stream.";
-    manualBtn.style.display = "inline-flex";
-  });
+.catch(() => {
+  watchShell.style.display = "";
+  watchShell.classList.remove("collapsed-head");
+  desc.textContent = "Status unavailable. Tap “LOAD MA3D Vibes” to start the stream.";
+  manualBtn.style.display = "inline-flex";
+});
     })();
     /* =========================
    BILLBOARD SLIDER
