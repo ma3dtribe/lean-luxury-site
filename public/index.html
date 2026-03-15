@@ -957,8 +957,9 @@ html, body{ width:100%; overflow-x:hidden; }
          
         const iframe = document.createElement("iframe");
         iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true`;
-        iframe.width = "100%";
-        iframe.height = "1000";
+        iframe.style.width = "100%";
+iframe.style.aspectRatio = "16 / 9";
+iframe.style.height = "auto";
         iframe.allowFullscreen = true;
         iframe.style.border = "0";
         iframe.style.borderRadius = "18px";
