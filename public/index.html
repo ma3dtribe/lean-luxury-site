@@ -305,12 +305,18 @@
   align-items: start;
 }
 
- .right-column{
+.left-stack{
+  display: grid;
+  gap: 22px;
+  align-content: start;
+}
+
+.right-column{
   display:grid;
   grid-template-columns: 1fr;
   gap: 22px;
+  align-content: start;
 }
-
 @media (min-width: 981px){
   .right-column{
     grid-template-columns: 1fr 1fr;
@@ -352,17 +358,35 @@
   .watch-chat{
     grid-template-columns: 1fr;
   }
+
+  .left-stack,
+  .right-column{
+    display: contents;
+  }
+
+  .left-stack > .card:first-child{
+    order: 1;
+  }
+
+  #chat{
+    order: 2;
+  }
+
+  .billboard-card{
+  order: 3;
+}
+
   #playerMount iframe{
     height: 260px;
   }
+
   #chat iframe{
-  height: 640px !important;
-  min-height: 640px;
+    height: 640px !important;
+    min-height: 640px;
+  }
 }
 
-    }
-
-    .grid {
+   .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 16px;
@@ -454,7 +478,7 @@
 ========================= */
 
 .billboard{
-  margin-top: 16px;
+  margin-top: 0;
   margin-bottom: 0;
   background: rgba(255,255,255,.04);
   border: 1px solid rgba(255,255,255,.10);
@@ -682,7 +706,7 @@ html, body{ width:100%; overflow-x:hidden; }
   border-radius:18px 0 0 18px;
 }
 
-##missionCard h3{
+#missionCard h3{
   margin:0 0 18px;
   font-size:30px;
   font-weight:900;
@@ -770,6 +794,7 @@ html, body{ width:100%; overflow-x:hidden; }
     <div class="container">
          <!-- WATCH + CHAT (side-by-side) -->
 <section class="watch-chat" id="watch">
+<div class="left-stack">  
   <!-- WATCH -->
   <div class="card">
     <div class="watch-shell" id="watchShell">
@@ -788,7 +813,10 @@ html, body{ width:100%; overflow-x:hidden; }
 
     <div id="playerMount" style="margin-top:14px; aspect-ratio:16/9;"></div>
 
-<section class="billboard" aria-label="MA3DTribe Billboard">
+  </div>
+
+<div class="card billboard-card" aria-label="MA3DTribe Billboard">
+  <section class="billboard">
   <div class="bb-top">
     <h2 class="bb-title">Billboard</h2>
     <div class="bb-actions">
@@ -841,9 +869,10 @@ html, body{ width:100%; overflow-x:hidden; }
 
   <div class="bb-dots" id="bbDots" aria-label="Billboard navigation dots"></div>
 </section>
- 
-  </div>
+  </div>  
 
+  </div>  
+  
   <!-- CHAT -->
 <!-- RIGHT COLUMN -->
 <div class="right-column">
@@ -860,7 +889,7 @@ html, body{ width:100%; overflow-x:hidden; }
 
 </div>  
 </section>     <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
-
+      
 <!-- MISSION + CALENDAR ROW -->
 <div class="info-row">
   <!-- MISSION -->
