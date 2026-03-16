@@ -295,14 +295,11 @@
   display: none !important;
 }
     
-/* =========================
-   Watch + Chat side-by-side (no scrolling)
-========================= */
 .watch-chat{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  align-items: stretch;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  align-items:stretch;
 }
 
 .right-column{
@@ -314,87 +311,87 @@
 #chat{
   display:flex;
   flex-direction:column;
-  flex:1;
+  height:100%;
+  min-height:900px;
+  overflow:hidden;
+}
+
+#chat h3{
+  margin:0 0 12px;
 }
 
 #chat iframe{
-  flex:1;
-  width:100%;
-  min-height:900px;
   display:block;
+  width:100%;
+  flex:1;
+  height:100%;
+  min-height:900px;
+  border:0;
+  border-radius:16px;
 }
-    
+
 .left-stack{
-  display: grid;
-  gap: 22px;
-  align-content: start;
+  display:grid;
+  gap:22px;
+  align-content:start;
 }
 
 .watch-chat .card{
-  margin-bottom: 0;
+  margin-bottom:0;
 }
 
 #playerMount iframe{
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  height: auto;
+  width:100%;
+  aspect-ratio:16/9;
+  height:auto;
 }
 
 #calendarCard iframe{
-  width: 100%;
-  height: 520px;
-  border: 0;
-  border-radius: 14px;
-  display: block;
+  width:100%;
+  height:520px;
+  border:0;
+  border-radius:14px;
+  display:block;
 }
- 
-@media (max-width: 980px){
+
+@media (max-width:980px){
   .watch-chat{
-    grid-template-columns: 1fr;
+    grid-template-columns:1fr;
   }
 
   .left-stack,
   .right-column{
-    display: contents;
+    display:contents;
   }
 
   .left-stack > .card:first-child{
-  order: 1;
-}
-
-#chat{
-  order: 2;
-}
-
-.billboard-card{
-  order: 3;
-}
-
-#calendarCard{
-  order: 4;
-}
+    order:1;
+  }
 
   #chat{
-    order: 2;
+    order:2;
+    min-height:780px;
   }
 
   .billboard-card{
-  order: 3;
-}
-
-#calendarCard{
-    order: 4;
-  }  
-  #playerMount iframe{
-    height: 260px;
+    order:3;
   }
 
- #chat iframe{
-  height: 900px !important;
-  min-height: 900px;
-}
+  #calendarCard{
+    order:4;
+  }
+
+  #playerMount iframe{
+    height:260px;
+  }
+
+  #chat iframe{
+    height:100%;
+    min-height:780px;
+  }
 }
 
+    
    .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -915,18 +912,16 @@ html, body{ width:100%; overflow-x:hidden; }
   <!-- CHAT -->
 <!-- RIGHT COLUMN -->
 <div class="right-column">
-<!-- CHAT -->
   <div class="card" id="chat">
     <h3>Community Chat</h3>
     <iframe
       src="/chat-test.html"
-      style="width:100%; max-width:100%; border:0; border-radius:16px; display:block;"
       loading="lazy"
       scrolling="yes">
     </iframe>
   </div>
-
-</div>  
+</div> 
+  
 </section>     <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
    
       <!-- SHOWS -->
