@@ -298,18 +298,20 @@
 .watch-chat{
   display:grid;
   grid-template-columns:1fr 1fr;
+  grid-template-areas:
+    "video chat"
+    "billboard chat"
+    "calendar chat";
   gap:16px;
   align-items:start;
 }
 
 .video-card{
-  grid-column:1;
-  grid-row:1;
+  grid-area:video;
 }
 
 #chat{
-  grid-column:2;
-  grid-row:1 / span 2;
+  grid-area:chat;
   display:flex;
   flex-direction:column;
   min-height:900px;
@@ -317,13 +319,11 @@
 }
 
 .billboard-card{
-  grid-column:1;
-  grid-row:2;
+  grid-area:billboard;
 }
 
 #calendarCard{
-  grid-column:1;
-  grid-row:3;
+  grid-area:calendar;
 }
 
 #chat h3{
@@ -360,31 +360,15 @@
 @media (max-width:980px){
   .watch-chat{
     grid-template-columns:1fr;
-  }
-
-  .video-card{
-    grid-column:auto;
-    grid-row:auto;
-    order:1;
+    grid-template-areas:
+      "video"
+      "chat"
+      "billboard"
+      "calendar";
   }
 
   #chat{
-    grid-column:auto;
-    grid-row:auto;
-    order:2;
     min-height:780px;
-  }
-
-  .billboard-card{
-    grid-column:auto;
-    grid-row:auto;
-    order:3;
-  }
-
-  #calendarCard{
-    grid-column:auto;
-    grid-row:auto;
-    order:4;
   }
 
   #playerMount iframe{
