@@ -299,21 +299,31 @@
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:16px;
-  align-items:stretch;
+  align-items:start;
 }
 
-.right-column{
-  display:flex;
-  flex-direction:column;
-  height:100%;
+.video-card{
+  grid-column:1;
+  grid-row:1;
 }
 
 #chat{
+  grid-column:2;
+  grid-row:1 / span 2;
   display:flex;
   flex-direction:column;
-  height:100%;
   min-height:900px;
   overflow:hidden;
+}
+
+.billboard-card{
+  grid-column:1;
+  grid-row:2;
+}
+
+#calendarCard{
+  grid-column:1;
+  grid-row:3;
 }
 
 #chat h3{
@@ -324,16 +334,9 @@
   display:block;
   width:100%;
   flex:1;
-  height:100%;
   min-height:900px;
   border:0;
   border-radius:16px;
-}
-
-.left-stack{
-  display:grid;
-  gap:22px;
-  align-content:start;
 }
 
 .watch-chat .card{
@@ -359,25 +362,28 @@
     grid-template-columns:1fr;
   }
 
-  .left-stack,
-  .right-column{
-    display:contents;
-  }
-
-  .left-stack > .card:first-child{
+  .video-card{
+    grid-column:auto;
+    grid-row:auto;
     order:1;
   }
 
   #chat{
+    grid-column:auto;
+    grid-row:auto;
     order:2;
     min-height:780px;
   }
 
   .billboard-card{
+    grid-column:auto;
+    grid-row:auto;
     order:3;
   }
 
   #calendarCard{
+    grid-column:auto;
+    grid-row:auto;
     order:4;
   }
 
@@ -386,7 +392,6 @@
   }
 
   #chat iframe{
-    height:100%;
     min-height:780px;
   }
 }
@@ -815,9 +820,9 @@ html, body{ width:100%; overflow-x:hidden; }
     <div class="container">
          <!-- WATCH + CHAT (side-by-side) -->
 <section class="watch-chat" id="watch">
-<div class="left-stack">  
+
   <!-- WATCH -->
-  <div class="card">
+  <div class="card video-card">
     <div class="watch-shell" id="watchShell">
       <div class="watch-head">
         <div class="watch-title">LOAD MA3D Vibes</div>
@@ -828,90 +833,18 @@ html, body{ width:100%; overflow-x:hidden; }
       </p>
 
       <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-  <button id="manualLoadBtn" class="btn" style="display:none;">LOAD MA3D Vibes</button>
-</div>
+        <button id="manualLoadBtn" class="btn" style="display:none;">LOAD MA3D Vibes</button>
+      </div>
     </div>
 
-<div id="explicitWarning" class="explicit-warning" style="display:none; margin-top:14px;">
-  ⚠️ Explicit Content – Viewer Discretion Advised
-</div>
-
-<div id="playerMount" style="margin-top:10px;"></div>
-
-  </div>
-
-<div class="card billboard-card" aria-label="MA3DTribe Billboard">
-  <section class="billboard">
-  <div class="bb-top">
-    <h2 class="bb-title">Billboard</h2>
-    <div class="bb-actions">
-      <button class="bb-nav" id="bbPrev" type="button" aria-label="Previous ad">‹</button>
-      <button class="bb-nav" id="bbNext" type="button" aria-label="Next ad">›</button>
+    <div id="explicitWarning" class="explicit-warning" style="display:none; margin-top:14px;">
+      ⚠️ Explicit Content – Viewer Discretion Advised
     </div>
+
+    <div id="playerMount" style="margin-top:10px;"></div>
   </div>
 
-  <div class="bb-viewport" id="bbViewport" tabindex="0" aria-roledescription="carousel">
-    <div class="bb-track" id="bbTrack">
-
-      <a class="bb-slide" href="#" aria-label="Tonight • Live DJ Set">
-        <img src="/ads/ad1.webp" alt="Tonight • Live DJ Set flyer" loading="eager" />
-       
-      </a>
- 
-      <a class="bb-slide" href="#" aria-label="Featured Show">
-        <img src="/ads/ad2.webp" alt="Featured Show flyer" loading="lazy" />
-     
-      </a>
-      
-<a class="bb-slide" href="#" aria-label="New DJ Set">
-  <img src="/ads/ad3.webp" alt="New DJ Set flyer" loading="lazy" />
-</a>
-
-<a class="bb-slide" href="#">
-  <img src="/ads/ad5.webp" loading="lazy" />
-</a>
-
-<a class="bb-slide" href="#">
-  <img src="/ads/ad6.webp" loading="lazy" />
-</a>
-<a class="bb-slide" href="#">
-  <img src="/ads/ad10.webp" loading="lazy" />
-</a>
-
-<a class="bb-slide" href="#">
-  <img src="/ads/ad11.webp" loading="lazy" />
-</a>
-      
-<a class="bb-slide" href="#">
-  <img src="/ads/ad14.webp" loading="lazy" />
-</a>
-
-    <a class="bb-slide" href="#">
-  <img src="/ads/ad13.webp" loading="lazy" />
-</a>
-   </div>
-  </div>
-
-  <div class="bb-dots" id="bbDots" aria-label="Billboard navigation dots"></div>
-</section>
-  </div>  
-
-<!-- CALENDAR -->
-  <div class="card" id="calendarCard">
-    <h3>MA3DTribe Calendar</h3>
-
-    <iframe
-      src="https://calendar.google.com/calendar/embed?src=ma3dlegacy%40gmail.com&ctz=America%2FNew_York&mode=AGENDA&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0"
-      frameborder="0"
-      scrolling="no">
-    </iframe>
-  </div>
-
-</div>   
-  
   <!-- CHAT -->
-<!-- RIGHT COLUMN -->
-<div class="right-column">
   <div class="card" id="chat">
     <h3>Community Chat</h3>
     <iframe
@@ -920,9 +853,77 @@ html, body{ width:100%; overflow-x:hidden; }
       scrolling="yes">
     </iframe>
   </div>
-</div> 
-  
-</section>     <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
+
+  <!-- BILLBOARD -->
+  <div class="card billboard-card" aria-label="MA3DTribe Billboard">
+    <section class="billboard">
+      <div class="bb-top">
+        <h2 class="bb-title">Billboard</h2>
+        <div class="bb-actions">
+          <button class="bb-nav" id="bbPrev" type="button" aria-label="Previous ad">‹</button>
+          <button class="bb-nav" id="bbNext" type="button" aria-label="Next ad">›</button>
+        </div>
+      </div>
+
+      <div class="bb-viewport" id="bbViewport" tabindex="0" aria-roledescription="carousel">
+        <div class="bb-track" id="bbTrack">
+
+          <a class="bb-slide" href="#" aria-label="Tonight • Live DJ Set">
+            <img src="/ads/ad1.webp" alt="Tonight • Live DJ Set flyer" loading="eager" />
+          </a>
+
+          <a class="bb-slide" href="#" aria-label="Featured Show">
+            <img src="/ads/ad2.webp" alt="Featured Show flyer" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#" aria-label="New DJ Set">
+            <img src="/ads/ad3.webp" alt="New DJ Set flyer" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad5.webp" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad6.webp" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad10.webp" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad11.webp" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad14.webp" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad13.webp" loading="lazy" />
+          </a>
+
+        </div>
+      </div>
+
+      <div class="bb-dots" id="bbDots" aria-label="Billboard navigation dots"></div>
+    </section>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="card" id="calendarCard">
+    <h3>MA3DTribe Calendar</h3>
+    <iframe
+      src="https://calendar.google.com/calendar/embed?src=ma3dlegacy%40gmail.com&ctz=America%2FNew_York&mode=AGENDA&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0"
+      frameborder="0"
+      scrolling="no">
+    </iframe>
+  </div>
+
+</section>    
+      
+      <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
    
       <!-- SHOWS -->
          </div>
