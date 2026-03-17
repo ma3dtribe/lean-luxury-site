@@ -22,7 +22,7 @@
     .wrap{
       max-width:980px;
       margin:0 auto;
-      padding:16px;
+      padding:8px;
     }
 
     .card{
@@ -33,35 +33,7 @@
       box-shadow:0 16px 60px rgba(0,0,0,.35);
       display:flex;
       flex-direction:column;
-      height:min(84vh, 920px);
-    }
-
-    .header{
-      padding:10px 14px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      min-height:52px;
-    }
-
-    .leftHead{
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
-
-    .title{
-      font-weight:800;
-      font-size:16px;
-      letter-spacing:.2px;
-    }
-
-    .rightHead{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
+      height:calc(100vh - 32px);
     }
 
     .pill{
@@ -89,8 +61,8 @@
     .linkBtn:hover{ text-decoration:underline; }
 
     .chatRule{
-      margin:10px 12px 6px;
-      padding:9px 10px;
+      margin:6px 8px 4px;
+  padding:7px 8px;
       border-radius:12px;
       text-align:center;
       font-size:12px;
@@ -113,7 +85,7 @@
       gap:6px;
       font-size:12px;
       opacity:.95;
-      margin:6px 12px 8px;
+      margin:4px 8px 6px;
       position:relative;
       z-index:50;
       pointer-events:auto;
@@ -160,7 +132,7 @@
       flex:1;
       min-height:0;
       overflow:auto;
-      padding:12px;
+      padding:8px;
       display:flex;
       flex-direction:column;
       gap:8px;
@@ -266,7 +238,7 @@
     }
 
     .composer{
-      padding:10px 12px calc(12px + env(safe-area-inset-bottom));
+      padding:8px 10px calc(10px + env(safe-area-inset-bottom));
       border-top:1px solid rgba(255,255,255,.08);
       display:flex;
       flex-direction:column;
@@ -277,15 +249,15 @@
     }
 
     .replyPreview{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:8px 10px;
-      border-radius:12px;
-      background:rgba(37,99,235,.14);
-      border-left:4px solid #60a5fa;
-      font-size:12px;
+  display:none;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:8px 10px;
+  border-radius:12px;
+  background:rgba(37,99,235,.14);
+  border-left:4px solid #60a5fa;
+  font-size:12px;
     }
 
     .replyPreviewText{
@@ -584,8 +556,8 @@
       .wrap{ padding:10px; }
 
       .card{
-        height:calc(100vh - 20px);
-        border-radius:14px;
+  height:100vh;
+  border-radius:14px;
       }
 
       .chatRule{
@@ -648,15 +620,6 @@
 <body>
   <div class="wrap">
     <div class="card">
-
-      <div class="header">
-        <div class="leftHead">
-          <div class="title">Ma3DTribe Chat</div>
-        </div>
-        <div class="rightHead">
-          <span class="pill">iPhone-style chat</span>
-        </div>
-      </div>
 
       <div class="chatRule">Be <span>RESPECTFUL</span> to all <span>VIEWERS</span> and <span>DJs</span> or <span>BE BLOCKED</span>.</div>
 
@@ -938,12 +901,14 @@
       replyToName.textContent = `Replying to ${replyState.username}`;
       replyToSnippet.textContent = replyState.text;
       replyPreview.hidden = false;
+      replyPreview.style.display = "flex";
       messageInput.focus();
     }
 
     function clearReplyState(){
       replyState = null;
       replyPreview.hidden = true;
+replyPreview.style.display = "none";      
       replyToName.textContent = "";
       replyToSnippet.textContent = "";
     }
@@ -1281,7 +1246,7 @@
         .from("messages")
         .select("id, room, username, kind, content, created_at")
         .eq("room", ROOM)
-        .order("id", { ascending: true })
+        data.reverse().forEach(row => renderRow(row));
         .limit(1000);
 
       if (error){
