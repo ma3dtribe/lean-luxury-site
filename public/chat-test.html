@@ -1247,7 +1247,7 @@ replyPreview.style.display = "none";
     .select("id, room, username, kind, content, created_at")
     .eq("room", ROOM)
     .order("created_at", { ascending: false })
-    .limit(1000);
+.limit(60);
 
   if (error){
     console.error("SELECT error:", error);
@@ -1272,25 +1272,39 @@ replyPreview.style.display = "none";
   }
 
   data.reverse().forEach(row => renderRow(row));
-  scrollBottom();
+
+setTimeout(() => {
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}, 50);
+      
 }
 
-    function subscribeRealtime(){
-      if (!sb) return;
+function subscribeRealtime(){
+  if (!sb) return;
 
-      sb.channel("room-" + ROOM)
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "messages", filter: `room=eq.${ROOM}` },
-          (payload) => {
-            if (payload && payload.new) {
-              renderRow(payload.new);
-              scrollBottom();
-            }
-          }
-        )
-        .subscribe((status) => console.log("realtime:", status));
-    }
+  sb.channel("room-" + ROOM)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "messages", filter: `room=eq.${ROOM}` },
+      (payload) => {
+        if (!payload || !payload.new) return;
+
+        if (renderedIds.has(payload.new.id)) return;
+
+        const nearBottom =
+          chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 120;
+
+        renderRow(payload.new);
+
+        if (nearBottom) {
+          setTimeout(() => {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }, 20);
+        }
+      }
+    )
+    .subscribe((status) => console.log("realtime:", status));
+}
 
     /* =========================
        SEND TEXT
