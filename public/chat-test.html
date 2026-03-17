@@ -1240,39 +1240,40 @@ replyPreview.style.display = "none";
        LOAD + REALTIME
     ========================= */
     async function loadInitial(){
-      if (!sb) return;
+  if (!sb) return;
 
-      const { data, error } = await sb
-        .from("messages")
-        .select("id, room, username, kind, content, created_at")
-        .eq("room", ROOM)
-        data.reverse().forEach(row => renderRow(row));
-        .limit(1000);
+  const { data, error } = await sb
+    .from("messages")
+    .select("id, room, username, kind, content, created_at")
+    .eq("room", ROOM)
+    .order("created_at", { ascending: false })
+    .limit(1000);
 
-      if (error){
-        console.error("SELECT error:", error);
-        chatMessages.innerHTML = `
-          <div class="msg them">
-            <div class="meta">System</div>
-            Read failed: ${escapeHtml(error.message)}
-          </div>`;
-        return;
-      }
+  if (error){
+    console.error("SELECT error:", error);
+    chatMessages.innerHTML = `
+      <div class="msg them">
+        <div class="meta">System</div>
+        Read failed: ${escapeHtml(error.message)}
+      </div>`;
+    return;
+  }
 
-      chatMessages.innerHTML = "";
-      renderedIds.clear();
+  chatMessages.innerHTML = "";
+  renderedIds.clear();
 
-      if (!data || !data.length){
-        chatMessages.innerHTML = `
-          <div class="msg them">
-            <div class="meta">System</div>
-            No messages yet. Say something.
-          </div>`;
-      } else {
-        data.forEach(row => renderRow(row));
-        scrollBottom();
-      }
-    }
+  if (!data || !data.length){
+    chatMessages.innerHTML = `
+      <div class="msg them">
+        <div class="meta">System</div>
+        No messages yet. Say something.
+      </div>`;
+    return;
+  }
+
+  data.reverse().forEach(row => renderRow(row));
+  scrollBottom();
+}
 
     function subscribeRealtime(){
       if (!sb) return;
