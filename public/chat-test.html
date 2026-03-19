@@ -151,6 +151,12 @@
       box-shadow:0 2px 10px rgba(0,0,0,.12);
     }
 
+.msg.stickerMsg{
+  padding:6px;
+  border:none;
+  box-shadow:none;
+}    
+    
     .me{
       margin-left:auto;
       background:#2563eb;
@@ -175,15 +181,15 @@
       flex-wrap:wrap;
     }
 
-    .meta .uname{
-      font-weight:800;
-      font-size:12px;
-      color:#fff;
-      background:rgba(255,255,255,.12);
-      padding:2px 8px;
-      border-radius:999px;
-      text-shadow:none;
-    }
+ .meta .uname{
+  font-weight:900;
+  font-size:16px;
+  color:#fff;
+  background:linear-gradient(90deg, #38bdf8, #22c55e);
+  padding:4px 10px;
+  border-radius:999px;
+  text-shadow:0 1px 4px rgba(0,0,0,.4);
+}
 
     .replyQuote{
       margin:0 0 8px;
@@ -206,7 +212,7 @@
       font-size:14px;
     }
 
-    .msg img{
+  .msg img{
       max-width:100%;
       width:auto;
       border-radius:12px;
@@ -214,13 +220,23 @@
       border:1px solid rgba(255,255,255,.10);
     }
 
-    .msgActions{
-      display:flex;
-      gap:6px;
-      margin-top:7px;
-      flex-wrap:wrap;
-      opacity:.96;
+    .msg.stickerMsg img{
+      border:none;
+      box-shadow:none;
+      background:transparent;
     }
+
+.msgActions{
+  display:none;
+  gap:6px;
+  margin-top:7px;
+  flex-wrap:wrap;
+  opacity:.96;
+}
+
+.msg.showActions .msgActions{
+  display:flex;
+}
 
     .msgActionBtn{
       border:1px solid rgba(255,255,255,.12);
@@ -1145,15 +1161,18 @@ replyPreview.style.display = "none";
         return frag;
       }
 
-      if (kind === "sticker") {
-        const img = document.createElement("img");
-        img.src = row.content || "";
-        img.alt = "sticker";
-        img.loading = "lazy";
-        img.style.maxWidth = "200px";
-        frag.appendChild(img);
-        return frag;
-      }
+   if (kind === "sticker") {
+  const img = document.createElement("img");
+  img.src = row.content || "";
+  img.alt = "sticker";
+  img.loading = "lazy";
+  img.style.maxWidth = "200px";
+  img.style.margin = "0";
+  img.style.display = "block";
+  img.style.borderRadius = "14px";
+  frag.appendChild(img);
+  return frag;
+}
 
       const div = document.createElement("div");
       div.className = "msgBody";
@@ -1203,6 +1222,15 @@ replyPreview.style.display = "none";
   if (!contentNode) return null;
 
   bubble.appendChild(contentNode);
+bubble.addEventListener("click", (e) => {
+  if (e.target.closest(".msgActionBtn")) return;
+
+  document.querySelectorAll(".msg.showActions").forEach(el => {
+    if (el !== bubble) el.classList.remove("showActions");
+  });
+
+  bubble.classList.toggle("showActions");
+});
 
   if ((row.kind || "").toLowerCase() === "text") {
     const actions = document.createElement("div");
@@ -1213,9 +1241,11 @@ replyPreview.style.display = "none";
     replyBtn.type = "button";
     replyBtn.textContent = "Reply";
     replyBtn.addEventListener("click", () => {
-      const parsed = parseReplyPayload(row.content || "");
-      setReply(row, parsed.body || row.content || "");
-    });
+  const parsed = parseReplyPayload(row.content || "");
+  setReply(row, parsed.body || row.content || "");
+  bubble.classList.remove("showActions");
+});
+    
     actions.appendChild(replyBtn);
 
     ["👍","❤️","😂","🔥"].forEach(emoji => {
@@ -1223,11 +1253,12 @@ replyPreview.style.display = "none";
       btn.className = "msgActionBtn";
       btn.type = "button";
       btn.textContent = emoji;
-      btn.addEventListener("click", async () => {
-        setReply(row, parseReplyPayload(row.content || "").body || row.content || "");
-        messageInput.value = emoji;
-        await sendText();
-      });
+     btn.addEventListener("click", async () => {
+  setReply(row, parseReplyPayload(row.content || "").body || row.content || "");
+  messageInput.value = emoji;
+  bubble.classList.remove("showActions");
+  await sendText();
+});    
       actions.appendChild(btn);
     });
 
@@ -1674,6 +1705,13 @@ function subscribeRealtime(){
       }
     });
 
+document.addEventListener("click", (e) => {
+  if (e.target.closest(".msg")) return;
+
+  document.querySelectorAll(".msg.showActions").forEach(el => {
+    el.classList.remove("showActions");
+  });
+});    
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         closeEmoji();
