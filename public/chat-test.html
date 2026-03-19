@@ -1203,9 +1203,10 @@ replyPreview.style.display = "none";
   }
 
   const who = (row.username === USERNAME) ? "me" : "them";
-  const bubble = document.createElement("div");
-  bubble.className = `msg ${who}`;
-  bubble.dataset.id = row.id || "";
+const bubble = document.createElement("div");
+const kindClass = (row.kind || "").toLowerCase() === "sticker" ? " stickerMsg" : "";
+bubble.className = `msg ${who}${kindClass}`;
+bubble.dataset.id = row.id || "";
 
   const meta = document.createElement("div");
   meta.className = "meta";
@@ -1360,16 +1361,15 @@ function subscribeRealtime(){
 
         if (renderedIds.has(payload.new.id)) return;
 
-        const nearBottom =
-          chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 120;
+        const nearTop = chatMessages.scrollTop < 120;
 
         renderRow(payload.new, "prepend");
 
-        if (nearBottom) {
-          setTimeout(() => {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-          }, 20);
-        }
+      if (nearTop) {
+  setTimeout(() => {
+    chatMessages.scrollTop = 0;
+  }, 20);
+}
       }
     )
     .subscribe((status) => console.log("realtime:", status));
