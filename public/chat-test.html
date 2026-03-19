@@ -159,15 +159,15 @@
     
   .me{
   margin-left:auto;
-  background:linear-gradient(135deg, #3b82f6, #2563eb);
+  background:#4f8df7;
   color:#fff;
   border-bottom-right-radius:8px;
 }
 
 .them{
   margin-right:auto;
-  background:#1f2937;
-  color:#e5e7eb;
+  background:#374151;
+  color:#f3f4f6;
   border-bottom-left-radius:8px;
 }
 
@@ -906,21 +906,32 @@
     }
 
     function setReply(row, forcedText){
-      const parsed = parseReplyPayload(row.content || "");
-      const bodyForReply = truncateReplyText(forcedText || parsed.body || row.content || "");
+  const parsed = parseReplyPayload(row.content || "");
 
-      replyState = {
-        id: row.id,
-        username: row.username || "Guest",
-        text: bodyForReply
-      };
+  let bodyForReply = "";
 
-      replyToName.textContent = `Replying to ${replyState.username}`;
-      replyToSnippet.textContent = replyState.text;
-      replyPreview.hidden = false;
-      replyPreview.style.display = "flex";
-      messageInput.focus();
-    }
+  if ((row.kind || "").toLowerCase() === "sticker") {
+    bodyForReply = "[Sticker]";
+  } else if ((row.kind || "").toLowerCase() === "gif") {
+    bodyForReply = "[GIF]";
+  } else if (/\[sticker:.*?\]/.test(String(row.content || ""))) {
+    bodyForReply = "[Sticker]";
+  } else {
+    bodyForReply = truncateReplyText(forcedText || parsed.body || row.content || "");
+  }
+
+  replyState = {
+    id: row.id,
+    username: row.username || "Guest",
+    text: bodyForReply
+  };
+
+  replyToName.textContent = `Replying to ${replyState.username}`;
+  replyToSnippet.textContent = replyState.text;
+  replyPreview.hidden = false;
+  replyPreview.style.display = "flex";
+  messageInput.focus();
+}
 
     function clearReplyState(){
       replyState = null;
