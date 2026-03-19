@@ -1281,11 +1281,11 @@ async function loadInitial(){
 
   oldestLoadedTime = data[data.length - 1]?.created_at || null;
 
-data.reverse().forEach(row => renderRow(row));
+data.forEach(row => renderRow(row));
 
   setTimeout(() => {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }, 50);
+  chatMessages.scrollTop = 0;
+}, 50);
 }
 
 
@@ -1310,13 +1310,9 @@ async function loadOlderMessages(){
 
   oldestLoadedTime = data[data.length - 1]?.created_at || oldestLoadedTime;
 
-  const prevHeight = chatMessages.scrollHeight;
-
-  data.forEach(row => {
-    renderRow(row, "prepend");
-  });
-
-  chatMessages.scrollTop = chatMessages.scrollHeight - prevHeight;
+data.forEach(row => {
+  renderRow(row, "append");
+});
 
   loadingOlderMessages = false;
 }
@@ -1336,7 +1332,7 @@ function subscribeRealtime(){
         const nearBottom =
           chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 120;
 
-        renderRow(payload.new);
+        renderRow(payload.new, "prepend");
 
         if (nearBottom) {
           setTimeout(() => {
@@ -1687,7 +1683,10 @@ function subscribeRealtime(){
       }
     });
 chatMessages.addEventListener("scroll", () => {
-  if (chatMessages.scrollTop < 120) {
+  const nearBottom =
+    chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 120;
+
+  if (nearBottom) {
     loadOlderMessages();
   }
 });
