@@ -220,7 +220,17 @@
   border:none;
 }
 
-    .msg.stickerMsg img{
+.msg video{
+  max-width:100%;
+  width:auto;
+  border-radius:12px;
+  display:block;
+  border:none;
+  background:transparent;
+}    
+    
+    .msg.stickerMsg img,
+    .msg.stickerMsg video{
       border:none;
       box-shadow:none;
       background:transparent;
@@ -1174,15 +1184,31 @@ replyPreview.style.display = "none";
       }
 
    if (kind === "sticker") {
-  const img = document.createElement("img");
-  img.src = row.content || "";
-  img.alt = "sticker";
-  img.loading = "lazy";
-  img.style.maxWidth = "200px";
-  img.style.margin = "0";
-  img.style.display = "block";
-  img.style.borderRadius = "14px";
-  frag.appendChild(img);
+  const url = row.content || "";
+
+  if (url.endsWith(".mp4")) {
+    const video = document.createElement("video");
+    video.src = url;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.style.maxWidth = "200px";
+    video.style.borderRadius = "14px";
+    video.style.display = "block";
+    frag.appendChild(video);
+  } else {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "sticker";
+    img.loading = "lazy";
+    img.style.maxWidth = "200px";
+    img.style.margin = "0";
+    img.style.display = "block";
+    img.style.borderRadius = "14px";
+    frag.appendChild(img);
+  }
+
   return frag;
 }
 
@@ -1192,7 +1218,13 @@ replyPreview.style.display = "none";
       let safe = escapeHtml(String(parsed.body || ""));
 
     safe = safe.replace(/\[sticker:(.*?)\]/g, (match, url) => {
-  return `<img src="${url}" style="max-width:120px;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 4px;display:inline-block;vertical-align:middle;">`;
+  const cleanUrl = String(url || "").trim();
+
+  if (cleanUrl.toLowerCase().endsWith(".mp4")) {
+    return `<video src="${cleanUrl}" autoplay loop muted playsinline style="max-width:120px;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 4px;display:inline-block;vertical-align:middle;"></video>`;
+  }
+
+  return `<img src="${cleanUrl}" style="max-width:120px;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 4px;display:inline-block;vertical-align:middle;">`;
 });
 
       if (typeof MA3D_TOKEN !== "undefined" && MA3D_TOKEN) {
