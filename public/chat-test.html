@@ -847,19 +847,16 @@
     }
 
     function formatChatTime(ts){
-      if (!ts) return "";
-      let s = String(ts);
-      if (!/[zZ]$|[+\-]\d\d:\d\d$/.test(s)) s += "Z";
-
-      const d = new Date(s);
-      return new Intl.DateTimeFormat("en-US", {
-        timeZone: "America/New_York",
-        month: "short",
-        day: "2-digit",
-        hour: "numeric",
-        minute: "2-digit"
-      }).format(d).replace(",", "");
-    }
+  if (!ts) return "";
+  const d = new Date(ts);
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    month: "short",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(d).replace(",", "");
+}
 
     function cleanDisplayText(text){
       let s = String(text || "");
@@ -1462,8 +1459,7 @@ function subscribeRealtime(){
         kind: "text",
         content: contentToSend,
         source: "web",
-        created_at: new Date().toISOString()
-      });
+              });
 
       if (error){
         alert("Save failed: " + error.message);
@@ -1513,8 +1509,7 @@ function subscribeRealtime(){
         kind: "gif",
         content: url,
         source: "web",
-        created_at: new Date().toISOString()
-      });
+              });
 
       if (error){
         alert("GIF send failed: " + error.message);
@@ -1590,8 +1585,7 @@ function subscribeRealtime(){
         kind: "sticker",
         content: url,
         source: "web",
-        created_at: new Date().toISOString()
-      });
+              });
 
       if (error){
         alert("Sticker send failed: " + error.message);
