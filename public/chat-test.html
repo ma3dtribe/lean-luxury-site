@@ -764,8 +764,8 @@
        ELEMENTS
     ========================= */
     const chatMessages = document.getElementById("chatMessages");
-    const messageInput = document.querySelector("input, textarea");
-    const sendBtn = document.querySelector("button");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
 
     const userDisplay = document.getElementById("userDisplay");
     const changeNameBtn = document.getElementById("changeName");
@@ -1758,17 +1758,7 @@ document.addEventListener("click", (e) => {
         closeViewerModal();
       }
     });
-
-sendBtn?.addEventListener("click", () => {
-  sendText();
-});
-
-messageInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendText();
-  }
-});    
+    
 chatMessages.addEventListener("scroll", () => {
   const nearBottom =
     chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 120;
@@ -1782,17 +1772,21 @@ chatMessages.addEventListener("scroll", () => {
        START
     ========================= */
     window.addEventListener("load", async () => {
-      try { messageInput && messageInput.focus(); } catch(e) {}
+  window.sendText = sendText;
+  window.sb = sb;
+  console.log("CHAT SCRIPT LOADED");
 
-      try { await loadInitial(); } catch(e) { console.error("loadInitial failed", e); }
-      try { subscribeRealtime(); } catch(e) { console.error("subscribeRealtime failed", e); }
-      try { startPresence(); } catch(e) { console.error("startPresence failed", e); }
+  try { messageInput && messageInput.focus(); } catch(e) {}
 
-      try { refreshTwitchViewers(); } catch(e) { console.error("refreshTwitchViewers failed", e); }
-      setInterval(() => {
-        try { refreshTwitchViewers(); } catch(e) { console.error("refreshTwitchViewers interval failed", e); }
-      }, 30000);
-    });
+  try { await loadInitial(); } catch(e) { console.error("loadInitial failed", e); }
+  try { subscribeRealtime(); } catch(e) { console.error("subscribeRealtime failed", e); }
+  try { startPresence(); } catch(e) { console.error("startPresence failed", e); }
+
+  try { refreshTwitchViewers(); } catch(e) { console.error("refreshTwitchViewers failed", e); }
+  setInterval(() => {
+    try { refreshTwitchViewers(); } catch(e) { console.error("refreshTwitchViewers interval failed", e); }
+  }, 30000);
+});
   </script>
 </body>
 </html>
