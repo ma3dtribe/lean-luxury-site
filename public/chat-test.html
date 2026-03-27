@@ -764,8 +764,8 @@
        ELEMENTS
     ========================= */
     const chatMessages = document.getElementById("chatMessages");
-    const messageInput = document.getElementById("messageInput");
-    const sendBtn = document.getElementById("sendBtn");
+    const messageInput = document.querySelector("input, textarea");
+    const sendBtn = document.querySelector("button");
 
     const userDisplay = document.getElementById("userDisplay");
     const changeNameBtn = document.getElementById("changeName");
@@ -1758,6 +1758,17 @@ document.addEventListener("click", (e) => {
         closeViewerModal();
       }
     });
+
+sendBtn?.addEventListener("click", () => {
+  sendText();
+});
+
+messageInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendText();
+  }
+});    
 chatMessages.addEventListener("scroll", () => {
   const nearBottom =
     chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 120;
