@@ -757,10 +757,11 @@ console.log("SCRIPT TAG RUNNING");
     const SESSION_KEY = "ma3dtribe_presence_session";
 
     let stickers = [];
-    let pendingStickers = [];
-    let hasChatted = false;
-    let presenceChannel = null;
-    let latestViewerRows = [];
+let pendingStickers = [];
+let hasChatted = false;
+let presenceChannel = null;
+let presenceHeartbeat = null;
+let latestViewerRows = [];
     const renderedIds = new Set();
     let oldestLoadedTime = null;
     let loadingOlderMessages = false;    
@@ -1002,86 +1003,120 @@ replyPreview.style.display = "none";
     }
 
     function recomputeCounts(channel){
-      if (!channel) return;
-      const state = channel.presenceState();
+  if (!channel) return;
+  const state = channel.presenceState();
 
-      let viewers = 0;
-      let chatters = 0;
+  const sessions = new Map();
+  let chatters = 0;
 
-      for (const key in state) {
-        const metas = state[key] || [];
-        viewers += metas.length;
-        if (metas.some(m => m?.chatted === true)) chatters += 1;
+  for (const key in state) {
+    const metas = state[key] || [];
+    if (!metas.length) continue;
+
+    let latest = metas[0];
+    for (const m of metas) {
+      if (Number(m?.t || 0) > Number(latest?.t || 0)) {
+        latest = m;
       }
-
-      if (viewCountEl) viewCountEl.textContent = String(viewers);
-      if (chatCountEl) chatCountEl.textContent = String(chatters);
-
-      updateViewersUI(channel);
     }
 
-    async function startPresence(){
-      if (!sb) return;
+    sessions.set(key, latest);
 
-      presenceChannel = sb.channel(`presence:${ROOM}`, {
-        config: { presence: { key: sessionId } }
-      });
+    if (metas.some(m => m?.chatted === true)) {
+      chatters += 1;
+    }
+  }
 
-      presenceChannel
-        .on("presence", { event: "sync" }, () => recomputeCounts(presenceChannel))
-        .on("presence", { event: "join" }, () => recomputeCounts(presenceChannel))
-        .on("presence", { event: "leave" }, () => recomputeCounts(presenceChannel));
+  const viewers = sessions.size;
 
-      await presenceChannel.subscribe(async (status) => {
-        if (status !== "SUBSCRIBED") return;
+  if (viewCountEl) viewCountEl.textContent = String(viewers);
+  if (chatCountEl) chatCountEl.textContent = String(chatters);
 
+  updateViewersUI(channel);
+}
+
+async function startPresence(){
+  if (!sb) return;
+
+  presenceChannel = sb.channel(`presence:${ROOM}`, {
+    config: { presence: { key: sessionId } }
+  });
+
+  presenceChannel
+    .on("presence", { event: "sync" }, () => recomputeCounts(presenceChannel))
+    .on("presence", { event: "join" }, () => recomputeCounts(presenceChannel))
+    .on("presence", { event: "leave" }, () => recomputeCounts(presenceChannel));
+
+  await presenceChannel.subscribe(async (status) => {
+    if (status !== "SUBSCRIBED") return;
+
+    await presenceChannel.track({
+      username: USERNAME || "Guest",
+      chatted: hasChatted,
+      t: Date.now()
+    });
+
+    recomputeCounts(presenceChannel);
+
+    if (presenceHeartbeat) clearInterval(presenceHeartbeat);
+
+    presenceHeartbeat = setInterval(async () => {
+      try {
         await presenceChannel.track({
           username: USERNAME || "Guest",
-          chatted: false,
+          chatted: hasChatted,
           t: Date.now()
         });
+      } catch (e) {}
+    }, 20000);
+  });
 
-        recomputeCounts(presenceChannel);
-      });
+  window.addEventListener("beforeunload", () => {
+  try { presenceChannel?.untrack(); } catch(e) {}
+  try { if (presenceHeartbeat) clearInterval(presenceHeartbeat); } catch(e) {}
+});
+}
 
-      window.addEventListener("beforeunload", () => {
-        try { presenceChannel?.untrack(); } catch(e) {}
-      });
-    }
+async function markChatted(){
+  if (!presenceChannel || hasChatted) return;
+  hasChatted = true;
 
-    async function markChatted(){
-      if (!presenceChannel || hasChatted) return;
-      hasChatted = true;
+  await presenceChannel.track({
+    username: USERNAME || "Guest",
+    chatted: true,
+    t: Date.now()
+  });
 
-      await presenceChannel.track({
-        username: USERNAME || "Guest",
-        chatted: true,
-        t: Date.now()
-      });
+  recomputeCounts(presenceChannel);
+}
 
-      recomputeCounts(presenceChannel);
-    }
+function buildViewerRowsFromPresence(channel){
+  const state = channel?.presenceState?.() || {};
+  const rows = [];
 
-    function buildViewerRowsFromPresence(channel){
-      const state = channel?.presenceState?.() || {};
-      const rows = [];
+  for (const key in state){
+    const metas = state[key] || [];
+    if (!metas.length) continue;
 
-      for (const key in state){
-        const metas = state[key] || [];
-        for (const m of metas){
-          rows.push({
-            name: (m.username || "Guest").toString(),
-            chatted: !!m.chatted,
-            t: Number(m.t || 0)
-          });
-        }
+    let latest = metas[0];
+    for (const m of metas){
+      if (Number(m?.t || 0) > Number(latest?.t || 0)) {
+        latest = m;
       }
-
-      return rows.sort((a,b) => {
-        if (a.chatted !== b.chatted) return a.chatted ? -1 : 1;
-        return (b.t || 0) - (a.t || 0);
-      });
     }
+
+    rows.push({
+      name: (latest.username || "Guest").toString(),
+      chatted: !!latest.chatted,
+      t: Number(latest.t || 0)
+    });
+  }
+
+  return rows.sort((a,b) => {
+    if (a.chatted !== b.chatted) return a.chatted ? -1 : 1;
+    return (b.t || 0) - (a.t || 0);
+  });
+}
 
     function renderViewerList(rows){
       if (!viewerList) return;
