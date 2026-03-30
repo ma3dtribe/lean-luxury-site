@@ -1067,6 +1067,7 @@ replyPreview.style.display = "none";
 
 async function startPresence(){
   if (!sb) return;
+  if (presenceChannel) return;
 
   presenceChannel = sb.channel(`presence:${ROOM}`, {
     config: { presence: { key: sessionId } }
@@ -1091,14 +1092,16 @@ async function startPresence(){
     if (presenceHeartbeat) clearInterval(presenceHeartbeat);
 
     presenceHeartbeat = setInterval(async () => {
-      try {
-        await presenceChannel.track({
-          username: USERNAME || "Guest",
-          chatted: hasChatted,
-          t: Date.now()
-        });
-      } catch (e) {}
-    }, 20000);
+  if (!isTabActive) return;
+
+  try {
+    await presenceChannel.track({
+      username: USERNAME || "Guest",
+      chatted: hasChatted,
+      t: Date.now()
+    });
+  } catch (e) {}
+}, 20000);
   });
 
   window.addEventListener("beforeunload", () => {
@@ -1111,11 +1114,14 @@ async function markChatted(){
   if (!presenceChannel || hasChatted) return;
   hasChatted = true;
 
+  if (!isTabActive) return;
+
   await presenceChannel.track({
     username: USERNAME || "Guest",
     chatted: true,
     t: Date.now()
   });
+}
 
   recomputeCounts(presenceChannel);
 }
@@ -1850,6 +1856,10 @@ document.addEventListener("visibilitychange", async () => {
 
   if (!isTabActive) {
     if (presenceHeartbeat) clearInterval(presenceHeartbeat);
+
+    if (presenceChannel) {
+      try { await presenceChannel.untrack(); } catch(e) {}
+    }
   } else {
     if (presenceChannel) {
       try {
@@ -1858,7 +1868,7 @@ document.addEventListener("visibilitychange", async () => {
           chatted: hasChatted,
           t: Date.now()
         });
-      } catch(e){}
+      } catch(e) {}
     }
   }
 });
