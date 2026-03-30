@@ -357,6 +357,10 @@
   display:block;
 }
 
+.mobile-chat-link{
+  display:none;
+}
+    
 @media (max-width:980px){
   .watch-chat{
     grid-template-columns:1fr;
@@ -368,7 +372,7 @@
   }
 
   #chat{
-    min-height:780px;
+    min-height:auto;
   }
 
   #playerMount iframe{
@@ -376,7 +380,7 @@
   }
 
   #chat iframe{
-    min-height:780px;
+    display:none;
   }
 }
 
@@ -830,13 +834,18 @@ html, body{ width:100%; overflow-x:hidden; }
 
   <!-- CHAT -->
   <div class="card" id="chat">
-    <h3>MA3D Lounge</h3>
-    <iframe
-      src="/chat-test.html"
-      loading="lazy"
-      scrolling="yes">
-    </iframe>
-  </div>
+  <h3>MA3D Lounge</h3>
+
+  <a href="/chat-test.html" class="mobile-chat-link">
+    Open Chat
+  </a>
+
+  <iframe
+    src="/chat-test.html"
+    loading="lazy"
+    scrolling="yes">
+  </iframe>
+</div>
 
   <!-- BILLBOARD -->
   <div class="card billboard-card" aria-label="MA3DTribe Billboard">
