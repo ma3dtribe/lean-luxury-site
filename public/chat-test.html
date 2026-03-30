@@ -1092,8 +1092,6 @@ async function startPresence(){
     if (presenceHeartbeat) clearInterval(presenceHeartbeat);
 
     presenceHeartbeat = setInterval(async () => {
-  if (!isTabActive) return;
-
   try {
     await presenceChannel.track({
       username: USERNAME || "Guest",
@@ -1113,8 +1111,6 @@ async function startPresence(){
 async function markChatted(){
   if (!presenceChannel || hasChatted) return;
   hasChatted = true;
-
-  if (!isTabActive) return;
 
   await presenceChannel.track({
     username: USERNAME || "Guest",
@@ -1855,10 +1851,6 @@ document.addEventListener("visibilitychange", async () => {
 
   if (!isTabActive) {
     if (presenceHeartbeat) clearInterval(presenceHeartbeat);
-
-    if (presenceChannel) {
-      try { await presenceChannel.untrack(); } catch(e) {}
-    }
   } else {
     if (presenceChannel) {
       try {
