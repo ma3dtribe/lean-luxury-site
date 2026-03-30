@@ -782,6 +782,7 @@ console.log("SCRIPT TAG RUNNING");
     const SESSION_KEY = "ma3dtribe_presence_session";
 
     let stickers = [];
+let stickersLoaded = false;
 let pendingStickers = [];
 let hasChatted = false;
 let presenceChannel = null;
@@ -1002,21 +1003,24 @@ replyPreview.style.display = "none";
        STICKERS
     ========================= */
     async function loadStickers(){
-      if (!sb) return;
+  if (!sb) return;
 
-      const { data, error } = await sb
-        .from("stickers")
-        .select("image_url")
-        .eq("active", true)
-        .order("sort_order", { ascending: true });
+  if (stickersLoaded && stickers.length) return;
 
-      if (error){
-        console.error("Sticker load failed:", error);
-        return;
-      }
+  const { data, error } = await sb
+    .from("stickers")
+    .select("image_url")
+    .eq("active", true)
+    .order("sort_order", { ascending: true });
 
-      stickers = (data || []).map(row => row.image_url).filter(Boolean);
-    }
+  if (error){
+    console.error("Sticker load failed:", error);
+    return;
+  }
+
+  stickers = (data || []).map(row => row.image_url).filter(Boolean);
+  stickersLoaded = true;
+}
 
     /* =========================
        PRESENCE
@@ -1660,43 +1664,47 @@ function subscribeRealtime(){
     }
 
     async function openStickers(){
-      if (!stickerModal || !stickerGrid) return;
+  if (!stickerModal || !stickerGrid) return;
 
-      stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>Loading stickers...</div>";
-      await loadStickers();
-      stickerGrid.innerHTML = "";
+  if (!stickersLoaded) {
+    stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>Loading stickers...</div>";
+    await loadStickers();
+  }
 
-      if (!stickers.length){
-        stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
-        stickerModal.classList.add("show");
-        stickerModal.setAttribute("aria-hidden", "false");
-        return;
-      }
+  stickerGrid.innerHTML = "";
 
-      stickers.forEach(src => {
-        const img = document.createElement("img");
-        img.src = src;
-        img.loading = "lazy";
-        img.style.width = "170px";
-        img.style.height = "170px";
-        img.style.objectFit = "contain";
-        img.style.cursor = "pointer";
+  if (!stickers.length){
+    stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
+    stickerModal.classList.add("show");
+    stickerModal.setAttribute("aria-hidden", "false");
+    return;
+  }
 
-        img.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
+  stickers.forEach(src => {
+    const img = document.createElement("img");
+    img.src = src;
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.style.width = "170px";
+    img.style.height = "170px";
+    img.style.objectFit = "contain";
+    img.style.cursor = "pointer";
 
-          pendingStickers.push(src);
-          insertAtCursor(messageInput, " [sticker] ");
-          closeStickers();
-        });
+    img.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-        stickerGrid.appendChild(img);
-      });
+      pendingStickers.push(src);
+      insertAtCursor(messageInput, " [sticker] ");
+      closeStickers();
+    });
 
-      stickerModal.classList.add("show");
-      stickerModal.setAttribute("aria-hidden", "false");
-    }
+    stickerGrid.appendChild(img);
+  });
+
+  stickerModal.classList.add("show");
+  stickerModal.setAttribute("aria-hidden", "false");
+}
 
     function closeStickers(){
       if (!stickerModal) return;
