@@ -788,6 +788,7 @@ let hasChatted = false;
 let presenceChannel = null;
 let presenceHeartbeat = null;
 let latestViewerRows = [];
+    let isTabActive = true;
     const renderedIds = new Set();
     let oldestLoadedTime = null;
     let loadingOlderMessages = false;    
@@ -1843,6 +1844,25 @@ chatMessages.addEventListener("scroll", () => {
     /* =========================
        START
     ========================= */
+
+document.addEventListener("visibilitychange", async () => {
+  isTabActive = !document.hidden;
+
+  if (!isTabActive) {
+    if (presenceHeartbeat) clearInterval(presenceHeartbeat);
+  } else {
+    if (presenceChannel) {
+      try {
+        await presenceChannel.track({
+          username: USERNAME || "Guest",
+          chatted: hasChatted,
+          t: Date.now()
+        });
+      } catch(e){}
+    }
+  }
+});
+    
     window.addEventListener("load", async () => {
   window.sendText = sendText;
   window.sb = sb;
@@ -1856,8 +1876,10 @@ chatMessages.addEventListener("scroll", () => {
 
   try { refreshTwitchViewers(); } catch(e) { console.error("refreshTwitchViewers failed", e); }
   setInterval(() => {
-    try { refreshTwitchViewers(); } catch(e) { console.error("refreshTwitchViewers interval failed", e); }
-  }, 30000);
+  if (!isTabActive) return;
+
+  try { refreshTwitchViewers(); } catch(e) { console.error("refreshTwitchViewers interval failed", e); }
+}, 30000);
 });
   </script>
 </body>
