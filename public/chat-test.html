@@ -823,6 +823,20 @@ let latestViewerRows = [];
     const chatCountEl = null;
     const twViewCountEl = document.getElementById("twViewCount");
 
+let parentWebCount = 0;
+
+function setWebCountFromParent(n){
+  parentWebCount = Number(n || 0);
+  if (viewCountEl) viewCountEl.textContent = String(parentWebCount);
+}
+
+window.addEventListener("message", (event) => {
+  const data = event.data || {};
+  if (data.type === "ma3d:webCount") {
+    setWebCountFromParent(data.count);
+  }
+});
+   
     const viewerBtn = document.getElementById("viewerBtn");
     const viewerModal = document.getElementById("viewerModal");
     const viewerClose = document.getElementById("viewerClose");
@@ -1057,12 +1071,9 @@ replyPreview.style.display = "none";
     }
   }
 
-  const viewers = sessions.size;
-
-  if (viewCountEl) viewCountEl.textContent = String(viewers);
   if (chatCountEl) chatCountEl.textContent = String(chatters);
 
-  updateViewersUI(channel);
+updateViewersUI(channel);
 }
 
 async function startPresence(){
