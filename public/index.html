@@ -923,6 +923,7 @@ html, body{ width:100%; overflow-x:hidden; }
   </main>
 
   <!-- Auto-load Twitch ONLY if live -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>  
   <script>
     (function () {
       const CHANNEL = "ma3dtribe";
@@ -932,7 +933,122 @@ html, body{ width:100%; overflow-x:hidden; }
       const desc = document.getElementById("watchDesc");
       const manualBtn = document.getElementById("manualLoadBtn");
       const watchShell = document.getElementById("watchShell");
+      const chatFrame = document.querySelector('#chat iframe');
 
+const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
+const ROOM = "ma3dtribe";
+const WEB_SESSION_KEY = "ma3d_web_session_id";
+const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);      
+
+let webPresenceChannel = null;
+let webHeartbeat = null;
+let streamLoaded = false;
+
+let webSessionId = localStorage.getItem(WEB_SESSION_KEY);
+if (!webSessionId) {
+  webSessionId = (crypto?.randomUUID?.() || (Date.now() + "-" + Math.random().toString(16).slice(2)));
+  localStorage.setItem(WEB_SESSION_KEY, webSessionId);
+}
+
+function pushWebCountToChat(count){
+  try {
+    chatFrame?.contentWindow?.postMessage({
+      type: "ma3d:webCount",
+      count: Number(count || 0)
+    }, "*");
+  } catch (e) {}
+}
+
+function recomputeWebCount(channel){
+  if (!channel) return;
+
+  const state = channel.presenceState();
+  const now = Date.now();
+  const STALE_MS = 120000;
+
+  const sessions = new Map();
+
+  for (const key in state) {
+    const metas = (state[key] || []).filter(m => {
+      return m?.streamLoaded === true && (now - Number(m?.t || 0)) < STALE_MS;
+    });
+
+    if (!metas.length) continue;
+
+    let latest = metas[0];
+    for (const m of metas) {
+      if (Number(m?.t || 0) > Number(latest?.t || 0)) {
+        latest = m;
+      }
+    }
+
+    sessions.set(key, latest);
+  }
+
+  pushWebCountToChat(sessions.size);
+}
+
+async function startWebPresence(){
+  if (!sb) return;
+  if (!streamLoaded) return;
+
+  if (webPresenceChannel) {
+    try { await webPresenceChannel.unsubscribe(); } catch (e) {}
+    webPresenceChannel = null;
+  }
+
+  webPresenceChannel = sb.channel(`web-presence:${ROOM}`, {
+    config: { presence: { key: webSessionId } }
+  });
+
+  webPresenceChannel
+    .on("presence", { event: "sync" }, () => recomputeWebCount(webPresenceChannel))
+    .on("presence", { event: "join" }, () => recomputeWebCount(webPresenceChannel))
+    .on("presence", { event: "leave" }, () => recomputeWebCount(webPresenceChannel));
+
+  await webPresenceChannel.subscribe(async (status) => {
+    if (status !== "SUBSCRIBED") return;
+
+    try {
+      await webPresenceChannel.track({
+        streamLoaded: true,
+        t: Date.now()
+      });
+    } catch (e) {}
+
+    recomputeWebCount(webPresenceChannel);
+
+    if (webHeartbeat) clearInterval(webHeartbeat);
+
+    webHeartbeat = setInterval(async () => {
+      try {
+        await webPresenceChannel.track({
+          streamLoaded: true,
+          t: Date.now()
+        });
+        recomputeWebCount(webPresenceChannel);
+      } catch (e) {}
+    }, 15000);
+  });
+}
+
+async function stopWebPresence(){
+  try { if (webHeartbeat) clearInterval(webHeartbeat); } catch (e) {}
+  webHeartbeat = null;
+
+  try { await webPresenceChannel?.untrack(); } catch (e) {}
+  try { await webPresenceChannel?.unsubscribe(); } catch (e) {}
+  webPresenceChannel = null;
+
+  pushWebCountToChat(0);
+}
+
+chatFrame?.addEventListener("load", () => {
+  pushWebCountToChat(0);
+  if (webPresenceChannel) recomputeWebCount(webPresenceChannel);
+});      
+      
        function loadPlayer() {
         if (mount.dataset.loaded) return;
         mount.dataset.loaded = "1";
@@ -952,6 +1068,10 @@ iframe.style.height = "auto";
 
         mount.appendChild(iframe);
 document.getElementById("explicitWarning").style.display = "block";
+
+streamLoaded = true;
+startWebPresence();
+
        }
 
       manualBtn.addEventListener("click", loadPlayer);
@@ -1085,6 +1205,13 @@ viewport?.addEventListener("touchend", (e) => {
 }, { passive: true });
 startAuto();  
 });
+window.addEventListener("pagehide", async () => {
+  try { await stopWebPresence(); } catch (e) {}
+});
+
+window.addEventListener("beforeunload", async () => {
+  try { await stopWebPresence(); } catch (e) {}
+});    
     
   </script>
   <!-- Social icons footer (bottom of page) -->
