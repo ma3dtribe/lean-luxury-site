@@ -952,11 +952,18 @@ if (!webSessionId) {
 }
 
 function pushWebCountToChat(count){
+  const n = Number(count || 0);
+
   try {
     chatFrame?.contentWindow?.postMessage({
       type: "ma3d:webCount",
-      count: Number(count || 0)
+      count: n
     }, "*");
+  } catch (e) {}
+
+  try {
+    const viewCountInFrame = chatFrame?.contentDocument?.getElementById("viewCount");
+    if (viewCountInFrame) viewCountInFrame.textContent = String(n);
   } catch (e) {}
 }
 
