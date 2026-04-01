@@ -783,6 +783,7 @@ console.log("SCRIPT TAG RUNNING");
 
     let stickers = [];
 let stickersLoaded = false;
+let stickersRendered = false;
 let pendingStickers = [];
 let hasChatted = false;
 let presenceChannel = null;
@@ -1702,8 +1703,6 @@ function subscribeRealtime(){
     await loadStickers();
   }
 
-  stickerGrid.innerHTML = "";
-
   if (!stickers.length){
     stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
     stickerModal.classList.add("show");
@@ -1711,27 +1710,33 @@ function subscribeRealtime(){
     return;
   }
 
-  stickers.forEach(src => {
-    const img = document.createElement("img");
-    img.src = src;
-    img.loading = "lazy";
-    img.decoding = "async";
-    img.style.width = "170px";
-    img.style.height = "170px";
-    img.style.objectFit = "contain";
-    img.style.cursor = "pointer";
+  if (!stickersRendered) {
+    stickerGrid.innerHTML = "";
 
-    img.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+    stickers.forEach(src => {
+      const img = document.createElement("img");
+      img.src = src;
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.style.width = "170px";
+      img.style.height = "170px";
+      img.style.objectFit = "contain";
+      img.style.cursor = "pointer";
 
-      pendingStickers.push(src);
-      insertAtCursor(messageInput, " [sticker] ");
-      closeStickers();
+      img.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        pendingStickers.push(src);
+        insertAtCursor(messageInput, " [sticker] ");
+        closeStickers();
+      });
+
+      stickerGrid.appendChild(img);
     });
 
-    stickerGrid.appendChild(img);
-  });
+    stickersRendered = true;
+  }
 
   stickerModal.classList.add("show");
   stickerModal.setAttribute("aria-hidden", "false");
