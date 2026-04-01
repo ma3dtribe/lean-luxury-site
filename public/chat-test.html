@@ -1022,6 +1022,19 @@ replyPreview.style.display = "none";
 
   if (stickersLoaded && stickers.length) return;
 
+  const cached = localStorage.getItem("ma3d_stickers");
+
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length) {
+        stickers = parsed;
+        stickersLoaded = true;
+        return;
+      }
+    } catch (e) {}
+  }
+
   const { data, error } = await sb
     .from("stickers")
     .select("image_url")
@@ -1034,6 +1047,11 @@ replyPreview.style.display = "none";
   }
 
   stickers = (data || []).map(row => row.image_url).filter(Boolean);
+
+  try {
+    localStorage.setItem("ma3d_stickers", JSON.stringify(stickers));
+  } catch (e) {}
+
   stickersLoaded = true;
 }
 
