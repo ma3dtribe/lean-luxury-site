@@ -784,7 +784,8 @@ console.log("SCRIPT TAG RUNNING");
     let stickers = [];
 let stickersLoaded = false;
 let stickersRendered = false;
-let pendingStickers = [];
+    let stickersOpening = false;
+    let pendingStickers = [];
 let hasChatted = false;
 let presenceChannel = null;
 let presenceHeartbeat = null;
@@ -1696,7 +1697,8 @@ function subscribeRealtime(){
     }
 
     async function openStickers(){
-  if (!stickerModal || !stickerGrid) return;
+  if (!stickerModal || !stickerGrid || stickersOpening) return;
+stickersOpening = true;
 
   if (!stickersLoaded) {
     stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>Loading stickers...</div>";
@@ -1704,11 +1706,14 @@ function subscribeRealtime(){
   }
 
   if (!stickers.length){
-    stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
-    stickerModal.classList.add("show");
-    stickerModal.setAttribute("aria-hidden", "false");
-    return;
-  }
+  stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
+  stickerModal.classList.add("show");
+  stickerModal.setAttribute("aria-hidden", "false");
+
+  stickersOpening = false; // ✅ ADD THIS LINE
+
+  return;
+}
 
   if (!stickersRendered) {
     stickerGrid.innerHTML = "";
@@ -1740,6 +1745,7 @@ function subscribeRealtime(){
 
   stickerModal.classList.add("show");
   stickerModal.setAttribute("aria-hidden", "false");
+stickersOpening = false;      
 }
 
     function closeStickers(){
