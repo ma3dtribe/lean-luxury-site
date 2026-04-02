@@ -1714,63 +1714,62 @@ function subscribeRealtime(){
 
     async function openStickers(){
   if (!stickerModal || !stickerGrid || stickersOpening) return;
-stickersOpening = true;
+  stickersOpening = true;
 
-  if (!stickersLoaded) {
-    stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>Loading stickers...</div>";
-    await loadStickers();
-  }
-
-  if (!stickers.length){
-  stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
-  stickerModal.classList.add("show");
-  stickerModal.setAttribute("aria-hidden", "false");
-
-  stickersOpening = false; // ✅ ADD THIS LINE
-
-  return;
-}
-
-  if (!stickersRendered) {
-    stickerGrid.innerHTML = "";
-
-    stickers.forEach(src => {
-      const img = document.createElement("img");
-      img.src = src;
-      img.loading = "lazy";
-      img.decoding = "async";
-      img.style.width = "170px";
-      img.style.height = "170px";
-      img.style.objectFit = "contain";
-      img.style.cursor = "pointer";
-
-      img.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        pendingStickers.push(src);
-        insertAtCursor(messageInput, " [sticker] ");
-        closeStickers();
-      });
-
-      stickerGrid.appendChild(img);
-    });
-
-    stickersRendered = true;
-  }
-
-  stickerModal.classList.add("show");
-  stickerModal.setAttribute("aria-hidden", "false");
-stickersOpening = false;      
-}
-
-    function closeStickers(){
-      if (!stickerModal) return;
-      stickerModal.classList.remove("show");
-      stickerModal.setAttribute("aria-hidden", "true");
-      messageInput.focus();
+  try {
+    if (!stickersLoaded) {
+      stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>Loading stickers...</div>";
+      await loadStickers();
     }
 
+    if (!stickers.length){
+      stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
+      stickerModal.classList.add("show");
+      stickerModal.setAttribute("aria-hidden", "false");
+      return;
+    }
+
+    if (!stickersRendered) {
+      stickerGrid.innerHTML = "";
+
+      stickers.forEach(src => {
+        const img = document.createElement("img");
+        img.src = src;
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.style.width = "170px";
+        img.style.height = "170px";
+        img.style.objectFit = "contain";
+        img.style.cursor = "pointer";
+
+        img.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          pendingStickers.push(src);
+          insertAtCursor(messageInput, " [sticker] ");
+          closeStickers();
+        });
+
+        stickerGrid.appendChild(img);
+      });
+
+      stickersRendered = true;
+    }
+
+    stickerModal.classList.add("show");
+    stickerModal.setAttribute("aria-hidden", "false");
+  } finally {
+    stickersOpening = false;
+  }
+}
+function closeStickers(){
+  if (!stickerModal) return;
+  stickerModal.classList.remove("show");
+  stickerModal.setAttribute("aria-hidden", "true");
+  messageInput.focus();
+}
+    
     /* =========================
        EMOJI
     ========================= */
