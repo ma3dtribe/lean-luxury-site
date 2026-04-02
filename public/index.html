@@ -1140,8 +1140,10 @@ startWebPresence();
        }
 manualBtn.addEventListener("click", loadPlayer);
       
-document.getElementById("mcPlay")?.addEventListener("click", () => {
-  loadPlayer();
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("mcPlay")?.addEventListener("click", () => {
+    loadPlayer();
+  });
 });
       
 setInterval(() => {
