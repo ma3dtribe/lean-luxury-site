@@ -1747,7 +1747,7 @@ function renderStickerBatch(reset = false){
       e.preventDefault();
       e.stopPropagation();
 
-      pendingStickers = [src];
+      pendingStickers.push(src)
       insertAtCursor(messageInput, " [sticker] ");
       closeStickers();
     });
