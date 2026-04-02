@@ -1138,8 +1138,12 @@ streamLoaded = true;
 startWebPresence();
 
        }
-
-      manualBtn.addEventListener("click", loadPlayer);
+manualBtn.addEventListener("click", loadPlayer);
+      
+document.getElementById("mcPlay")?.addEventListener("click", () => {
+  loadPlayer();
+});
+      
 setInterval(() => {
   if (document.hidden) return;
 
@@ -1324,14 +1328,14 @@ window.addEventListener("beforeunload", async () => {
     <div>Play</div>
   </button>
 
+  <button class="mobile-control-btn" id="mcLive" type="button">
+    <div class="icon">🔴</div>
+    <div>Live</div>
+  </button>
+
   <button class="mobile-control-btn" id="mcMute" type="button">
     <div class="icon">🔊</div>
     <div>Sound</div>
-  </button>
-
-  <button class="mobile-control-btn" id="mcChat" type="button">
-    <div class="icon">💬</div>
-    <div>Chat</div>
   </button>
 
   <button class="mobile-control-btn" id="mcTop" type="button">
