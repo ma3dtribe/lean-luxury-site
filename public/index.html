@@ -11,7 +11,7 @@
   gtag('config', 'G-25Z62Q3QGH');
 </script>  
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <title>MA3DTribe Media</title>
 
   <meta name="description" content="Live streams, podcasts, sports talk, and culture — powered by MA3DTribe.">
@@ -943,7 +943,7 @@ const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let webPresenceChannel = null;
 let webHeartbeat = null;
-let streamLoaded = false;
+let streamLoaded = true;
 
 let webSessionId = localStorage.getItem(WEB_SESSION_KEY);
 if (!webSessionId) {
@@ -998,7 +998,7 @@ function recomputeWebCount(channel){
 
 async function startWebPresence(){
   if (!sb) return;
-  if (!streamLoaded) return;
+  if (!streamLoaded && isTabActive) return;
 
   if (webPresenceChannel) {
     try { await webPresenceChannel.unsubscribe(); } catch (e) {}
@@ -1070,10 +1070,11 @@ chatFrame?.addEventListener("load", () => {
 iframe.style.aspectRatio = "16 / 9";
 iframe.style.height = "auto";
         iframe.allowFullscreen = true;
-        iframe.style.border = "0";
+         iframe.setAttribute("allow", "autoplay; fullscreen");
+         iframe.style.border = "0";
         iframe.style.borderRadius = "18px";
 
-        mount.appendChild(iframe);
+        mount.appendChild(iframe)
 document.getElementById("explicitWarning").style.display = "block";
 
 streamLoaded = true;
@@ -1083,6 +1084,8 @@ startWebPresence();
 
       manualBtn.addEventListener("click", loadPlayer);
 setInterval(() => {
+  if (document.hidden) return;
+
   fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
     .then(r => r.text())
     .then(t => {
