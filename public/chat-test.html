@@ -1605,9 +1605,12 @@ function subscribeRealtime(){
     }
 
     function closeGifModal() {
-      gifModal.classList.remove("show");
-      messageInput.focus();
-    }
+  gifModal.classList.remove("show");
+
+  try {
+    messageInput?.blur();
+  } catch(e) {}
+}
 
     gifBtn.addEventListener("click", openGifModal);
     gifClose.addEventListener("click", closeGifModal);
@@ -1713,7 +1716,9 @@ function subscribeRealtime(){
     }
 
     async function openStickers(){
-  if (!stickerModal || !stickerGrid || stickersOpening) return;
+  if (!stickerModal || !stickerGrid) return;
+if (stickersOpening) return;
+if (!isTabActive) return;
   stickersOpening = true;
 
   try {
@@ -1765,9 +1770,15 @@ function subscribeRealtime(){
 }
 function closeStickers(){
   if (!stickerModal) return;
+
   stickerModal.classList.remove("show");
   stickerModal.setAttribute("aria-hidden", "true");
-  messageInput.focus();
+
+  stickersOpening = false;
+
+  try {
+    messageInput?.blur();   // prevent iOS freeze when returning
+  } catch(e) {}
 }
     
     /* =========================
@@ -1783,15 +1794,18 @@ function closeStickers(){
     const MA3D_TOKEN = ":ma3d:";
 
     function insertAtCursor(input, text){
-      const start = input.selectionStart ?? input.value.length;
-      const end = input.selectionEnd ?? input.value.length;
-      const before = input.value.slice(0, start);
-      const after = input.value.slice(end);
-      input.value = before + text + after;
-      const pos = start + text.length;
-      input.setSelectionRange(pos, pos);
-      input.focus();
-    }
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? input.value.length;
+  const before = input.value.slice(0, start);
+  const after = input.value.slice(end);
+  input.value = before + text + after;
+  const pos = start + text.length;
+  input.setSelectionRange(pos, pos);
+
+  if (isTabActive) {
+    try { input.focus(); } catch(e) {}
+  }
+}
 
     function openEmoji(){
       if (!emojiPopup) return;
@@ -1800,11 +1814,14 @@ function closeStickers(){
     }
 
     function closeEmoji(){
-      if (!emojiPopup) return;
-      emojiPopup.classList.remove("show");
-      emojiPopup.setAttribute("aria-hidden", "true");
-      messageInput.focus();
-    }
+  if (!emojiPopup) return;
+  emojiPopup.classList.remove("show");
+  emojiPopup.setAttribute("aria-hidden", "true");
+
+  try {
+    messageInput?.blur();
+  } catch(e) {}
+}
 
     function buildEmojiGrid(){
       if (!emojiGrid) return;
@@ -1905,17 +1922,39 @@ document.addEventListener("visibilitychange", async () => {
   isTabActive = !document.hidden;
 
   if (!isTabActive) {
-    if (presenceHeartbeat) clearInterval(presenceHeartbeat);
-  } else {
-    if (presenceChannel) {
+    if (presenceHeartbeat) {
+      clearInterval(presenceHeartbeat);
+      presenceHeartbeat = null;
+    }
+
+    closeEmoji();
+    closeStickers();
+    closeGifModal();
+    return;
+  }
+
+  if (presenceChannel) {
+    try {
+      await presenceChannel.track({
+        username: USERNAME || "Guest",
+        chatted: hasChatted,
+        t: Date.now()
+      });
+    } catch (e) {}
+  }
+
+  if (!presenceHeartbeat && presenceChannel) {
+    presenceHeartbeat = setInterval(async () => {
+      if (!isTabActive) return;
+
       try {
         await presenceChannel.track({
           username: USERNAME || "Guest",
           chatted: hasChatted,
           t: Date.now()
         });
-      } catch(e) {}
-    }
+      } catch (e) {}
+    }, 20000);
   }
 });
     
@@ -1924,7 +1963,7 @@ document.addEventListener("visibilitychange", async () => {
   window.sb = sb;
   console.log("CHAT SCRIPT LOADED");
 
-  try { messageInput && messageInput.focus(); } catch(e) {}
+  try { messageInput?.blur(); } catch(e) {}
 
   try { await loadInitial(); } catch(e) { console.error("loadInitial failed", e); }
   try { subscribeRealtime(); } catch(e) { console.error("subscribeRealtime failed", e); }
