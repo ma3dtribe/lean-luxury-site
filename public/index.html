@@ -840,6 +840,15 @@ html, body{ width:100%; overflow-x:hidden; }
     font-size: 18px;
     line-height: 1;
   }
+
+.mobile-control-btn.live-glow{
+  background: rgba(255,59,59,.18);
+  border-color: rgba(255,59,59,.45);
+  box-shadow: 0 0 0 1px rgba(255,59,59,.15), 0 0 18px rgba(255,59,59,.45);
+  color:#ffecec;
+  font-weight:900;
+}
+  
 }
 
 </style>    
@@ -1144,6 +1153,15 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("mcPlay")?.addEventListener("click", () => {
     loadPlayer();
   });
+
+  document.getElementById("mcBackground")?.addEventListener("click", () => {
+    loadPlayer();
+    alert("Audio is now playing. You can leave the app and keep listening.");
+  });
+
+  document.getElementById("mcRefresh")?.addEventListener("click", () => {
+    window.location.reload();
+  });
 });
       
 setInterval(() => {
@@ -1155,9 +1173,17 @@ setInterval(() => {
       const text = (t || "").toLowerCase();
       const isLive = !text.includes("offline");
 
-      if (isLive && !mount.dataset.loaded) {
-        desc.textContent = "We’re live — loading the stream now.";
-        loadPlayer();
+      const liveBtn = document.getElementById("mcLive");
+
+      if (isLive) {
+        liveBtn?.classList.add("live-glow");
+
+        if (!mount.dataset.loaded) {
+          desc.textContent = "We’re live — loading the stream now.";
+          loadPlayer();
+        }
+      } else {
+        liveBtn?.classList.remove("live-glow");
       }
     })
     .catch(() => {});
@@ -1330,20 +1356,20 @@ window.addEventListener("beforeunload", async () => {
     <div>Play</div>
   </button>
 
+  <button class="mobile-control-btn" id="mcBackground" type="button">
+    <div class="icon">🔒</div>
+    <div>Lock</div>
+  </button>
+
   <button class="mobile-control-btn" id="mcLive" type="button">
     <div class="icon">🔴</div>
     <div>Live</div>
   </button>
 
-  <button class="mobile-control-btn" id="mcMute" type="button">
-    <div class="icon">🔊</div>
-    <div>Sound</div>
-  </button>
-
-  <button class="mobile-control-btn" id="mcTop" type="button">
-    <div class="icon">⬆️</div>
-    <div>Top</div>
-  </button>
+  <button class="mobile-control-btn" id="mcRefresh" type="button">
+  <div class="icon">🔄</div>
+  <div>Refresh</div>
+</button>
 </div>
 
 </body>
