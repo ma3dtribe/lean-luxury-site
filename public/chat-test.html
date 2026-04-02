@@ -474,11 +474,14 @@
     .emojiClose:hover{ opacity:1; }
 
     .emojiGrid{
-      padding:10px;
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:10px;
-    }
+  padding:10px;
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:10px;
+  max-height:42vh;
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
+}
 
     .emojiBtn{
       border:1px solid rgba(255,255,255,.10);
@@ -784,8 +787,10 @@ console.log("SCRIPT TAG RUNNING");
     let stickers = [];
 let stickersLoaded = false;
 let stickersRendered = false;
-    let stickersOpening = false;
-    let pendingStickers = [];
+let stickersOpening = false;
+let pendingStickers = [];
+let stickerRenderIndex = 0;
+const STICKERS_BATCH_SIZE = 24;
 let hasChatted = false;
 let presenceChannel = null;
 let presenceHeartbeat = null;
@@ -1715,6 +1720,43 @@ function subscribeRealtime(){
       }
     }
 
+function renderStickerBatch(reset = false){
+  if (!stickerGrid) return;
+
+  if (reset) {
+    stickerGrid.innerHTML = "";
+    stickerRenderIndex = 0;
+  }
+
+  const end = Math.min(stickerRenderIndex + STICKERS_BATCH_SIZE, stickers.length);
+
+  for (let i = stickerRenderIndex; i < end; i++) {
+    const src = stickers[i];
+    const img = document.createElement("img");
+
+    img.src = src + (src.includes("?") ? "&v=1" : "?v=1");
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.style.width = window.innerWidth <= 520 ? "96px" : "120px";
+    img.style.height = window.innerWidth <= 520 ? "96px" : "120px";
+    img.style.objectFit = "contain";
+    img.style.cursor = "pointer";
+
+    img.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      pendingStickers = [src];
+      insertAtCursor(messageInput, " [sticker] ");
+      closeStickers();
+    });
+
+    stickerGrid.appendChild(img);
+  }
+
+  stickerRenderIndex = end;
+}
+    
     async function openStickers(){
   if (!stickerModal || !stickerGrid) return;
 if (stickersOpening) return;
@@ -1727,6 +1769,7 @@ if (!isTabActive) return;
       await loadStickers();
     }
 
+    stickerGrid.scrollTop = 0;
     if (!stickers.length){
       stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
       stickerModal.classList.add("show");
@@ -1734,31 +1777,8 @@ if (!isTabActive) return;
       return;
     }
 
-    if (!stickersRendered) {
-      stickerGrid.innerHTML = "";
-
-      stickers.forEach(src => {
-        const img = document.createElement("img");
-        img.src = src;
-        img.loading = "lazy";
-        img.decoding = "async";
-        img.style.width = "170px";
-        img.style.height = "170px";
-        img.style.objectFit = "contain";
-        img.style.cursor = "pointer";
-
-        img.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-
-          pendingStickers.push(src);
-          insertAtCursor(messageInput, " [sticker] ");
-          closeStickers();
-        });
-
-        stickerGrid.appendChild(img);
-      });
-
+        if (!stickersRendered) {
+      renderStickerBatch(true);
       stickersRendered = true;
     }
 
@@ -1775,9 +1795,16 @@ function closeStickers(){
   stickerModal.setAttribute("aria-hidden", "true");
 
   stickersOpening = false;
+  stickersRendered = false;
+  stickerRenderIndex = 0;
+
+  if (stickerGrid) {
+    stickerGrid.innerHTML = "";
+    stickerGrid.scrollTop = 0;
+  }
 
   try {
-    messageInput?.blur();   // prevent iOS freeze when returning
+    messageInput?.blur();
   } catch(e) {}
 }
     
@@ -1879,6 +1906,14 @@ function closeStickers(){
       closeStickers();
     });
 
+stickerGrid?.addEventListener("scroll", () => {
+  const nearBottom =
+    stickerGrid.scrollHeight - stickerGrid.scrollTop - stickerGrid.clientHeight < 120;
+
+  if (nearBottom && stickerRenderIndex < stickers.length) {
+    renderStickerBatch(false);
+  }
+});    
     document.addEventListener("click", (e) => {
       if (emojiPopup.classList.contains("show")) {
         if (!emojiPopup.contains(e.target) && !emojiBtn.contains(e.target)) closeEmoji();
