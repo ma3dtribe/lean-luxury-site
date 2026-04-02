@@ -793,7 +793,9 @@ let latestViewerRows = [];
     let isTabActive = true;
     const renderedIds = new Set();
     let oldestLoadedTime = null;
-    let loadingOlderMessages = false;    
+    let loadingOlderMessages = false; 
+const MOBILE_CHAT_LIMIT = 35;
+const DESKTOP_CHAT_LIMIT = 60;    
     /* =========================
        ELEMENTS
     ========================= */
@@ -1405,13 +1407,18 @@ bubble.addEventListener("click", (e) => {
       actions.appendChild(btn);
     });
 
-    bubble.appendChild(actions);
-  }
-
-  if (position === "prepend") {
+    if (position === "prepend") {
     chatMessages.insertBefore(bubble, chatMessages.firstChild);
   } else {
     chatMessages.appendChild(bubble);
+  }
+
+  // ✅ MOBILE ONLY: limit messages in DOM
+  if (window.innerWidth <= 980) {
+    const msgs = chatMessages.children;
+    if (msgs.length > MOBILE_CHAT_LIMIT) {
+      chatMessages.removeChild(msgs[msgs.length - 1]);
+    }
   }
 
   return bubble;
@@ -1429,7 +1436,7 @@ async function loadInitial(){
     .eq("room", ROOM)
     .not("created_at", "is", null)
     .order("created_at", { ascending: false, nullsFirst: false })
-    .limit(60);
+    .limit(window.innerWidth <= 980 ? MOBILE_CHAT_LIMIT : DESKTOP_CHAT_LIMIT);
 
   if (error){
     console.error("SELECT error:", error);
@@ -1488,6 +1495,11 @@ data.forEach(row => {
   renderRow(row, "append");
 });
 
+if (window.innerWidth <= 980) {
+  while (chatMessages.children.length > MOBILE_CHAT_LIMIT) {
+    chatMessages.removeChild(chatMessages.lastElementChild);
+  }
+}
   loadingOlderMessages = false;
 }
     
