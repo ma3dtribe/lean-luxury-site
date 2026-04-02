@@ -1347,10 +1347,10 @@ function buildViewerRowsFromPresence(channel){
   }
 
   const who = (row.username === USERNAME) ? "me" : "them";
-const bubble = document.createElement("div");
-const kindClass = (row.kind || "").toLowerCase() === "sticker" ? " stickerMsg" : "";
-bubble.className = `msg ${who}${kindClass}`;
-bubble.dataset.id = row.id || "";
+  const bubble = document.createElement("div");
+  const kindClass = (row.kind || "").toLowerCase() === "sticker" ? " stickerMsg" : "";
+  bubble.className = `msg ${who}${kindClass}`;
+  bubble.dataset.id = row.id || "";
 
   const meta = document.createElement("div");
   meta.className = "meta";
@@ -1367,15 +1367,16 @@ bubble.dataset.id = row.id || "";
   if (!contentNode) return null;
 
   bubble.appendChild(contentNode);
-bubble.addEventListener("click", (e) => {
-  if (e.target.closest(".msgActionBtn")) return;
 
-  document.querySelectorAll(".msg.showActions").forEach(el => {
-    if (el !== bubble) el.classList.remove("showActions");
+  bubble.addEventListener("click", (e) => {
+    if (e.target.closest(".msgActionBtn")) return;
+
+    document.querySelectorAll(".msg.showActions").forEach(el => {
+      if (el !== bubble) el.classList.remove("showActions");
+    });
+
+    bubble.classList.toggle("showActions");
   });
-
-  bubble.classList.toggle("showActions");
-});
 
   if ((row.kind || "").toLowerCase() === "text") {
     const actions = document.createElement("div");
@@ -1386,11 +1387,11 @@ bubble.addEventListener("click", (e) => {
     replyBtn.type = "button";
     replyBtn.textContent = "Reply";
     replyBtn.addEventListener("click", () => {
-  const parsed = parseReplyPayload(row.content || "");
-  setReply(row, parsed.body || row.content || "");
-  bubble.classList.remove("showActions");
-});
-    
+      const parsed = parseReplyPayload(row.content || "");
+      setReply(row, parsed.body || row.content || "");
+      bubble.classList.remove("showActions");
+    });
+
     actions.appendChild(replyBtn);
 
     ["👍","❤️","😂","🔥"].forEach(emoji => {
@@ -1398,16 +1399,19 @@ bubble.addEventListener("click", (e) => {
       btn.className = "msgActionBtn";
       btn.type = "button";
       btn.textContent = emoji;
-     btn.addEventListener("click", async () => {
-  setReply(row, parseReplyPayload(row.content || "").body || row.content || "");
-  messageInput.value = emoji;
-  bubble.classList.remove("showActions");
-  await sendText();
-});    
+      btn.addEventListener("click", async () => {
+        setReply(row, parseReplyPayload(row.content || "").body || row.content || "");
+        messageInput.value = emoji;
+        bubble.classList.remove("showActions");
+        await sendText();
+      });
       actions.appendChild(btn);
     });
 
-    if (position === "prepend") {
+    bubble.appendChild(actions);
+  }
+
+  if (position === "prepend") {
     chatMessages.insertBefore(bubble, chatMessages.firstChild);
   } else {
     chatMessages.appendChild(bubble);
@@ -1422,6 +1426,7 @@ bubble.addEventListener("click", (e) => {
   }
 
   return bubble;
+}
 }
 
     /* =========================
