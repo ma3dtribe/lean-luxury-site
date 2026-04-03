@@ -872,6 +872,8 @@ gap: 10px;
 
 </script>
   
+<link rel="manifest" href="/manifest.json">  
+  
 </head>
 
 <body>
@@ -1178,7 +1180,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
- 
+  alert("Notify button clicked");
 
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(async function(OneSignal) {
