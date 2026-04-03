@@ -854,6 +854,8 @@ gap: 10px;
 </style>    
 
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+
 <script>
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   OneSignalDeferred.push(async function(OneSignal) {
@@ -864,17 +866,10 @@ gap: 10px;
 </script>
 
 <script>
-  window.OneSignalReady = false;
-
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  window.OneSignalDeferred.push(function(OneSignal) {
-    window.OneSignalReady = true;
-  });
-</script>  
-<script>
   window.addEventListener("load", () => {
     console.log("OneSignal ready");
   });
+
 </script>
   
 </head>
@@ -1183,10 +1178,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
-  if (!window.OneSignalReady) {
-    alert("Notifications not ready yet — try again in a second");
-    return;
-  }
+ 
 
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(async function(OneSignal) {
