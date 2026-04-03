@@ -789,6 +789,7 @@ console.log("SCRIPT TAG RUNNING");
 let stickersLoaded = false;
 let stickersRendered = false;
 let stickersOpening = false;
+let stickerNeedsRefresh = false;
 let pendingStickers = [];
 let stickerRenderIndex = 0;
 const STICKERS_BATCH_SIZE = 12;
@@ -1772,9 +1773,10 @@ function renderStickerBatch(reset = false){
     
     async function openStickers(){
   if (!stickerModal || !stickerGrid) return;
-if (stickersOpening) return;
-if (!isTabActive && !stickersLoaded) return;
+  if (stickersOpening) return;
+  if (!isTabActive && !stickersLoaded) return;
   stickersOpening = true;
+
 
   try {
     if (!stickersLoaded) {
@@ -1790,7 +1792,11 @@ if (!isTabActive && !stickersLoaded) return;
       return;
     }
 
-        if (!stickersRendered) {
+        if (stickerNeedsRefresh) {
+  renderStickerBatch(true);
+  stickerNeedsRefresh = false;
+  stickersRendered = true;
+} else if (!stickersRendered) {
   renderStickerBatch(true);
   stickersRendered = true;
 } else if (!stickerGrid.children.length) {
@@ -1810,10 +1816,6 @@ function closeStickers(){
   stickerModal.setAttribute("aria-hidden", "true");
 
   stickersOpening = false;
-
-  try {
-    messageInput?.blur();
-  } catch(e) {}
 }
     
     /* =========================
@@ -1965,15 +1967,17 @@ document.addEventListener("visibilitychange", async () => {
   isTabActive = !document.hidden;
 
   if (!isTabActive) {
-    if (presenceHeartbeat) {
-      clearInterval(presenceHeartbeat);
-      presenceHeartbeat = null;
-    }
-
-    closeEmoji();
-    closeGifModal();
-    return;
+  if (presenceHeartbeat) {
+    clearInterval(presenceHeartbeat);
+    presenceHeartbeat = null;
   }
+
+  stickerNeedsRefresh = true;
+  stickersLoaded = false;
+  closeEmoji();
+  closeGifModal();
+  return;
+}
 
   if (presenceChannel) {
     try {
