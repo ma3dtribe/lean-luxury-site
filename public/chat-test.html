@@ -791,7 +791,7 @@ let stickersRendered = false;
 let stickersOpening = false;
 let pendingStickers = [];
 let stickerRenderIndex = 0;
-const STICKERS_BATCH_SIZE = 24;
+const STICKERS_BATCH_SIZE = 12;
 let hasChatted = false;
 let presenceChannel = null;
 let presenceHeartbeat = null;
@@ -1328,14 +1328,12 @@ div.style.overflowWrap = "anywhere";
 
       let safe = escapeHtml(String(parsed.body || "")).replace(/\n/g, "<br>");
 
-    safe = safe.replace(/\[sticker:(.*?)\]/g, (match, url) => {
-  const cleanUrl = String(url || "").trim();
-
-  if (cleanUrl.toLowerCase().endsWith(".mp4")) {
-    return `<video src="${cleanUrl}" autoplay loop muted playsinline style="width:${INLINE_STICKER_SIZE}px;max-width:${INLINE_STICKER_SIZE}px;height:${INLINE_STICKER_SIZE}px;object-fit:contain;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;"></video>`;
+    safe = safe.replace(/\[sticker:(.*?)\]/g, (_, url) => {
+  const cleanUrl = url.replace(/"/g, "&quot;");
+  if (/\.(mp4|webm)$/i.test(cleanUrl)) {
+    return `<video src="${cleanUrl}" autoplay loop muted playsinline preload="metadata" style="max-width:120px;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 4px;display:inline-block;vertical-align:middle;"></video>`;
   }
-
-  return `<img src="${cleanUrl}" style="width:${INLINE_STICKER_SIZE}px;max-width:${INLINE_STICKER_SIZE}px;height:${INLINE_STICKER_SIZE}px;object-fit:contain;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;">`;
+  return `<img src="${cleanUrl}" loading="lazy" decoding="async" style="max-width:120px;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 4px;display:inline-block;vertical-align:middle;">`;
 });
 
 safe = safe.replace(/\[gif:(.*?)\]/g, (match, url) => {
@@ -1789,9 +1787,11 @@ if (!isTabActive) return;
     }
 
         if (!stickersRendered) {
-      renderStickerBatch(true);
-      stickersRendered = true;
-    }
+  renderStickerBatch(true);
+  stickersRendered = true;
+} else if (!stickerGrid.children.length) {
+  renderStickerBatch(true);
+}
 
     stickerModal.classList.add("show");
     stickerModal.setAttribute("aria-hidden", "false");
@@ -1806,13 +1806,6 @@ function closeStickers(){
   stickerModal.setAttribute("aria-hidden", "true");
 
   stickersOpening = false;
-  stickersRendered = false;
-  stickerRenderIndex = 0;
-
-  if (stickerGrid) {
-    stickerGrid.innerHTML = "";
-    stickerGrid.scrollTop = 0;
-  }
 
   try {
     messageInput?.blur();
@@ -1974,7 +1967,6 @@ document.addEventListener("visibilitychange", async () => {
     }
 
     closeEmoji();
-    closeStickers();
     closeGifModal();
     return;
   }
