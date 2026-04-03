@@ -1319,18 +1319,26 @@ function buildViewerRowsFromPresence(channel){
 }
 
       const div = document.createElement("div");
-      div.className = "msgBody";
+div.className = "msgBody";
+div.style.lineHeight = "1.35";
+div.style.wordBreak = "break-word";
+div.style.overflowWrap = "anywhere";
 
-      let safe = escapeHtml(String(parsed.body || ""));
+      let safe = escapeHtml(String(parsed.body || "")).replace(/\n/g, "<br>");
 
     safe = safe.replace(/\[sticker:(.*?)\]/g, (match, url) => {
   const cleanUrl = String(url || "").trim();
 
   if (cleanUrl.toLowerCase().endsWith(".mp4")) {
-    return `<video src="${cleanUrl}" autoplay loop muted playsinline style="max-width:120px;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 4px;display:inline-block;vertical-align:middle;"></video>`;
+    return `<video src="${cleanUrl}" autoplay loop muted playsinline style="width:72px;max-width:72px;height:72px;object-fit:contain;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;"></video>`;
   }
 
-  return `<img src="${cleanUrl}" style="max-width:120px;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 4px;display:inline-block;vertical-align:middle;">`;
+  return `<img src="${cleanUrl}" style="width:72px;max-width:72px;height:72px;object-fit:contain;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;">`;
+});
+
+safe = safe.replace(/\[gif:(.*?)\]/g, (match, url) => {
+  const cleanUrl = String(url || "").trim();
+  return `<img src="${cleanUrl}" style="width:96px;max-width:96px;height:96px;object-fit:cover;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;">`;
 });
 
       if (typeof MA3D_TOKEN !== "undefined" && MA3D_TOKEN) {
