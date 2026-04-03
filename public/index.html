@@ -803,8 +803,8 @@ html, body{ width:100%; overflow-x:hidden; }
     bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
     z-index: 9999;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(5, 1fr);
+gap: 10px;
     padding: 10px;
     border-radius: 18px;
     background: rgba(20,16,17,.92);
@@ -852,7 +852,16 @@ html, body{ width:100%; overflow-x:hidden; }
 }
 
 </style>    
-  
+
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "bc727029-b445-4395-b78f-7ac3c89c1cbf",
+    });
+  });
+</script>
   
 </head>
 
@@ -1159,6 +1168,21 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Audio is now playing. You can leave the app and keep listening.");
   });
 
+  // ✅ Notify button (separate, not inside another button)
+  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
+    if (!window.OneSignalDeferred) return;
+
+    window.OneSignalDeferred.push(async function(OneSignal) {
+      const permission = await OneSignal.Notifications.requestPermission();
+
+      if (permission) {
+        alert("Notifications enabled 🔔");
+      } else {
+        alert("Notifications blocked ❌");
+      }
+    });
+  });
+
   document.getElementById("mcRefresh")?.addEventListener("click", () => {
     window.location.reload();
   });
@@ -1370,6 +1394,12 @@ window.addEventListener("beforeunload", async () => {
   <div class="icon">🔄</div>
   <div>Refresh</div>
 </button>
+
+<button class="mobile-control-btn" id="notifyBtn" type="button">
+  <div class="icon">🔔</div>
+  <div>Notify</div>
+</button>
+  
 </div>
 
 </body>
