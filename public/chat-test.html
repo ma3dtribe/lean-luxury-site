@@ -1330,10 +1330,13 @@ div.style.overflowWrap = "anywhere";
 
     safe = safe.replace(/\[sticker:(.*?)\]/g, (_, url) => {
   const cleanUrl = url.replace(/"/g, "&quot;");
+  const size = INLINE_STICKER_SIZE;
+
   if (/\.(mp4|webm)$/i.test(cleanUrl)) {
-    return `<video src="${cleanUrl}" autoplay loop muted playsinline preload="metadata" style="max-width:120px;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 4px;display:inline-block;vertical-align:middle;"></video>`;
+    return `<video src="${cleanUrl}" autoplay loop muted playsinline preload="metadata" style="width:${size}px;max-width:${size}px;height:${size}px;object-fit:contain;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;"></video>`;
   }
-  return `<img src="${cleanUrl}" loading="lazy" decoding="async" style="max-width:120px;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 4px;display:inline-block;vertical-align:middle;">`;
+
+  return `<img src="${cleanUrl}" loading="lazy" decoding="async" style="width:${size}px;max-width:${size}px;height:${size}px;object-fit:contain;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;">`;
 });
 
 safe = safe.replace(/\[gif:(.*?)\]/g, (match, url) => {
