@@ -24,8 +24,7 @@ export default async (req, context) => {
     },
     body: JSON.stringify({
       app_id: APP_ID,
-      included_segments: ["Subscribed Users"],
-      target_channel: "push",
+      included_segments: ["Total Subscriptions"],
       headings: { en: "🔴 MA3DTribe is LIVE" },
       contents: { en: "Tap now — MA3D Vibes is live." },
       web_url: "https://ma3dtribe.com"
