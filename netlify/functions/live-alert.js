@@ -1,38 +1,60 @@
-export default async (req, context) => {
+import { createHash } from "node:crypto";
+
+function parseUptimeToSeconds(text) {
+  const s = String(text || "").toLowerCase();
+  let total = 0;
+
+  for (const match of s.matchAll(/(\d+)\s*(day|days|hour|hours|minute|minutes|second|seconds)/g)) {
+    const n = Number(match[1]);
+    const unit = match[2];
+
+    if (unit.startsWith("day")) total += n * 86400;
+    else if (unit.startsWith("hour")) total += n * 3600;
+    else if (unit.startsWith("minute")) total += n * 60;
+    else if (unit.startsWith("second")) total += n;
+  }
+
+  return total;
+}
+
+function makeSessionUuid(channel, startedAtMs) {
+  const minuteBucket = Math.floor(startedAtMs / 60000) * 60000;
+  const hex = createHash("sha1")
+    .update(`${channel}:${minuteBucket}`)
+    .digest("hex");
+
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    `4${hex.slice(13, 16)}`,
+    `8${hex.slice(17, 20)}`,
+    hex.slice(20, 32)
+  ].join("-");
+}
+
+export default async () => {
   const CHANNEL = "ma3dtribe";
-const KV_KEY = "ma3d_live_sent";
   const APP_ID = process.env.ONESIGNAL_APP_ID;
   const API_KEY = process.env.ONESIGNAL_REST_API_KEY;
 
-let alreadySent = false;
-
-try {
-  const kvRes = await fetch(`${context.site.url}/.netlify/functions/get-live-flag`);
-  const kvData = await kvRes.json();
-  alreadySent = kvData.sent === true;
-} catch (e) {}  
   const uptimeRes = await fetch(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`, {
     headers: { "cache-control": "no-cache" }
   });
 
-  const uptimeText = (await uptimeRes.text()).toLowerCase();
-  const isLive = !uptimeText.includes("offline");
+  const uptimeText = (await uptimeRes.text()).trim();
+  const lower = uptimeText.toLowerCase();
+  const isLive = !lower.includes("offline");
 
   if (!isLive) {
-  try {
-    await fetch(`${context.site.url}/.netlify/functions/set-live-flag?sent=false`);
-  } catch (e) {}
+    return new Response(JSON.stringify({ ok: true, sent: false, reason: "offline" }), {
+      headers: { "content-type": "application/json" }
+    });
+  }
 
-  return new Response(JSON.stringify({ ok: true, sent: false }), {
-    headers: { "content-type": "application/json" }
-  });
-}
+  const uptimeSeconds = parseUptimeToSeconds(uptimeText);
+  const startedAtMs = Date.now() - (uptimeSeconds * 1000);
+  const idempotencyKey = makeSessionUuid(CHANNEL, startedAtMs);
 
-if (alreadySent) {
-  return new Response(JSON.stringify({ ok: true, sent: false, reason: "already_sent" }), {
-    headers: { "content-type": "application/json" }
-  });
-}  
   const sendRes = await fetch("https://api.onesignal.com/notifications?c=push", {
     method: "POST",
     headers: {
@@ -44,16 +66,14 @@ if (alreadySent) {
       included_segments: ["Total Subscriptions"],
       headings: { en: "🔴 MA3DTribe is LIVE" },
       contents: { en: "Tap now — MA3D Vibes is live." },
-      web_url: "https://ma3dtribe.com"
+      web_url: "https://ma3dtribe.com",
+      idempotency_key: idempotencyKey
     })
   });
 
   const data = await sendRes.json();
-try {
-  await fetch(`${context.site.url}/.netlify/functions/set-live-flag?sent=true`);
-} catch (e) {}  
 
-  return new Response(JSON.stringify({ ok: true, sent: true, data }), {
+  return new Response(JSON.stringify({ ok: true, sent: true, uptimeText, idempotencyKey, data }), {
     headers: { "content-type": "application/json" }
   });
 };
@@ -61,5 +81,3 @@ try {
 export const config = {
   schedule: "*/2 * * * *"
 };
-
-
