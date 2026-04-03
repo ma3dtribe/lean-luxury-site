@@ -792,6 +792,8 @@ let stickersOpening = false;
 let pendingStickers = [];
 let stickerRenderIndex = 0;
 const STICKERS_BATCH_SIZE = 12;
+const STICKER_CACHE_VERSION = "v2";
+const STICKER_CACHE_KEY = `ma3d_stickers_${STICKER_CACHE_VERSION}`;
 let hasChatted = false;
 let presenceChannel = null;
 let presenceHeartbeat = null;
@@ -1034,7 +1036,7 @@ replyPreview.style.display = "none";
 
   if (stickersLoaded && stickers.length) return;
 
-  const cached = localStorage.getItem("ma3d_stickers");
+  const cached = localStorage.getItem(STICKER_CACHE_KEY);
 
   if (cached) {
     try {
@@ -1061,7 +1063,7 @@ replyPreview.style.display = "none";
   stickers = (data || []).map(row => row.image_url).filter(Boolean);
 
   try {
-    localStorage.setItem("ma3d_stickers", JSON.stringify(stickers));
+    localStorage.setItem(STICKER_CACHE_KEY, JSON.stringify(stickers));
   } catch (e) {}
 
   stickersLoaded = true;
@@ -1329,10 +1331,11 @@ div.style.overflowWrap = "anywhere";
       let safe = escapeHtml(String(parsed.body || "")).replace(/\n/g, "<br>");
 
     safe = safe.replace(/\[sticker:(.*?)\]/g, (_, url) => {
-  const cleanUrl = url.replace(/"/g, "&quot;");
+  const rawUrl = url.replace(/"/g, "&quot;");
+  const cleanUrl = rawUrl + (rawUrl.includes("?") ? `&v=${STICKER_CACHE_VERSION}` : `?v=${STICKER_CACHE_VERSION}`);
   const size = INLINE_STICKER_SIZE;
 
-  if (/\.(mp4|webm)$/i.test(cleanUrl)) {
+  if (/\.(mp4|webm)(\?|$)/i.test(rawUrl)) {
     return `<video src="${cleanUrl}" autoplay loop muted playsinline preload="metadata" style="width:${size}px;max-width:${size}px;height:${size}px;object-fit:contain;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;"></video>`;
   }
 
@@ -1746,7 +1749,7 @@ function renderStickerBatch(reset = false){
     const src = stickers[i];
     const img = document.createElement("img");
 
-    img.src = src + (src.includes("?") ? "&v=1" : "?v=1");
+    img.src = src + (src.includes("?") ? `&v=${STICKER_CACHE_VERSION}` : `?v=${STICKER_CACHE_VERSION}`);
     img.loading = "lazy";
     img.decoding = "async";
     img.style.width = window.innerWidth <= 520 ? "96px" : "120px";
