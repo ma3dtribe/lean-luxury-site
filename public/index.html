@@ -862,6 +862,11 @@ gap: 10px;
     });
   });
 </script>
+<script>
+  window.addEventListener("load", () => {
+    console.log("OneSignal ready");
+  });
+</script>
   
 </head>
 
@@ -1168,11 +1173,11 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Audio is now playing. You can leave the app and keep listening.");
   });
 
-  // ✅ Notify button (separate, not inside another button)
-  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
-    if (!window.OneSignalDeferred) return;
+ document.getElementById("notifyBtn")?.addEventListener("click", () => {
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
 
-    window.OneSignalDeferred.push(async function(OneSignal) {
+  window.OneSignalDeferred.push(async function(OneSignal) {
+    try {
       const permission = await OneSignal.Notifications.requestPermission();
 
       if (permission) {
@@ -1180,8 +1185,11 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         alert("Notifications blocked ❌");
       }
-    });
+    } catch (e) {
+      alert("Try again — notifications not ready yet");
+    }
   });
+});
 
   document.getElementById("mcRefresh")?.addEventListener("click", () => {
     window.location.reload();
