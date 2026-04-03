@@ -862,6 +862,15 @@ gap: 10px;
     });
   });
 </script>
+
+<script>
+  window.OneSignalReady = false;
+
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push(function(OneSignal) {
+    window.OneSignalReady = true;
+  });
+</script>  
 <script>
   window.addEventListener("load", () => {
     console.log("OneSignal ready");
@@ -1173,9 +1182,13 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Audio is now playing. You can leave the app and keep listening.");
   });
 
- document.getElementById("notifyBtn")?.addEventListener("click", () => {
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
+ document.getElementById("notifyBtn")?.addEventListener("click", async () => {
+  if (!window.OneSignalReady) {
+    alert("Notifications not ready yet — try again in a second");
+    return;
+  }
 
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(async function(OneSignal) {
     try {
       const permission = await OneSignal.Notifications.requestPermission();
