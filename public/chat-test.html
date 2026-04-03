@@ -1772,17 +1772,21 @@ function renderStickerBatch(reset = false){
 }
     
     async function openStickers(){
-  if (!stickerModal || !stickerGrid) return;
+    if (!stickerModal || !stickerGrid) return;
   if (stickersOpening) return;
-  if (!isTabActive && !stickersLoaded) return;
+  if (!isTabActive) return;
   stickersOpening = true;
 
 
   try {
-    if (!stickersLoaded) {
+      if (!stickersLoaded) {
+    if (!stickers.length) {
       stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>Loading stickers...</div>";
       await loadStickers();
+    } else {
+      stickersLoaded = true;
     }
+  }
 
     stickerGrid.scrollTop = 0;
     if (!stickers.length){
@@ -1799,14 +1803,15 @@ function renderStickerBatch(reset = false){
 } else if (!stickersRendered) {
   renderStickerBatch(true);
   stickersRendered = true;
-} else if (!stickerGrid.children.length) {
+} else if (!stickerGrid.querySelector("img, video")) {
   renderStickerBatch(true);
+  stickersRendered = true;
 }
 
     stickerModal.classList.add("show");
     stickerModal.setAttribute("aria-hidden", "false");
   } finally {
-    stickersOpening = false;
+    setTimeout(() => { stickersOpening = false; }, 100);
   }
 }
 function closeStickers(){
@@ -1967,17 +1972,19 @@ document.addEventListener("visibilitychange", async () => {
   isTabActive = !document.hidden;
 
   if (!isTabActive) {
-  if (presenceHeartbeat) {
-    clearInterval(presenceHeartbeat);
-    presenceHeartbeat = null;
+    if (presenceHeartbeat) {
+      clearInterval(presenceHeartbeat);
+      presenceHeartbeat = null;
+    }
+
+    stickerNeedsRefresh = false;
+    closeEmoji();
+    closeStickers();
+    closeGifModal();
+    return;
   }
 
-  stickerNeedsRefresh = true;
-  stickersLoaded = false;
-  closeEmoji();
-  closeGifModal();
-  return;
-}
+  stickersOpening = false;
 
   if (presenceChannel) {
     try {
