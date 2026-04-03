@@ -801,7 +801,9 @@ let latestViewerRows = [];
     let oldestLoadedTime = null;
     let loadingOlderMessages = false; 
 const MOBILE_CHAT_LIMIT = 35;
-const DESKTOP_CHAT_LIMIT = 60;    
+const DESKTOP_CHAT_LIMIT = 60;
+const INLINE_STICKER_SIZE = window.innerWidth <= 520 ? 88 : 112;
+const INLINE_GIF_SIZE = window.innerWidth <= 520 ? 96 : 130;      
     /* =========================
        ELEMENTS
     ========================= */
@@ -1330,15 +1332,15 @@ div.style.overflowWrap = "anywhere";
   const cleanUrl = String(url || "").trim();
 
   if (cleanUrl.toLowerCase().endsWith(".mp4")) {
-    return `<video src="${cleanUrl}" autoplay loop muted playsinline style="width:72px;max-width:72px;height:72px;object-fit:contain;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;"></video>`;
+    return `<video src="${cleanUrl}" autoplay loop muted playsinline style="width:${INLINE_STICKER_SIZE}px;max-width:${INLINE_STICKER_SIZE}px;height:${INLINE_STICKER_SIZE}px;object-fit:contain;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;"></video>`;
   }
 
-  return `<img src="${cleanUrl}" style="width:72px;max-width:72px;height:72px;object-fit:contain;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;">`;
+  return `<img src="${cleanUrl}" style="width:${INLINE_STICKER_SIZE}px;max-width:${INLINE_STICKER_SIZE}px;height:${INLINE_STICKER_SIZE}px;object-fit:contain;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;">`;
 });
 
 safe = safe.replace(/\[gif:(.*?)\]/g, (match, url) => {
   const cleanUrl = String(url || "").trim();
-  return `<img src="${cleanUrl}" style="width:96px;max-width:96px;height:96px;object-fit:cover;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;">`;
+  return `<img src="${cleanUrl}" style="width:${INLINE_GIF_SIZE}px;max-width:${INLINE_GIF_SIZE}px;height:${INLINE_GIF_SIZE}px;object-fit:cover;border:none;box-shadow:none;background:transparent;border-radius:10px;margin:0 6px 0 0;display:inline-block;vertical-align:middle;">`;
 });
 
       if (typeof MA3D_TOKEN !== "undefined" && MA3D_TOKEN) {
