@@ -1,0 +1,20 @@
+{
+  "name": "MA3DTribe Media",
+  "short_name": "MA3DTribe",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c1718",
+  "theme_color": "#ff3b3b",
+  "icons": [
+    {
+      "src": "/images/ma3dtribebanner_cropped.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/ma3dtribebanner_cropped.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
