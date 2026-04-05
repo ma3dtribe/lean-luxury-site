@@ -1025,6 +1025,7 @@ const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
 const ROOM = "ma3dtribe";
 const WEB_SESSION_KEY = "ma3d_web_session_id";
+const AUDIO_STARTED_KEY = "ma3d_audio_started";
 const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);      
 
 let webPresenceChannel = null;
@@ -1146,9 +1147,10 @@ chatFrame?.addEventListener("load", () => {
   if (mount.dataset.loaded && !userStarted) return;
 
   if (userStarted) {
-    mount.dataset.loaded = "";
-    mount.innerHTML = "";
-  }
+  mount.dataset.loaded = "";
+  mount.innerHTML = "";
+  localStorage.setItem(AUDIO_STARTED_KEY, "1");
+}
 
   mount.dataset.loaded = "1";
         
@@ -1251,7 +1253,7 @@ setInterval(() => {
 } else {
   watchShell.style.display = "";
   watchShell.classList.remove("collapsed-head");
-  desc.textContent = "Currently off air. Tap “LOAD MA3D Vibes” when we go live.";
+  desc.textContent = "Currently off air. Tap to start audio when we go live.";
   manualBtn.style.display = "inline-flex";
 }
     
@@ -1259,7 +1261,7 @@ setInterval(() => {
 .catch(() => {
   watchShell.style.display = "";
   watchShell.classList.remove("collapsed-head");
-  desc.textContent = "Status unavailable. Tap “LOAD MA3D Vibes” to start the stream.";
+  desc.textContent = "Status unavailable. Tap to start audio.";
   manualBtn.style.display = "inline-flex";
 });
     })();
@@ -1353,6 +1355,15 @@ viewport?.addEventListener("touchend", (e) => {
 }, { passive: true });
 startAuto();  
 });
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && localStorage.getItem(AUDIO_STARTED_KEY) === "1") {
+    const hasPlayer = !!mount.querySelector("iframe");
+    if (!hasPlayer) {
+      loadPlayer(true);
+    }
+  }
+});
+
 window.addEventListener("pagehide", async () => {
   try { await stopWebPresence(); } catch (e) {}
 });
