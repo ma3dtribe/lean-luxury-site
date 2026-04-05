@@ -1748,22 +1748,31 @@ function renderStickerBatch(reset = false){
     const src = stickers[i];
     const img = document.createElement("img");
 
-    img.src = src + (src.includes("?") ? `&v=${STICKER_CACHE_VERSION}` : `?v=${STICKER_CACHE_VERSION}`);
-    img.loading = "lazy";
-    img.decoding = "async";
-    img.style.width = window.innerWidth <= 520 ? "96px" : "120px";
-    img.style.height = window.innerWidth <= 520 ? "96px" : "120px";
-    img.style.objectFit = "contain";
-    img.style.cursor = "pointer";
+img.src = src + (src.includes("?") ? `&v=${STICKER_CACHE_VERSION}` : `?v=${STICKER_CACHE_VERSION}`);
+img.loading = "lazy";
+img.decoding = "async";
+img.style.width = window.innerWidth <= 520 ? "96px" : "120px";
+img.style.height = window.innerWidth <= 520 ? "96px" : "120px";
+img.style.objectFit = "contain";
+img.style.cursor = "pointer";
+
+img.onerror = () => {
+  img.remove();
+  stickerNeedsRefresh = true;
+  stickersRendered = false;
+  stickerRenderIndex = 0;
+};
 
     img.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  e.preventDefault();
+  e.stopPropagation();
 
-      pendingStickers.push(src)
-      insertAtCursor(messageInput, " [sticker] ");
-      closeStickers();
-    });
+  if (document.hidden || !isTabActive) return;
+
+  pendingStickers.push(src);
+  insertAtCursor(messageInput, " [sticker] ");
+  closeStickers();
+});
 
     stickerGrid.appendChild(img);
   }
@@ -1773,9 +1782,17 @@ function renderStickerBatch(reset = false){
     
     async function openStickers(){
     if (!stickerModal || !stickerGrid) return;
-  if (stickersOpening) return;
-  if (!isTabActive) return;
-  stickersOpening = true;
+if (stickersOpening) return;
+if (!isTabActive) return;
+
+if (stickerGrid.children.length && !stickerGrid.querySelector("img, video")) {
+  stickerGrid.innerHTML = "";
+  stickersRendered = false;
+  stickerNeedsRefresh = true;
+  stickerRenderIndex = 0;
+}
+
+stickersOpening = true;
 
 
   try {
@@ -1796,15 +1813,9 @@ function renderStickerBatch(reset = false){
       return;
     }
 
-        if (stickerNeedsRefresh) {
+        if (stickerNeedsRefresh || !stickersRendered || !stickerGrid.querySelector("img, video")) {
   renderStickerBatch(true);
   stickerNeedsRefresh = false;
-  stickersRendered = true;
-} else if (!stickersRendered) {
-  renderStickerBatch(true);
-  stickersRendered = true;
-} else if (!stickerGrid.querySelector("img, video")) {
-  renderStickerBatch(true);
   stickersRendered = true;
 }
 
@@ -1819,6 +1830,13 @@ function closeStickers(){
 
   stickerModal.classList.remove("show");
   stickerModal.setAttribute("aria-hidden", "true");
+
+  if (document.hidden) {
+    stickerNeedsRefresh = true;
+    stickersRendered = false;
+    stickerRenderIndex = 0;
+    if (stickerGrid) stickerGrid.innerHTML = "";
+  }
 
   stickersOpening = false;
 }
@@ -1972,17 +1990,23 @@ document.addEventListener("visibilitychange", async () => {
   isTabActive = !document.hidden;
 
   if (!isTabActive) {
-    if (presenceHeartbeat) {
-      clearInterval(presenceHeartbeat);
-      presenceHeartbeat = null;
-    }
-
-    stickerNeedsRefresh = false;
-    closeEmoji();
-    closeStickers();
-    closeGifModal();
-    return;
+  if (presenceHeartbeat) {
+    clearInterval(presenceHeartbeat);
+    presenceHeartbeat = null;
   }
+
+  stickerNeedsRefresh = true;
+  stickersOpening = false;
+  stickersRendered = false;
+  stickerRenderIndex = 0;
+
+  if (stickerGrid) stickerGrid.innerHTML = "";
+
+  closeEmoji();
+  closeStickers();
+  closeGifModal();
+  return;
+}
 
   stickersOpening = false;
 
