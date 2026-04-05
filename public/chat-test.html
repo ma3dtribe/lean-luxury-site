@@ -1770,8 +1770,8 @@ img.onerror = () => {
   if (document.hidden || !isTabActive) return;
 
   pendingStickers.push(src);
-  insertAtCursor(messageInput, " [sticker] ");
-  closeStickers();
+  insertAtCursor(messageInput, "[sticker] ");
+  updateStickerHint();
 });
 
     stickerGrid.appendChild(img);
@@ -1818,7 +1818,7 @@ stickersOpening = true;
   stickerNeedsRefresh = false;
   stickersRendered = true;
 }
-
+    updateStickerHint();
     stickerModal.classList.add("show");
     stickerModal.setAttribute("aria-hidden", "false");
   } finally {
@@ -1840,20 +1840,9 @@ function closeStickers(){
 
   stickersOpening = false;
 }
-    
-    /* =========================
-       EMOJI
-    ========================= */
-    const EMOJIS = [
-      "😀","😄","😁","😆","😂","🤣","😊","🙂",
-      "😉","😎","😍","😘","😜","🤪","😅","🤝",
-      "🙏","👏","🔥","💯","🎶","🎧","✅","❤️",
-      "🎤","🎛️","💿","🪩","🌍","🏆","🚀","👀","🙌","🥳"
-    ];
+const MA3D_TOKEN = ":ma3d:";
 
-    const MA3D_TOKEN = ":ma3d:";
-
-    function insertAtCursor(input, text){
+function insertAtCursor(input, text){
   const start = input.selectionStart ?? input.value.length;
   const end = input.selectionEnd ?? input.value.length;
   const before = input.value.slice(0, start);
@@ -1867,13 +1856,36 @@ function closeStickers(){
   }
 }
 
-    function openEmoji(){
-      if (!emojiPopup) return;
-      emojiPopup.classList.add("show");
-      emojiPopup.setAttribute("aria-hidden", "false");
-    }
+function updateStickerHint(){
+  const hint = document.querySelector("#stickerModal .emojiHint");
+  if (!hint) return;
 
-    function closeEmoji(){
+  const count = pendingStickers.length;
+  hint.textContent = count
+    ? `${count} sticker${count === 1 ? "" : "s"} selected. Keep tapping stickers, then press Send.`
+    : "Tap stickers to add them. Press Send when ready.";
+}
+
+    
+    /* =========================
+       EMOJI
+    ========================= */
+    const EMOJIS = [
+      "😀","😄","😁","😆","😂","🤣","😊","🙂",
+      "😉","😎","😍","😘","😜","🤪","😅","🤝",
+      "🙏","👏","🔥","💯","🎶","🎧","✅","❤️",
+      "🎤","🎛️","💿","🪩","🌍","🏆","🚀","👀","🙌","🥳"
+    ];
+
+   
+
+function openEmoji(){
+  if (!emojiPopup) return;
+  emojiPopup.classList.add("show");
+  emojiPopup.setAttribute("aria-hidden", "false");
+}
+
+function closeEmoji(){
   if (!emojiPopup) return;
   emojiPopup.classList.remove("show");
   emojiPopup.setAttribute("aria-hidden", "true");
@@ -1883,34 +1895,34 @@ function closeStickers(){
   } catch(e) {}
 }
 
-    function buildEmojiGrid(){
-      if (!emojiGrid) return;
-      emojiGrid.innerHTML = "";
+function buildEmojiGrid(){
+  if (!emojiGrid) return;
+  emojiGrid.innerHTML = "";
 
-      const ma3dBtn = document.createElement("button");
-      ma3dBtn.type = "button";
-      ma3dBtn.className = "emojiBtn";
-      ma3dBtn.title = "Ma3DTribe";
-      ma3dBtn.textContent = "MA3D";
-      ma3dBtn.addEventListener("click", () => {
-        insertAtCursor(messageInput, ` ${MA3D_TOKEN} `);
-        closeEmoji();
-      });
-      emojiGrid.appendChild(ma3dBtn);
+  const ma3dBtn = document.createElement("button");
+  ma3dBtn.type = "button";
+  ma3dBtn.className = "emojiBtn";
+  ma3dBtn.title = "Ma3DTribe";
+  ma3dBtn.textContent = "MA3D";
+  ma3dBtn.addEventListener("click", () => {
+    insertAtCursor(messageInput, ` ${MA3D_TOKEN} `);
+    closeEmoji();
+  });
+  emojiGrid.appendChild(ma3dBtn);
 
-      EMOJIS.forEach(e => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "emojiBtn";
-        b.textContent = e;
-        b.addEventListener("click", () => {
-          insertAtCursor(messageInput, e);
-          closeEmoji();
-        });
-        emojiGrid.appendChild(b);
-      });
-    }
-
+  EMOJIS.forEach(e => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "emojiBtn";
+    b.textContent = e;
+    b.addEventListener("click", () => {
+      insertAtCursor(messageInput, e);
+      closeEmoji();
+    });
+    emojiGrid.appendChild(b);
+  });
+}
+    
     buildEmojiGrid();
 
     emojiBtn.addEventListener("click", (e) => {
