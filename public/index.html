@@ -912,7 +912,7 @@ gap: 10px;
       </p>
 
       <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-        <button id="manualLoadBtn" class="btn" style="display:none;">LOAD MA3D Vibes</button>
+        <button id="manualLoadBtn" class="btn" style="display:none;">Tap to Start Audio 🔊</button>
       </div>
     </div>
 
@@ -1142,16 +1142,23 @@ chatFrame?.addEventListener("load", () => {
   if (webPresenceChannel) recomputeWebCount(webPresenceChannel);
 });      
       
-       function loadPlayer() {
-        if (mount.dataset.loaded) return;
-        mount.dataset.loaded = "1";
+       function loadPlayer(userStarted = false) {
+  if (mount.dataset.loaded && !userStarted) return;
+
+  if (userStarted) {
+    mount.dataset.loaded = "";
+    mount.innerHTML = "";
+  }
+
+  mount.dataset.loaded = "1";
         
         manualBtn.style.display = "none";
          watchShell.classList.add("collapsed-head");
          watchShell.style.display = "none";
          
         const iframe = document.createElement("iframe");
-        iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true`;
+        const shouldMute = userStarted ? "false" : "true";
+iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=${shouldMute}`;
         iframe.style.width = "100%";
 iframe.style.aspectRatio = "16 / 9";
 iframe.style.height = "auto";
@@ -1167,17 +1174,20 @@ streamLoaded = true;
 startWebPresence();
 
        }
-manualBtn.addEventListener("click", loadPlayer);
-      
+manualBtn.addEventListener("click", () => loadPlayer(true));
+
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("mcPlay")?.addEventListener("click", () => {
-    loadPlayer();
+    loadPlayer(true);
   });
 
   document.getElementById("mcBackground")?.addEventListener("click", () => {
-    loadPlayer();
-    alert("Audio is now playing. You can leave the app and keep listening.");
-  });
+  loadPlayer(true);
+
+  setTimeout(() => {
+    window.scrollTo(0, 0);
+  }, 300);
+});
 
  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
   alert("Notify button clicked");
