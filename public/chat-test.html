@@ -808,7 +808,7 @@ let latestViewerRows = [];
 const MOBILE_CHAT_LIMIT = 35;
 const DESKTOP_CHAT_LIMIT = 60;
 const INLINE_STICKER_SIZE = window.innerWidth <= 520 ? 88 : 112;
-const INLINE_GIF_SIZE = window.innerWidth <= 520 ? 96 : 130;      
+const INLINE_GIF_SIZE = window.innerWidth <= 520 ? 150 : 240;      
     /* =========================
        ELEMENTS
     ========================= */
@@ -1315,7 +1315,7 @@ video.style.margin = "0 auto";
     img.src = url;
     img.alt = "sticker";
     img.loading = "lazy";
-    img.style.width = (window.innerWidth <= 520 ? 170 : 240) + "px";
+    const INLINE_STICKER_SIZE = window.innerWidth <= 520 ? 150 : 240;
     img.style.margin = "0";
     img.style.display = "block";
 img.style.margin = "0 auto";
@@ -1757,8 +1757,8 @@ function renderStickerBatch(reset = false){
 img.src = src + (src.includes("?") ? `&v=${STICKER_CACHE_VERSION}` : `?v=${STICKER_CACHE_VERSION}`);
 img.loading = "lazy";
 img.decoding = "async";
-img.style.width = window.innerWidth <= 520 ? "96px" : "120px";
-img.style.height = window.innerWidth <= 520 ? "96px" : "120px";
+img.style.width = window.innerWidth <= 520 ? "150px" : "240px";
+img.style.height = window.innerWidth <= 520 ? "150px" : "240px";
 img.style.objectFit = "contain";
 img.style.cursor = "pointer";
 
