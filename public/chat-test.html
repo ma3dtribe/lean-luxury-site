@@ -153,9 +153,11 @@
 }
 
 .msg.stickerMsg{
-  padding:8px 10px;
+  padding:6px;
   border:none;
   box-shadow:none;
+  width:fit-content;
+  max-width:92%;
 }    
     
   .me{
@@ -1302,8 +1304,9 @@ function buildViewerRowsFromPresence(channel){
     video.loop = true;
     video.muted = true;
     video.playsInline = true;
-    video.style.maxWidth = (window.innerWidth <= 520 ? 150 : 180) + "px";
+    video.style.maxWidth = (window.innerWidth <= 520 ? 170 : 210) + "px";
     video.style.borderRadius = "14px";
+    video.style.margin = "0 auto";
     video.style.display = "block";
 video.style.margin = "0 auto";
     frag.appendChild(video);
@@ -1312,11 +1315,12 @@ video.style.margin = "0 auto";
     img.src = url;
     img.alt = "sticker";
     img.loading = "lazy";
-    img.style.maxWidth = (window.innerWidth <= 520 ? 150 : 180) + "px";
+    img.style.maxWidth = (window.innerWidth <= 520 ? 170 : 210) + "px";
     img.style.margin = "0";
     img.style.display = "block";
 img.style.margin = "0 auto";
     img.style.borderRadius = "14px";
+    img.style.margin = "0 auto";
     frag.appendChild(img);
   }
 
