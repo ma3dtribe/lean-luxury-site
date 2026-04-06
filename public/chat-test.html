@@ -1610,7 +1610,9 @@ function subscribeRealtime(){
         pendingStickers = [];
         clearReplyState();
         markChatted();
-        messageInput.focus();
+        if (window.innerWidth > 520) {
+  messageInput.focus();
+}
       }
     }
 
@@ -1776,8 +1778,9 @@ img.onerror = () => {
   if (document.hidden || !isTabActive) return;
 
   pendingStickers.push(src);
-  insertAtCursor(messageInput, "[sticker] ");
-  updateStickerHint();
+messageInput?.blur();
+insertAtCursor(messageInput, "[sticker] ", false);
+updateStickerHint();
 });
 
     stickerGrid.appendChild(img);
@@ -1787,7 +1790,9 @@ img.onerror = () => {
 }
     
     async function openStickers(){
-    if (!stickerModal || !stickerGrid) return;
+  messageInput?.blur();
+
+  if (!stickerModal || !stickerGrid) return;
 if (stickersOpening) return;
 if (!isTabActive) return;
 
@@ -1848,16 +1853,18 @@ function closeStickers(){
 }
 const MA3D_TOKEN = ":ma3d:";
 
-function insertAtCursor(input, text){
+function insertAtCursor(input, text, shouldFocus = true){
   const start = input.selectionStart ?? input.value.length;
   const end = input.selectionEnd ?? input.value.length;
   const before = input.value.slice(0, start);
   const after = input.value.slice(end);
+
   input.value = before + text + after;
+
   const pos = start + text.length;
   input.setSelectionRange(pos, pos);
 
-  if (isTabActive) {
+  if (shouldFocus && isTabActive) {
     try { input.focus(); } catch(e) {}
   }
 }
