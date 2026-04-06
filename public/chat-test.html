@@ -153,7 +153,7 @@
 }
 
 .msg.stickerMsg{
-  padding:6px;
+  padding:8px 10px;
   border:none;
   box-shadow:none;
 }    
@@ -1302,18 +1302,20 @@ function buildViewerRowsFromPresence(channel){
     video.loop = true;
     video.muted = true;
     video.playsInline = true;
-    video.style.maxWidth = (window.innerWidth <= 520 ? 130 : 170) + "px";
+    video.style.maxWidth = (window.innerWidth <= 520 ? 150 : 180) + "px";
     video.style.borderRadius = "14px";
     video.style.display = "block";
+video.style.margin = "0 auto";
     frag.appendChild(video);
   } else {
     const img = document.createElement("img");
     img.src = url;
     img.alt = "sticker";
     img.loading = "lazy";
-    img.style.maxWidth = (window.innerWidth <= 520 ? 130 : 170) + "px";
+    img.style.maxWidth = (window.innerWidth <= 520 ? 150 : 180) + "px";
     img.style.margin = "0";
     img.style.display = "block";
+img.style.margin = "0 auto";
     img.style.borderRadius = "14px";
     frag.appendChild(img);
   }
