@@ -1287,7 +1287,7 @@ function buildViewerRowsFromPresence(channel){
         img.src = row.content || "";
         img.alt = "gif";
         img.loading = "lazy";
-        img.style.maxWidth = "320px";
+        img.style.maxWidth = INLINE_GIF_SIZE + "px";
         frag.appendChild(img);
         return frag;
       }
@@ -1302,7 +1302,7 @@ function buildViewerRowsFromPresence(channel){
     video.loop = true;
     video.muted = true;
     video.playsInline = true;
-    video.style.maxWidth = "200px";
+    video.style.maxWidth = INLINE_GIF_SIZE + "px";
     video.style.borderRadius = "14px";
     video.style.display = "block";
     frag.appendChild(video);
@@ -1311,7 +1311,7 @@ function buildViewerRowsFromPresence(channel){
     img.src = url;
     img.alt = "sticker";
     img.loading = "lazy";
-    img.style.maxWidth = "200px";
+    img.style.maxWidth = INLINE_GIF_SIZE + "px";
     img.style.margin = "0";
     img.style.display = "block";
     img.style.borderRadius = "14px";
