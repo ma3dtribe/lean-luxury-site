@@ -217,7 +217,7 @@
 
   .msg img{
   max-width:100%;
-  width:auto;
+  width:100%;
   border-radius:12px;
   display:block;
   border:none;
@@ -1304,7 +1304,7 @@ function buildViewerRowsFromPresence(channel){
     video.loop = true;
     video.muted = true;
     video.playsInline = true;
-    video.style.maxWidth = (window.innerWidth <= 520 ? 170 : 210) + "px";
+    vvideo.style.width = (window.innerWidth <= 520 ? 170 : 210) + "px"
     video.style.borderRadius = "14px";
     video.style.margin = "0 auto";
     video.style.display = "block";
@@ -1315,7 +1315,7 @@ video.style.margin = "0 auto";
     img.src = url;
     img.alt = "sticker";
     img.loading = "lazy";
-    img.style.maxWidth = (window.innerWidth <= 520 ? 170 : 210) + "px";
+    img.style.width = (window.innerWidth <= 520 ? 170 : 240) + "px";
     img.style.margin = "0";
     img.style.display = "block";
 img.style.margin = "0 auto";
