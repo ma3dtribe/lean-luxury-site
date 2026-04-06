@@ -844,13 +844,12 @@ let parentWebCount = 0;
 
 function setWebCountFromParent(n){
   parentWebCount = Number(n || 0);
-  if (viewCountEl) viewCountEl.textContent = String(parentWebCount);
 }
 
 window.addEventListener("message", (event) => {
   const data = event.data || {};
   if (data.type === "ma3d:webCount") {
-    setWebCountFromParent(data.count);
+    parentWebCount = Number(data.count || 0);
   }
 });
    
@@ -1106,6 +1105,8 @@ replyPreview.style.display = "none";
 
   if (chatCountEl) chatCountEl.textContent = String(chatters);
 
+      if (viewCountEl) viewCountEl.textContent = String(sessions.size);
+      
 updateViewersUI(channel);
 }
 
