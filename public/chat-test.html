@@ -807,7 +807,7 @@ let latestViewerRows = [];
     let loadingOlderMessages = false; 
 const MOBILE_CHAT_LIMIT = 35;
 const DESKTOP_CHAT_LIMIT = 60;
-const INLINE_STICKER_SIZE = window.innerWidth <= 520 ? 88 : 112;
+const INLINE_STICKER_SIZE = window.innerWidth <= 520 ? 150 : 240;
 const INLINE_GIF_SIZE = window.innerWidth <= 520 ? 150 : 240;      
     /* =========================
        ELEMENTS
@@ -1304,7 +1304,7 @@ function buildViewerRowsFromPresence(channel){
     video.loop = true;
     video.muted = true;
     video.playsInline = true;
-    vvideo.style.width = (window.innerWidth <= 520 ? 170 : 210) + "px"
+    video.style.width = (window.innerWidth <= 520 ? 170 : 210) + "px"
     video.style.borderRadius = "14px";
     video.style.margin = "0 auto";
     video.style.display = "block";
@@ -1315,7 +1315,7 @@ video.style.margin = "0 auto";
     img.src = url;
     img.alt = "sticker";
     img.loading = "lazy";
-    const INLINE_STICKER_SIZE = window.innerWidth <= 520 ? 150 : 240;
+    img.style.width = (window.innerWidth <= 520 ? 150 : 240) + "px";
     img.style.margin = "0";
     img.style.display = "block";
 img.style.margin = "0 auto";
