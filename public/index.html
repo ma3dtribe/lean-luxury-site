@@ -1149,7 +1149,8 @@ chatFrame?.addEventListener("load", () => {
       
        function loadPlayer(userStarted = false) {
   if (mount.dataset.loaded && !userStarted) return;
-
+         watchShell.style.display = "";
+         
   if (userStarted) {
   mount.dataset.loaded = "";
   mount.innerHTML = "";
@@ -1157,6 +1158,7 @@ chatFrame?.addEventListener("load", () => {
 }
 
   mount.dataset.loaded = "1";
+localStorage.setItem(AUDIO_STARTED_KEY, "1");         
         
         manualBtn.style.display = "none";
          watchShell.classList.add("collapsed-head");
@@ -1193,8 +1195,9 @@ function refreshOnReturn() {
   const hasPlayer = !!mount.querySelector("iframe");
 
   if (hadAudioStarted && !hasPlayer) {
-    loadPlayer(true);
-  }
+  watchShell.style.display = "none";
+  desc.textContent = "Tap Play to resume listening.";
+}
 
   if (webPresenceChannel) {
     recomputeWebCount(webPresenceChannel);
@@ -1221,7 +1224,13 @@ window.addEventListener("focus", () => {
 });
 
   document.getElementById("mcBackground")?.addEventListener("click", () => {
-  loadPlayer(true);
+  watchShell.style.display = "";
+
+  if (!mount.dataset.loaded) {
+    loadPlayer(true);
+  }
+
+  localStorage.setItem(AUDIO_STARTED_KEY, "1");
 
   setTimeout(() => {
     window.scrollTo(0, 0);
@@ -1229,7 +1238,9 @@ window.addEventListener("focus", () => {
 });
 
 document.getElementById("mcPlay")?.addEventListener("click", () => {
-  loadPlayer(true);
+  localStorage.setItem(AUDIO_STARTED_KEY, "1");
+  watchShell.style.display = "";
+  loadPlayer();
 });
 
  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
@@ -1268,15 +1279,15 @@ setInterval(() => {
       const liveBtn = document.getElementById("mcLive");
 
       if (isLive) {
-        liveBtn?.classList.add("live-glow");
+  liveBtn?.classList.add("live-glow");
 
-        if (!mount.dataset.loaded) {
-          desc.textContent = "We’re live — loading the stream now.";
-          loadPlayer();
-        }
-      } else {
-        liveBtn?.classList.remove("live-glow");
-      }
+  if (!mount.dataset.loaded) {
+    desc.textContent = "We’re live — tap Play to start listening.";
+  }
+} else {
+  liveBtn?.classList.remove("live-glow");
+  localStorage.removeItem(AUDIO_STARTED_KEY);
+}
     })
     .catch(() => {});
 }, 10000);      
@@ -1289,8 +1300,7 @@ setInterval(() => {
     const isLive = !text.includes("offline");
 
     if (isLive) {
-      desc.textContent = "We’re live — loading the stream now.";
-      loadPlayer();
+  desc.textContent = "We’re live — tap Play to start listening.";
 } else {
   watchShell.style.display = "";
   watchShell.classList.remove("collapsed-head");
