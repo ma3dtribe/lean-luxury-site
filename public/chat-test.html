@@ -846,6 +846,45 @@ function setWebCountFromParent(n){
   parentWebCount = Number(n || 0);
 }
 
+async function refreshChatOnReturn() {
+  isTabActive = true;
+
+  if (presenceChannel) {
+    try {
+      await presenceChannel.track({
+        username: USERNAME || "Guest",
+        chatted: hasChatted,
+        t: Date.now()
+      });
+    } catch (e) {}
+  }
+
+  if (!presenceHeartbeat && presenceChannel) {
+    presenceHeartbeat = setInterval(async () => {
+      if (!isTabActive) return;
+
+      try {
+        await presenceChannel.track({
+          username: USERNAME || "Guest",
+          chatted: hasChatted,
+          t: Date.now()
+        });
+      } catch (e) {}
+    }, 20000);
+  }
+
+  stickerNeedsRefresh = true;
+  stickersOpening = false;
+
+  try {
+    await refreshTwitchViewers();
+  } catch (e) {}
+
+  try {
+    await loadInitial();
+  } catch (e) {}
+}
+
 window.addEventListener("message", (event) => {
   const data = event.data || {};
 
@@ -856,7 +895,7 @@ window.addEventListener("message", (event) => {
   }
 
   if (data.type === "ma3d:refreshOnReturn") {
-    document.dispatchEvent(new Event("visibilitychange"));
+    refreshChatOnReturn();
     return;
   }
 });
