@@ -1015,7 +1015,7 @@ gap: 10px;
   <!-- Auto-load Twitch ONLY if live -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>  
   <script>
-    (function () {
+    document.addEventListener("DOMContentLoaded", function () {
       const CHANNEL = "ma3dtribe";
       const PARENT = window.location.hostname;
 
@@ -1034,7 +1034,7 @@ const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let webPresenceChannel = null;
 let webHeartbeat = null;
-let streamLoaded = true;
+let streamLoaded = false;
 
 let webSessionId = localStorage.getItem(WEB_SESSION_KEY);
 if (!webSessionId) {
@@ -1089,7 +1089,7 @@ function recomputeWebCount(channel){
 
 async function startWebPresence(){
   if (!sb) return;
-  if (!streamLoaded && isTabActive) return;
+  if (!streamLoaded) return;
 
   if (webPresenceChannel) {
     try { await webPresenceChannel.unsubscribe(); } catch (e) {}
@@ -1211,6 +1211,10 @@ document.addEventListener("visibilitychange", () => {
   }, 300);
 });
 
+document.getElementById("mcPlay")?.addEventListener("click", () => {
+  loadPlayer(true);
+});
+
  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
   alert("Notify button clicked");
 
@@ -1284,7 +1288,7 @@ setInterval(() => {
   desc.textContent = "Status unavailable. Tap to start audio.";
   manualBtn.style.display = "inline-flex";
 });
-    })();
+    });
     /* =========================
    BILLBOARD SLIDER
 ========================= */
