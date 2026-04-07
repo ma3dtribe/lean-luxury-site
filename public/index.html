@@ -1182,10 +1182,26 @@ startWebPresence();
        }
 manualBtn.addEventListener("click", () => loadPlayer(true));
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("mcPlay")?.addEventListener("click", () => {
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+
+  const hadAudioStarted = localStorage.getItem(AUDIO_STARTED_KEY) === "1";
+  const hasPlayer = !!mount.querySelector("iframe");
+
+  if (hadAudioStarted && !hasPlayer) {
     loadPlayer(true);
-  });
+  }
+
+  if (webPresenceChannel) {
+    recomputeWebCount(webPresenceChannel);
+  } else if (hasPlayer || hadAudioStarted) {
+    startWebPresence();
+  }
+
+  try {
+    chatFrame?.contentWindow?.postMessage({ type: "ma3d:refreshOnReturn" }, "*");
+  } catch (e) {}
+});
 
   document.getElementById("mcBackground")?.addEventListener("click", () => {
   loadPlayer(true);
@@ -1358,14 +1374,6 @@ viewport?.addEventListener("touchend", (e) => {
   }
 }, { passive: true });
 startAuto();  
-});
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && localStorage.getItem(AUDIO_STARTED_KEY) === "1") {
-    const hasPlayer = !!mount.querySelector("iframe");
-    if (!hasPlayer) {
-      loadPlayer(true);
-    }
-  }
 });
 
 window.addEventListener("pagehide", async () => {
