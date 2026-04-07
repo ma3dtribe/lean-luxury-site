@@ -848,8 +848,16 @@ function setWebCountFromParent(n){
 
 window.addEventListener("message", (event) => {
   const data = event.data || {};
+
   if (data.type === "ma3d:webCount") {
     parentWebCount = Number(data.count || 0);
+    if (viewCountEl) viewCountEl.textContent = String(parentWebCount);
+    return;
+  }
+
+  if (data.type === "ma3d:refreshOnReturn") {
+    document.dispatchEvent(new Event("visibilitychange"));
+    return;
   }
 });
    
