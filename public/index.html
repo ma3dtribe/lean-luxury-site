@@ -1182,8 +1182,12 @@ startWebPresence();
        }
 manualBtn.addEventListener("click", () => loadPlayer(true));
 
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) return;
+let lastRefreshOnReturn = 0;
+
+function refreshOnReturn() {
+  const now = Date.now();
+  if (now - lastRefreshOnReturn < 1500) return;
+  lastRefreshOnReturn = now;
 
   const hadAudioStarted = localStorage.getItem(AUDIO_STARTED_KEY) === "1";
   const hasPlayer = !!mount.querySelector("iframe");
@@ -1201,6 +1205,19 @@ document.addEventListener("visibilitychange", () => {
   try {
     chatFrame?.contentWindow?.postMessage({ type: "ma3d:refreshOnReturn" }, "*");
   } catch (e) {}
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+  refreshOnReturn();
+});
+
+window.addEventListener("pageshow", () => {
+  refreshOnReturn();
+});
+
+window.addEventListener("focus", () => {
+  refreshOnReturn();
 });
 
   document.getElementById("mcBackground")?.addEventListener("click", () => {
