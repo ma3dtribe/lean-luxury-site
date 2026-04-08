@@ -1030,6 +1030,9 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const ROOM = "ma3dtribe";
 const WEB_SESSION_KEY = "ma3d_web_session_id";
 const AUDIO_STARTED_KEY = "ma3d_audio_started";
+const AUDIO_STICKY_KEY = "ma3d_audio_sticky";
+const AUDIO_STICKY_TS_KEY = "ma3d_audio_sticky_ts";
+const AUDIO_STICKY_TTL = 1000 * 60 * 30;      
 const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);      
 
 let webPresenceChannel = null;
@@ -1158,6 +1161,8 @@ chatFrame?.addEventListener("load", () => {
 }
 
   mount.dataset.loaded = "1";
+sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
+sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));         
 localStorage.setItem(AUDIO_STARTED_KEY, "1");         
         
         manualBtn.style.display = "none";
@@ -1192,11 +1197,14 @@ function refreshOnReturn() {
   lastRefreshOnReturn = now;
 
   const hadAudioStarted = localStorage.getItem(AUDIO_STARTED_KEY) === "1";
+const sticky = sessionStorage.getItem(AUDIO_STICKY_KEY) === "1";
+const stickyTs = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
+const stickyFresh = (Date.now() - stickyTs) < AUDIO_STICKY_TTL;  
   const hasPlayer = !!mount.querySelector("iframe");
-
-  if (hadAudioStarted && !hasPlayer) {
+  if ((hadAudioStarted || (sticky && stickyFresh)) && !hasPlayer) {
   watchShell.style.display = "none";
-  desc.textContent = "Tap Play to resume listening.";
+  loadPlayer(true);
+  return;
 }
 
   if (webPresenceChannel) {
@@ -1216,6 +1224,15 @@ document.addEventListener("visibilitychange", () => {
 });
 
 window.addEventListener("pageshow", () => {
+  const sticky = sessionStorage.getItem(AUDIO_STICKY_KEY) === "1";
+  const ts = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
+  const fresh = (Date.now() - ts) < AUDIO_STICKY_TTL;
+
+  if (sticky && fresh && !mount.querySelector("iframe")) {
+    loadPlayer(true);
+    return;
+  }
+
   refreshOnReturn();
 });
 
@@ -1287,6 +1304,8 @@ setInterval(() => {
 } else {
   liveBtn?.classList.remove("live-glow");
   localStorage.removeItem(AUDIO_STARTED_KEY);
+  sessionStorage.removeItem(AUDIO_STICKY_KEY);
+  sessionStorage.removeItem(AUDIO_STICKY_TS_KEY);
 }
     })
     .catch(() => {});
@@ -1408,10 +1427,12 @@ startAuto();
 });
 
 window.addEventListener("pagehide", async () => {
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
   try { await stopWebPresence(); } catch (e) {}
 });
 
 window.addEventListener("beforeunload", async () => {
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
   try { await stopWebPresence(); } catch (e) {}
 });    
     
