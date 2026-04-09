@@ -39,7 +39,15 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
 
-  // ❌ NEVER cache these (critical for your setup)
+  // Only handle navigation (page loads)
+  if (req.mode === "navigate") {
+    event.respondWith(
+      fetch(req).catch(() => caches.match("/index.html"))
+    );
+    return;
+  }
+
+  // ❌ NEVER cache these (critical)
   if (
     req.url.includes("supabase") ||
     req.url.includes("twitch") ||
