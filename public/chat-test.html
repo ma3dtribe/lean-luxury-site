@@ -1691,20 +1691,30 @@ if (window.innerWidth <= 980) {
   loadingOlderMessages = false;
 }
     
+let messagesChannel = null;
+
 function subscribeRealtime(){
   if (!sb) return;
 
-  sb.channel("room:" + ROOM)
+  if (messagesChannel) {
+    try { sb.removeChannel(messagesChannel); } catch (e) {}
+    messagesChannel = null;
+  }
+
+  messagesChannel = sb
+    .channel("messages-debug")
     .on(
       "postgres_changes",
       {
         event: "INSERT",
         schema: "public",
-        table: "messages",
-        filter: `room=eq.${ROOM}`
+        table: "messages"
       },
       (payload) => {
+        console.log("MESSAGE INSERT RECEIVED:", payload);
+
         if (!payload || !payload.new) return;
+        if (payload.new.room !== ROOM) return;
         if (renderedIds.has(payload.new.id)) return;
 
         const nearTop = chatMessages.scrollTop < 120;
@@ -1717,19 +1727,9 @@ function subscribeRealtime(){
         }
       }
     )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "pinned_messages",
-        filter: `room=eq.${ROOM}`
-      },
-      async () => {
-        await loadPinnedMessage();
-      }
-    )
-    .subscribe((status) => console.log("realtime:", status));
+    .subscribe((status) => {
+      console.log("messages realtime status:", status);
+    });
 }
 
     /* =========================
