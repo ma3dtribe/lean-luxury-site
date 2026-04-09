@@ -717,13 +717,17 @@
   </div>
 </div>
 
+<div id="pinnedMessageBar" style="display:none;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);">
+  <div style="font-size:12px;font-weight:800;opacity:.9;margin-bottom:4px;">📌 Pinned message</div>
+  <div id="pinnedMessageText" style="font-size:14px;line-height:1.35;word-break:break-word;"></div>
+</div>
+
 <div id="chatMessages">
   <div class="msg them">
     <div class="meta">System</div>
     Loading messages…
   </div>
 </div>
-  </div>
   
 
   <!-- GIF MODAL -->
@@ -787,7 +791,8 @@ console.log("SCRIPT TAG RUNNING");
     const GIPHY_API_KEY = "3zxGKg42FRkYfKmUrnjmobhQch37O33L";
     const USER_STORAGE_KEY = "ma3dtribe_username";
     const SESSION_KEY = "ma3dtribe_presence_session";
-
+    const PINNED_MESSAGE_KEY = "ma3dtribe_pinned_message";
+    
     let stickers = [];
 let stickersLoaded = false;
 let stickersRendered = false;
@@ -813,9 +818,11 @@ const INLINE_GIF_SIZE = window.innerWidth <= 520 ? 150 : 240;
     /* =========================
        ELEMENTS
     ========================= */
-    const chatMessages = document.getElementById("chatMessages");
-    const messageInput = document.getElementById("messageInput");
-    const sendBtn = document.getElementById("sendBtn");
+    const pinnedMessageBar = document.getElementById("pinnedMessageBar");
+const pinnedMessageText = document.getElementById("pinnedMessageText");
+const chatMessages = document.getElementById("chatMessages");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
 
     const userDisplay = document.getElementById("userDisplay");
 const pinUserBtn = document.getElementById("pinUserBtn");
@@ -932,11 +939,32 @@ window.addEventListener("message", (event) => {
   localStorage.setItem(USER_STORAGE_KEY, clean);
   USERNAME = clean;
   userDisplay.textContent = USERNAME;
+
+  if (USERNAME && USERNAME !== "Guest") {
+    pinUserBtn.style.display = "inline-block";
+  } else {
+    pinUserBtn.style.display = "none";
+  }
 }
 
-    let USERNAME = getWebsiteUsername();
+let USERNAME = getWebsiteUsername();
 let pinnedUsername = localStorage.getItem("ma3d_pinned_username") === "true";
 userDisplay.textContent = USERNAME;
+
+if (pinnedUsername) {
+  pinUserBtn.style.opacity = "1";
+} else {
+  pinUserBtn.style.opacity = "0.5";
+}
+
+    
+
+// 👇 Show pin only if username exists
+if (USERNAME && USERNAME !== "Guest") {
+  pinUserBtn.style.display = "inline-block";
+} else {
+  pinUserBtn.style.display = "none";
+}
 
 if (pinnedUsername) {
   pinUserBtn.style.opacity = "1";
@@ -978,6 +1006,33 @@ pinUserBtn.addEventListener("click", () => {
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
+function setPinnedMessage(text) {
+  const clean = String(text || "").trim();
+
+  if (!clean) {
+    localStorage.removeItem(PINNED_MESSAGE_KEY);
+    pinnedMessageBar.style.display = "none";
+    pinnedMessageText.textContent = "";
+    return;
+  }
+
+  localStorage.setItem(PINNED_MESSAGE_KEY, clean);
+  pinnedMessageText.textContent = clean;
+  pinnedMessageBar.style.display = "block";
+}
+
+function loadPinnedMessage() {
+  const saved = localStorage.getItem(PINNED_MESSAGE_KEY) || "";
+  if (saved.trim()) {
+    pinnedMessageText.textContent = saved;
+    pinnedMessageBar.style.display = "block";
+  } else {
+    pinnedMessageBar.style.display = "none";
+    pinnedMessageText.textContent = "";
+  }
+}
+
+    
     function formatChatTime(ts){
   if (!ts) return "";
   const d = new Date(ts);
@@ -1479,32 +1534,48 @@ safe = safe.replace(/\[gif:(.*?)\]/g, (match, url) => {
     actions.className = "msgActions";
 
     const replyBtn = document.createElement("button");
-    replyBtn.className = "msgActionBtn";
-    replyBtn.type = "button";
-    replyBtn.textContent = "Reply";
-    replyBtn.addEventListener("click", () => {
-      const parsed = parseReplyPayload(row.content || "");
-      setReply(row, parsed.body || row.content || "");
-      bubble.classList.remove("showActions");
-    });
+replyBtn.className = "msgActionBtn";
+replyBtn.type = "button";
+replyBtn.textContent = "Reply";
+replyBtn.addEventListener("click", () => {
+  const parsed = parseReplyPayload(row.content || "");
+  setReply(row, parsed.body || row.content || "");
+  bubble.classList.remove("showActions");
+});
 
-    actions.appendChild(replyBtn);
+actions.appendChild(replyBtn);
 
-    ["👍","❤️","😂","🔥"].forEach(emoji => {
-      const btn = document.createElement("button");
-      btn.className = "msgActionBtn";
-      btn.type = "button";
-      btn.textContent = emoji;
-      btn.addEventListener("click", async () => {
-        setReply(row, parseReplyPayload(row.content || "").body || row.content || "");
-        messageInput.value = emoji;
-        bubble.classList.remove("showActions");
-        await sendText();
-      });
-      actions.appendChild(btn);
-    });
+if (USERNAME === "CVO") {
+  const pinBtn = document.createElement("button");
+  pinBtn.className = "msgActionBtn";
+  pinBtn.type = "button";
+  pinBtn.textContent = "📌 Pin";
 
-    bubble.appendChild(actions);
+  pinBtn.addEventListener("click", () => {
+    const parsed = parseReplyPayload(row.content || "");
+    const textToPin = parsed.body || row.content || "";
+    setPinnedMessage(textToPin);
+    bubble.classList.remove("showActions");
+  });
+
+  actions.appendChild(pinBtn);
+}
+
+["👍","❤️","😂","🔥"].forEach(emoji => {
+  const btn = document.createElement("button");
+  btn.className = "msgActionBtn";
+  btn.type = "button";
+  btn.textContent = emoji;
+  btn.addEventListener("click", async () => {
+    setReply(row, parseReplyPayload(row.content || "").body || row.content || "");
+    messageInput.value = emoji;
+    bubble.classList.remove("showActions");
+    await sendText();
+  });
+  actions.appendChild(btn);
+});
+
+bubble.appendChild(actions);
   }
 
   if (position === "prepend") {
@@ -2135,6 +2206,7 @@ document.addEventListener("visibilitychange", async () => {
   window.sendText = sendText;
   window.sb = sb;
   console.log("CHAT SCRIPT LOADED");
+loadPinnedMessage();      
 
   try { messageInput?.blur(); } catch(e) {}
 
