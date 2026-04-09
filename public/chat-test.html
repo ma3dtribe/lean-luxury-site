@@ -1696,29 +1696,31 @@ function subscribeRealtime(){
 
   sb.channel("room-" + ROOM)
     .on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table: "messages", filter: `room=eq.${ROOM}` },
-      (payload) => {
-        if (!payload || !payload.new) return;
-        if (renderedIds.has(payload.new.id)) return;
+  "postgres_changes",
+  { event: "INSERT", schema: "public", table: "messages" },
+  (payload) => {
+    if (!payload || !payload.new) return;
+    if (payload.new.room !== ROOM) return;
+    if (renderedIds.has(payload.new.id)) return;
 
-        const nearTop = chatMessages.scrollTop < 120;
-        renderRow(payload.new, "prepend");
+    const nearTop = chatMessages.scrollTop < 120;
+renderRow(payload.new, "prepend");
 
-        if (nearTop) {
-          setTimeout(() => {
-            chatMessages.scrollTop = 0;
-          }, 20);
-        }
-      }
-    )
+if (nearTop) {
+  setTimeout(() => {
+    chatMessages.scrollTop = 0;
+  }, 20);
+}
+  }
+)
     .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "pinned_messages", filter: `room=eq.${ROOM}` },
-      async () => {
-        await loadPinnedMessage();
-      }
-    )
+  "postgres_changes",
+  { event: "*", schema: "public", table: "pinned_messages" },
+  async (payload) => {
+    if (payload?.new?.room !== ROOM && payload?.old?.room !== ROOM) return;
+    await loadPinnedMessage();
+  }
+)
     .subscribe((status) => console.log("realtime:", status));
 }
 
