@@ -686,9 +686,10 @@
       <div class="presence">
   <div class="presRow">
     <span class="pill">
-      <b id="userDisplay">...</b>
-      <button id="changeName" class="linkBtn" type="button">Change</button>
-    </span>
+  <button id="pinUserBtn" class="linkBtn" type="button" title="Pin this username">📌</button>
+  <b id="userDisplay">...</b>
+  <button id="changeName" class="linkBtn" type="button">Change</button>
+</span>
   <button id="viewerBtn" class="viewerBtn" type="button" aria-haspopup="dialog" aria-controls="viewerModal">
     Web <b id="viewCount">0</b>
   </button>
@@ -817,7 +818,8 @@ const INLINE_GIF_SIZE = window.innerWidth <= 520 ? 150 : 240;
     const sendBtn = document.getElementById("sendBtn");
 
     const userDisplay = document.getElementById("userDisplay");
-    const changeNameBtn = document.getElementById("changeName");
+const pinUserBtn = document.getElementById("pinUserBtn");
+const changeNameBtn = document.getElementById("changeName");
 
     const gifBtn = document.getElementById("gifBtn");
     const stickerBtn = document.getElementById("stickerBtn");
@@ -924,20 +926,41 @@ window.addEventListener("message", (event) => {
     }
 
     function setWebsiteUsername(newName) {
-      const clean = (newName || "").trim() || "Guest";
-      localStorage.setItem(USER_STORAGE_KEY, clean);
-      USERNAME = clean;
-      userDisplay.textContent = USERNAME;
-    }
+  if (pinnedUsername) return;
+
+  const clean = (newName || "").trim() || "Guest";
+  localStorage.setItem(USER_STORAGE_KEY, clean);
+  USERNAME = clean;
+  userDisplay.textContent = USERNAME;
+}
 
     let USERNAME = getWebsiteUsername();
-    userDisplay.textContent = USERNAME;
+let pinnedUsername = localStorage.getItem("ma3d_pinned_username") === "true";
+userDisplay.textContent = USERNAME;
+
+if (pinnedUsername) {
+  pinUserBtn.style.opacity = "1";
+} else {
+  pinUserBtn.style.opacity = "0.5";
+}    
 
     changeNameBtn.addEventListener("click", () => {
       const newName = prompt("Change your chat name:", USERNAME);
       if (newName !== null) setWebsiteUsername(newName);
       messageInput.focus();
     });
+
+pinUserBtn.addEventListener("click", () => {
+  pinnedUsername = !pinnedUsername;
+
+  localStorage.setItem("ma3d_pinned_username", pinnedUsername);
+
+  if (pinnedUsername) {
+    pinUserBtn.style.opacity = "1";
+  } else {
+    pinUserBtn.style.opacity = "0.5";
+  }
+});    
 
     /* =========================
        SAFE HELPERS
