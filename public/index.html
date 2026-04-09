@@ -1028,6 +1028,7 @@ gap: 10px;
 const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
 const ROOM = "ma3dtribe";
+const USER_STORAGE_KEY = "ma3dtribe_username";
 const WEB_SESSION_KEY = "ma3d_web_session_id";
 const AUDIO_STARTED_KEY = "ma3d_audio_started";
 const AUDIO_STICKY_KEY = "ma3d_audio_sticky";
@@ -1045,13 +1046,17 @@ if (!webSessionId) {
   localStorage.setItem(WEB_SESSION_KEY, webSessionId);
 }
 
-function pushWebCountToChat(count){
+function getWebsiteUsername() {
+  return (localStorage.getItem(USER_STORAGE_KEY) || "Guest").trim() || "Guest";
+}      
+function pushWebCountToChat(count, viewers = []){
   const n = Number(count || 0);
 
   try {
     chatFrame?.contentWindow?.postMessage({
       type: "ma3d:webCount",
-      count: n
+      count: n,
+      viewers
     }, "*");
   } catch (e) {}
 
@@ -1071,29 +1076,39 @@ function recomputeWebCount(channel){
   const sessions = new Map();
 
   for (const key in state) {
-    const metas = (state[key] || []).filter(m => {
-      return m?.streamLoaded === true && (now - Number(m?.t || 0)) < STALE_MS;
-    });
+  const metas = (state[key] || []).filter(m => {
+    const fresh = (now - Number(m?.t || 0)) < STALE_MS;
+    const activeOnSite = m?.pageActive === true;
+    const listeningInBackground = m?.streamLoaded === true;
+    return fresh && (activeOnSite || listeningInBackground);
+  });
 
-    if (!metas.length) continue;
+  if (!metas.length) continue;
 
-    let latest = metas[0];
-    for (const m of metas) {
-      if (Number(m?.t || 0) > Number(latest?.t || 0)) {
-        latest = m;
-      }
+  let latest = metas[0];
+  for (const m of metas) {
+    if (Number(m?.t || 0) > Number(latest?.t || 0)) {
+      latest = m;
     }
-
-    sessions.set(key, latest);
   }
 
-  pushWebCountToChat(sessions.size);
+  sessions.set(key, latest);
+}
+
+    const viewers = Array.from(sessions.values())
+    .sort((a, b) => Number(b?.t || 0) - Number(a?.t || 0))
+    .map(m => ({
+      name: (m?.username || "Guest").toString(),
+      chatted: !!m?.chatted,
+      t: Number(m?.t || 0)
+    }));
+
+  pushWebCountToChat(sessions.size, viewers);
 }
 
 async function startWebPresence(){
   if (!sb) return;
   if (document.hidden) return;
-  if (!streamLoaded) return;
 
   if (webPresenceChannel) {
     try { await webPresenceChannel.unsubscribe(); } catch (e) {}
@@ -1112,21 +1127,25 @@ async function startWebPresence(){
   await webPresenceChannel.subscribe(async (status) => {
     if (status !== "SUBSCRIBED") return;
 
-    try {
+        try {
       await webPresenceChannel.track({
-        streamLoaded: true,
-        t: Date.now()
-      });
+  username: getWebsiteUsername(),
+  pageActive: !document.hidden,
+  streamLoaded: !!streamLoaded,
+  t: Date.now()
+});
     } catch (e) {}
 
     recomputeWebCount(webPresenceChannel);
 
     if (webHeartbeat) clearInterval(webHeartbeat);
 
-    webHeartbeat = setInterval(async () => {
+            webHeartbeat = setInterval(async () => {
       try {
         await webPresenceChannel.track({
-          streamLoaded: true,
+          username: getWebsiteUsername(),
+          pageActive: !document.hidden,
+          streamLoaded: !!streamLoaded,
           t: Date.now()
         });
         recomputeWebCount(webPresenceChannel);
@@ -1219,8 +1238,34 @@ const stickyFresh = (Date.now() - stickyTs) < AUDIO_STICKY_TTL;
   } catch (e) {}
 }
 
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) return;
+document.addEventListener("visibilitychange", async () => {
+  if (document.hidden) {
+    if (webPresenceChannel) {
+      try {
+        await webPresenceChannel.track({
+          username: getWebsiteUsername(),
+          pageActive: false,
+          streamLoaded: !!streamLoaded,
+          t: Date.now()
+        });
+        recomputeWebCount(webPresenceChannel);
+      } catch (e) {}
+    }
+    return;
+  }
+
+  if (webPresenceChannel) {
+    try {
+      await webPresenceChannel.track({
+        username: getWebsiteUsername(),
+        pageActive: true,
+        streamLoaded: !!streamLoaded,
+        t: Date.now()
+      });
+      recomputeWebCount(webPresenceChannel);
+    } catch (e) {}
+  }
+
   refreshOnReturn();
 });
 
@@ -1336,6 +1381,7 @@ setInterval(() => {
   desc.textContent = "Status unavailable. Tap to start audio.";
   manualBtn.style.display = "inline-flex";
 });
+startWebPresence();      
     });
     /* =========================
    BILLBOARD SLIDER
