@@ -1761,25 +1761,35 @@ if (nearTop) {
         contentToSend = encodeReplyPayload(replyState.username, replyState.text, contentToSend);
       }
 
-      const { error } = await sb.from("messages").insert({
-        room: ROOM,
-        username: USERNAME,
-        kind: "text",
-        content: contentToSend,
-        source: "web",
-              });
+      const { data, error } = await sb
+  .from("messages")
+  .insert({
+    room: ROOM,
+    username: USERNAME,
+    kind: "text",
+    content: contentToSend,
+    source: "web",
+  })
+  .select("id, room, username, kind, content, created_at")
+  .single();
 
-      if (error){
-        alert("Save failed: " + error.message);
-      } else {
-        messageInput.value = "";
-        pendingStickers = [];
-        clearReplyState();
-        markChatted();
-        if (window.innerWidth > 520) {
-  messageInput.focus();
+if (error){
+  alert("Save failed: " + error.message);
+} else {
+  if (data && !renderedIds.has(data.id)) {
+    renderRow(data, "prepend");
+    chatMessages.scrollTop = 0;
+  }
+
+  messageInput.value = "";
+  pendingStickers = [];
+  clearReplyState();
+  markChatted();
+
+  if (window.innerWidth > 520) {
+    messageInput.focus();
+  }
 }
-      }
     }
 
     sendBtn.addEventListener("click", sendText);
@@ -1814,23 +1824,32 @@ if (nearTop) {
     });
 
     async function sendGif(url){
-      if (!sb) return;
+  if (!sb) return;
 
-      const { error } = await sb.from("messages").insert({
-        room: ROOM,
-        username: USERNAME,
-        kind: "gif",
-        content: url,
-        source: "web",
-              });
+  const { data, error } = await sb
+    .from("messages")
+    .insert({
+      room: ROOM,
+      username: USERNAME,
+      kind: "gif",
+      content: url,
+      source: "web",
+    })
+    .select("id, room, username, kind, content, created_at")
+    .single();
 
-      if (error){
-        alert("GIF send failed: " + error.message);
-      } else {
-        markChatted();
-        closeGifModal();
-      }
+  if (error){
+    alert("GIF send failed: " + error.message);
+  } else {
+    if (data && !renderedIds.has(data.id)) {
+      renderRow(data, "prepend");
+      chatMessages.scrollTop = 0;
     }
+
+    markChatted();
+    closeGifModal();
+  }
+}
 
     async function loadTrending() {
       gifResults.textContent = "Loading trending GIFs...";
@@ -1890,23 +1909,32 @@ if (nearTop) {
        STICKERS
     ========================= */
     async function sendSticker(url){
-      if (!sb) return;
+  if (!sb) return;
 
-      const { error } = await sb.from("messages").insert({
-        room: ROOM,
-        username: USERNAME,
-        kind: "sticker",
-        content: url,
-        source: "web",
-              });
+  const { data, error } = await sb
+    .from("messages")
+    .insert({
+      room: ROOM,
+      username: USERNAME,
+      kind: "sticker",
+      content: url,
+      source: "web",
+    })
+    .select("id, room, username, kind, content, created_at")
+    .single();
 
-      if (error){
-        alert("Sticker send failed: " + error.message);
-      } else {
-        markChatted();
-        closeStickers();
-      }
+  if (error){
+    alert("Sticker send failed: " + error.message);
+  } else {
+    if (data && !renderedIds.has(data.id)) {
+      renderRow(data, "prepend");
+      chatMessages.scrollTop = 0;
     }
+
+    markChatted();
+    closeStickers();
+  }
+}
 
 function renderStickerBatch(reset = false){
   if (!stickerGrid) return;
