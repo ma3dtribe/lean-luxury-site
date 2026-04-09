@@ -791,8 +791,7 @@ console.log("SCRIPT TAG RUNNING");
     const GIPHY_API_KEY = "3zxGKg42FRkYfKmUrnjmobhQch37O33L";
     const USER_STORAGE_KEY = "ma3dtribe_username";
     const SESSION_KEY = "ma3dtribe_presence_session";
-    const PINNED_MESSAGE_KEY = "ma3dtribe_pinned_message";
-    
+        
     let stickers = [];
 let stickersLoaded = false;
 let stickersRendered = false;
@@ -940,11 +939,11 @@ window.addEventListener("message", (event) => {
   USERNAME = clean;
   userDisplay.textContent = USERNAME;
 
-  if (USERNAME && USERNAME !== "Guest") {
-    pinUserBtn.style.display = "inline-block";
-  } else {
-    pinUserBtn.style.display = "none";
-  }
+  if (USERNAME === "CVO") {
+  pinUserBtn.style.display = "inline-block";
+} else {
+  pinUserBtn.style.display = "none";
+}
 }
 
 let USERNAME = getWebsiteUsername();
@@ -960,7 +959,7 @@ if (pinnedUsername) {
     
 
 // 👇 Show pin only if username exists
-if (USERNAME && USERNAME !== "Guest") {
+if (USERNAME === "CVO") {
   pinUserBtn.style.display = "inline-block";
 } else {
   pinUserBtn.style.display = "none";
@@ -1006,30 +1005,48 @@ pinUserBtn.addEventListener("click", () => {
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-function setPinnedMessage(text) {
+async function setPinnedMessage(text) {
   const clean = String(text || "").trim();
 
   if (!clean) {
-    localStorage.removeItem(PINNED_MESSAGE_KEY);
     pinnedMessageBar.style.display = "none";
     pinnedMessageText.textContent = "";
     return;
   }
 
-  localStorage.setItem(PINNED_MESSAGE_KEY, clean);
+  const { error } = await sb
+    .from("pinned_messages")
+    .upsert({
+      room: ROOM,
+      content: clean,
+      updated_by: USERNAME,
+      updated_at: new Date().toISOString()
+    });
+
+  if (error) {
+    alert("Pinned message failed: " + error.message);
+    return;
+  }
+
   pinnedMessageText.textContent = clean;
   pinnedMessageBar.style.display = "block";
 }
 
-function loadPinnedMessage() {
-  const saved = localStorage.getItem(PINNED_MESSAGE_KEY) || "";
-  if (saved.trim()) {
-    pinnedMessageText.textContent = saved;
-    pinnedMessageBar.style.display = "block";
-  } else {
+async function loadPinnedMessage() {
+  const { data, error } = await sb
+    .from("pinned_messages")
+    .select("content")
+    .eq("room", ROOM)
+    .maybeSingle();
+
+  if (error || !data?.content?.trim()) {
     pinnedMessageBar.style.display = "none";
     pinnedMessageText.textContent = "";
+    return;
   }
+
+  pinnedMessageText.textContent = data.content;
+  pinnedMessageBar.style.display = "block";
 }
 
     
@@ -1551,10 +1568,10 @@ if (USERNAME === "CVO") {
   pinBtn.type = "button";
   pinBtn.textContent = "📌 Pin";
 
-  pinBtn.addEventListener("click", () => {
+  pinBtn.addEventListener("click", async () => {
     const parsed = parseReplyPayload(row.content || "");
     const textToPin = parsed.body || row.content || "";
-    setPinnedMessage(textToPin);
+    await setPinnedMessage(textToPin);
     bubble.classList.remove("showActions");
   });
 
@@ -1683,18 +1700,23 @@ function subscribeRealtime(){
       { event: "INSERT", schema: "public", table: "messages", filter: `room=eq.${ROOM}` },
       (payload) => {
         if (!payload || !payload.new) return;
-
         if (renderedIds.has(payload.new.id)) return;
 
         const nearTop = chatMessages.scrollTop < 120;
-
         renderRow(payload.new, "prepend");
 
-      if (nearTop) {
-  setTimeout(() => {
-    chatMessages.scrollTop = 0;
-  }, 20);
-}
+        if (nearTop) {
+          setTimeout(() => {
+            chatMessages.scrollTop = 0;
+          }, 20);
+        }
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "pinned_messages", filter: `room=eq.${ROOM}` },
+      async () => {
+        await loadPinnedMessage();
       }
     )
     .subscribe((status) => console.log("realtime:", status));
@@ -2206,7 +2228,7 @@ document.addEventListener("visibilitychange", async () => {
   window.sendText = sendText;
   window.sb = sb;
   console.log("CHAT SCRIPT LOADED");
-loadPinnedMessage();      
+await loadPinnedMessage();      
 
   try { messageInput?.blur(); } catch(e) {}
 
