@@ -849,6 +849,7 @@ const changeNameBtn = document.getElementById("changeName");
     const twViewCountEl = document.getElementById("twViewCount");
 
 let parentWebCount = 0;
+let parentWebViewers = [];    
 
 function setWebCountFromParent(n){
   parentWebCount = Number(n || 0);
@@ -897,10 +898,12 @@ window.addEventListener("message", (event) => {
   const data = event.data || {};
 
   if (data.type === "ma3d:webCount") {
-    parentWebCount = Number(data.count || 0);
-    if (viewCountEl) viewCountEl.textContent = String(parentWebCount);
-    return;
-  }
+  parentWebCount = Number(data.count || 0);
+  parentWebViewers = Array.isArray(data.viewers) ? data.viewers : [];
+  latestViewerRows = parentWebViewers;
+  if (viewCountEl) viewCountEl.textContent = String(parentWebCount);
+  return;
+}
 
   if (data.type === "ma3d:refreshOnReturn") {
     refreshChatOnReturn();
@@ -1353,8 +1356,8 @@ function buildViewerRowsFromPresence(channel){
     }
 
     function updateViewersUI(channel){
-      latestViewerRows = buildViewerRowsFromPresence(channel);
-    }
+  latestViewerRows = parentWebViewers;
+}
 
     function openViewerModal(){
       renderViewerList(latestViewerRows);
