@@ -1092,6 +1092,7 @@ function recomputeWebCount(channel){
 
 async function startWebPresence(){
   if (!sb) return;
+  if (document.hidden) return;
   if (!streamLoaded) return;
 
   if (webPresenceChannel) {
@@ -1130,7 +1131,7 @@ async function startWebPresence(){
         });
         recomputeWebCount(webPresenceChannel);
       } catch (e) {}
-    }, 15000);
+    }, 20000);
   });
 }
 
@@ -1237,6 +1238,7 @@ window.addEventListener("pageshow", () => {
 });
 
 window.addEventListener("focus", () => {
+  if (document.hidden) return;
   refreshOnReturn();
 });
 
@@ -1309,7 +1311,7 @@ setInterval(() => {
 }
     })
     .catch(() => {});
-}, 10000);      
+}, 20000);      
       
 
       fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
