@@ -927,6 +927,14 @@ gap: 10px;
     </div>
 
     <div id="playerMount" style="margin-top:10px;"></div>
+<audio
+  id="audioOnlyPlayer"
+  playsinline
+  preload="none"
+  crossorigin="anonymous"
+  style="display:none;"
+></audio>
+    
   </div>
 
   <!-- CHAT -->
@@ -1025,7 +1033,19 @@ gap: 10px;
       const desc = document.getElementById("watchDesc");
       const manualBtn = document.getElementById("manualLoadBtn");
       const watchShell = document.getElementById("watchShell");
-      const chatFrame = document.querySelector('#chat iframe');
+const audioOnlyPlayer = document.getElementById("audioOnlyPlayer");
+const AUDIO_ONLY_URL = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
+
+function primeAudioOnly() {
+  if (!audioOnlyPlayer) return;
+  if (audioOnlyPlayer.src !== AUDIO_ONLY_URL) {
+    audioOnlyPlayer.src = AUDIO_ONLY_URL;
+  }
+  audioOnlyPlayer.load();
+}
+
+const chatFrame = document.querySelector('#chat iframe');
+      
 
 const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
@@ -1180,6 +1200,9 @@ chatFrame?.addEventListener("load", () => {
   mount.dataset.loaded = "";
   mount.innerHTML = "";
   localStorage.setItem(AUDIO_STARTED_KEY, "1");
+  try {
+    audioOnlyPlayer.pause();
+  } catch(e) {}
 }
 
   mount.dataset.loaded = "1";
@@ -1192,8 +1215,8 @@ localStorage.setItem(AUDIO_STARTED_KEY, "1");
          watchShell.style.display = "none";
          
         const iframe = document.createElement("iframe");
-        const shouldMute = userStarted ? "false" : "true";
-iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=${shouldMute}`;
+        const shouldMute = "true";
+iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=false&muted=${shouldMute}`;
         iframe.style.width = "100%";
 iframe.style.aspectRatio = "16 / 9";
 iframe.style.height = "auto";
@@ -1206,10 +1229,25 @@ iframe.style.height = "auto";
 document.getElementById("explicitWarning").style.display = "block";
 
 streamLoaded = true;
+
+setTimeout(() => {
+  try {
+    audioOnlyPlayer.pause();
+  } catch(e) {}
+}, 1500);
+
 startWebPresence();
 
        }
-manualBtn.addEventListener("click", () => loadPlayer(true));
+manualBtn.addEventListener("click", async () => {
+  primeAudioOnly();
+
+  try {
+    await audioOnlyPlayer.play().catch(() => {});
+  } catch(e) {}
+
+  loadPlayer(true);
+});      
 
 let lastRefreshOnReturn = 0;
 
@@ -1224,6 +1262,8 @@ const stickyTs = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
 const stickyFresh = (Date.now() - stickyTs) < AUDIO_STICKY_TTL;  
   const hasPlayer = !!mount.querySelector("iframe");
   if ((hadAudioStarted || (sticky && stickyFresh)) && !hasPlayer) {
+  primeAudioOnly();
+  audioOnlyPlayer.play().catch(() => {});
   watchShell.style.display = "none";
   loadPlayer(true);
   return;
@@ -1256,7 +1296,7 @@ document.addEventListener("visibilitychange", async () => {
     return;
   }
 
-  if (webPresenceChannel) {
+    if (webPresenceChannel) {
     try {
       await webPresenceChannel.track({
         username: getWebsiteUsername(),
@@ -1268,6 +1308,7 @@ document.addEventListener("visibilitychange", async () => {
     } catch (e) {}
   }
 
+  primeAudioOnly();
   refreshOnReturn();
 });
 
@@ -1277,22 +1318,27 @@ window.addEventListener("pageshow", () => {
   const fresh = (Date.now() - ts) < AUDIO_STICKY_TTL;
 
   if (sticky && fresh && !mount.querySelector("iframe")) {
-    loadPlayer(true);
-    return;
-  }
+  primeAudioOnly();
+  audioOnlyPlayer.play().catch(() => {});
+  loadPlayer(true);
+  return;
+}
 
   refreshOnReturn();
 });
 
 window.addEventListener("focus", () => {
   if (document.hidden) return;
+  primeAudioOnly();
   refreshOnReturn();
 });
 
-  document.getElementById("mcBackground")?.addEventListener("click", () => {
+  document.getElementById("mcBackground")?.addEventListener("click", async () => {
   watchShell.style.display = "";
 
   if (!mount.dataset.loaded) {
+    primeAudioOnly();
+    await audioOnlyPlayer.play().catch(() => {});
     loadPlayer(true);
   }
 
@@ -1303,9 +1349,13 @@ window.addEventListener("focus", () => {
   }, 300);
 });
 
-document.getElementById("mcPlay")?.addEventListener("click", () => {
+document.getElementById("mcPlay")?.addEventListener("click", async () => {
   localStorage.setItem(AUDIO_STARTED_KEY, "1");
   watchShell.style.display = "";
+
+  primeAudioOnly();
+  await audioOnlyPlayer.play().catch(() => {});
+
   loadPlayer();
 });
 
@@ -1349,9 +1399,19 @@ setInterval(() => {
 
   if (!mount.dataset.loaded) {
     desc.textContent = "We’re live — tap Play to start listening.";
+    primeAudioOnly();
   }
-} else {
+} 
+      
+      else {
   liveBtn?.classList.remove("live-glow");
+
+  try {
+    audioOnlyPlayer.pause();
+    audioOnlyPlayer.removeAttribute("src");
+    audioOnlyPlayer.load();
+  } catch(e) {}
+
   localStorage.removeItem(AUDIO_STARTED_KEY);
   sessionStorage.removeItem(AUDIO_STICKY_KEY);
   sessionStorage.removeItem(AUDIO_STICKY_TS_KEY);
@@ -1369,7 +1429,14 @@ setInterval(() => {
 
     if (isLive) {
   desc.textContent = "We’re live — tap Play to start listening.";
+  primeAudioOnly();
 } else {
+  try {
+    audioOnlyPlayer.pause();
+    audioOnlyPlayer.removeAttribute("src");
+    audioOnlyPlayer.load();
+  } catch(e) {}
+
   watchShell.style.display = "";
   watchShell.classList.remove("collapsed-head");
   desc.textContent = "Currently off air. Tap to start audio when we go live.";
