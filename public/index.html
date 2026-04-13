@@ -1227,7 +1227,7 @@ localStorage.setItem(AUDIO_STARTED_KEY, "1");
          
         const iframe = document.createElement("iframe");
         const shouldMute = "false";
-iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=${shouldMute}`;
+iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=false&muted=true`;
         iframe.style.width = "100%";
 iframe.style.aspectRatio = "16 / 9";
 iframe.style.height = "auto";
