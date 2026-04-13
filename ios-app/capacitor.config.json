@@ -1,1 +1,9 @@
-
+{
+  "appId": "com.ma3dtribe.media",
+  "appName": "MA3DTribe",
+  "webDir": "../public",
+  "server": {
+    "url": "https://ma3dtribe.com",
+    "cleartext": false
+  }
+}
