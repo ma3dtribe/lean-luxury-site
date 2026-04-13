@@ -1,0 +1,9 @@
+{
+  "name": "ma3dtribe-ios-app",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0"
+  }
+}
