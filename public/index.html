@@ -1421,7 +1421,6 @@ setInterval(() => {
 
   if (!streamLoaded) {
     desc.textContent = "We’re live — tap Play to start listening.";
-    primeAudioOnly();
   }
 } 
       
@@ -1452,7 +1451,6 @@ streamLoaded = false;
 
     if (isLive) {
   desc.textContent = "We’re live — tap Play to start listening.";
-  primeAudioOnly();
 } else {
   try {
     audioOnlyPlayer.pause();
