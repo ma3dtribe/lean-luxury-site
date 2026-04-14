@@ -1257,9 +1257,10 @@ manualBtn.addEventListener("click", async () => {
 
   try {
     await audioOnlyPlayer.play();
-  } catch(e) {}
-
-  loadPlayer(true);
+    loadPlayer(true);
+  } catch(e) {
+    console.error("Direct audio failed", e);
+  }
 });      
 
 let lastRefreshOnReturn = 0;
@@ -1371,9 +1372,13 @@ document.getElementById("mcPlay")?.addEventListener("click", async () => {
   watchShell.style.display = "";
 
   primeAudioOnly();
-  await audioOnlyPlayer.play();
 
-  loadPlayer(true);
+  try {
+    await audioOnlyPlayer.play();
+    loadPlayer(true);
+  } catch(e) {
+    console.error("Direct audio failed", e);
+  }
 });
 
  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
