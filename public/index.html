@@ -1211,7 +1211,7 @@ chatFrame?.addEventListener("load", () => {
 });      
       
        function loadPlayer(userStarted = false) {
-  if (streamLoaded && !userStarted) return;
+  if (streamLoaded && !userStarted && audioOnlyPlayer.style.display === "block") return;
 watchShell.style.display = "";
          
   if (userStarted) {
@@ -1246,7 +1246,9 @@ if (
   audioOnlyPlayer.style.display === "block"
 ) {
   mount.innerHTML = "";
+  return;
 } else {
+  mount.innerHTML = "";
   iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=false&muted=true`;
   mount.appendChild(iframe);
 }
