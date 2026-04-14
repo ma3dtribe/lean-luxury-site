@@ -931,9 +931,10 @@ gap: 10px;
   id="audioOnlyPlayer"
   playsinline
   webkit-playsinline
-  preload="auto"
+  preload="none"
   crossorigin="anonymous"
   controls
+  style="display:none;"
 ></audio>
     
   </div>
@@ -1047,6 +1048,8 @@ audioOnlyPlayer.addEventListener("pause", () => {
 
 audioOnlyPlayer.addEventListener("error", () => {
   streamLoaded = false;
+  audioOnlyPlayer.style.display = "none";
+  audioOnlyPlayer.removeAttribute("src");
 });      
 
 function primeAudioOnly() {
@@ -1209,8 +1212,7 @@ chatFrame?.addEventListener("load", () => {
       
        function loadPlayer(userStarted = false) {
   if (streamLoaded && !userStarted) return;
-streamLoaded = true;
-         watchShell.style.display = "";
+watchShell.style.display = "";
          
   if (userStarted) {
   mount.innerHTML = "";
@@ -1237,7 +1239,12 @@ iframe.setAttribute("allow", "autoplay; fullscreen");
 iframe.style.border = "0";
 iframe.style.borderRadius = "18px";
 
-if (USE_DIRECT_AUDIO_ON_MOBILE && window.innerWidth <= 980 && streamLoaded) {
+if (
+  USE_DIRECT_AUDIO_ON_MOBILE &&
+  window.innerWidth <= 980 &&
+  streamLoaded &&
+  audioOnlyPlayer.style.display === "block"
+) {
   mount.innerHTML = "";
 } else {
   iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=false&muted=true`;
@@ -1247,8 +1254,6 @@ if (USE_DIRECT_AUDIO_ON_MOBILE && window.innerWidth <= 980 && streamLoaded) {
         
 document.getElementById("explicitWarning").style.display = "block";
 
-streamLoaded = true;
-
 startWebPresence();
 
        }
@@ -1257,10 +1262,15 @@ manualBtn.addEventListener("click", async () => {
 
   try {
     await audioOnlyPlayer.play();
+    audioOnlyPlayer.style.display = "block";
     loadPlayer(true);
   } catch(e) {
-    console.error("Direct audio failed", e);
-  }
+  console.error("Direct audio failed", e);
+  streamLoaded = false;
+  audioOnlyPlayer.style.display = "none";
+  audioOnlyPlayer.removeAttribute("src");
+  loadPlayer(false);
+}
 });      
 
 let lastRefreshOnReturn = 0;
@@ -1375,10 +1385,14 @@ document.getElementById("mcPlay")?.addEventListener("click", async () => {
 
   try {
     await audioOnlyPlayer.play();
+    audioOnlyPlayer.style.display = "block";
     loadPlayer(true);
   } catch(e) {
-    console.error("Direct audio failed", e);
-  }
+  console.error("Direct audio failed", e);
+  streamLoaded = false;
+  audioOnlyPlayer.style.display = "none";
+  loadPlayer(false);
+}
 });
 
  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
