@@ -1259,10 +1259,10 @@ startWebPresence();
        }
 manualBtn.addEventListener("click", async () => {
   primeAudioOnly();
+  audioOnlyPlayer.style.display = "block";
 
   try {
     await audioOnlyPlayer.play();
-    audioOnlyPlayer.style.display = "block";
     loadPlayer(true);
   } catch(e) {
   console.error("Direct audio failed", e);
@@ -1382,10 +1382,10 @@ document.getElementById("mcPlay")?.addEventListener("click", async () => {
   watchShell.style.display = "";
 
   primeAudioOnly();
+  audioOnlyPlayer.style.display = "block";
 
   try {
     await audioOnlyPlayer.play();
-    audioOnlyPlayer.style.display = "block";
     loadPlayer(true);
   } catch(e) {
   console.error("Direct audio failed", e);
