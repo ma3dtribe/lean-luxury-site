@@ -1262,8 +1262,9 @@ manualBtn.addEventListener("click", async () => {
   audioOnlyPlayer.style.display = "block";
 
   try {
-    await audioOnlyPlayer.play();
-    loadPlayer(true);
+  await audioOnlyPlayer.play();
+  streamLoaded = true;
+  loadPlayer(true);
   } catch(e) {
   console.error("Direct audio failed", e);
   streamLoaded = false;
@@ -1385,8 +1386,9 @@ document.getElementById("mcPlay")?.addEventListener("click", async () => {
   audioOnlyPlayer.style.display = "block";
 
   try {
-    await audioOnlyPlayer.play();
-    loadPlayer(true);
+  await audioOnlyPlayer.play();
+  streamLoaded = true;
+  loadPlayer(true);
   } catch(e) {
   console.error("Direct audio failed", e);
   streamLoaded = false;
