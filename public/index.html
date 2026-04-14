@@ -1035,7 +1035,8 @@ gap: 10px;
       const manualBtn = document.getElementById("manualLoadBtn");
       const watchShell = document.getElementById("watchShell");
 const audioOnlyPlayer = document.getElementById("audioOnlyPlayer");
-const AUDIO_ONLY_URL = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
+const DIRECT_AUDIO_URL = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
+const USE_DIRECT_AUDIO_ON_MOBILE = true;
 audioOnlyPlayer.addEventListener("play", () => {
   streamLoaded = true;
 });
@@ -1050,8 +1051,8 @@ audioOnlyPlayer.addEventListener("error", () => {
 
 function primeAudioOnly() {
   if (!audioOnlyPlayer) return;
-  if (audioOnlyPlayer.src !== AUDIO_ONLY_URL) {
-    audioOnlyPlayer.src = AUDIO_ONLY_URL;
+  if (audioOnlyPlayer.src !== DIRECT_AUDIO_URL) {
+    audioOnlyPlayer.src = DIRECT_AUDIO_URL;
   }
   if (!streamLoaded) {
     audioOnlyPlayer.load();
@@ -1224,20 +1225,26 @@ localStorage.setItem(AUDIO_STARTED_KEY, "1");
         
         manualBtn.style.display = "none";
          watchShell.classList.add("collapsed-head");
-         watchShell.style.display = "none";
+         
          
         const iframe = document.createElement("iframe");
-        const shouldMute = "false";
-iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=false&muted=true`;
-        iframe.style.width = "100%";
+
+iframe.style.width = "100%";
 iframe.style.aspectRatio = "16 / 9";
 iframe.style.height = "auto";
-        iframe.allowFullscreen = true;
-         iframe.setAttribute("allow", "autoplay; fullscreen");
-         iframe.style.border = "0";
-        iframe.style.borderRadius = "18px";
+iframe.allowFullscreen = true;
+iframe.setAttribute("allow", "autoplay; fullscreen");
+iframe.style.border = "0";
+iframe.style.borderRadius = "18px";
 
-        mount.appendChild(iframe)
+if (USE_DIRECT_AUDIO_ON_MOBILE && window.innerWidth <= 980) {
+  mount.innerHTML = "";
+} else {
+  iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=false&muted=true`;
+  mount.appendChild(iframe);
+}
+
+        
 document.getElementById("explicitWarning").style.display = "block";
 
 streamLoaded = true;
