@@ -1260,21 +1260,29 @@ startWebPresence();
 
        }
 manualBtn.addEventListener("click", async () => {
+  localStorage.setItem(AUDIO_STARTED_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
+
+  mount.innerHTML = "";
+  watchShell.style.display = "";
   primeAudioOnly();
   audioOnlyPlayer.style.display = "block";
 
   try {
-  await audioOnlyPlayer.play();
-  streamLoaded = true;
-  loadPlayer(true);
+    await audioOnlyPlayer.play();
+    streamLoaded = true;
+    manualBtn.style.display = "none";
+    watchShell.classList.add("collapsed-head");
+    startWebPresence();
   } catch(e) {
-  console.error("Direct audio failed", e);
-  streamLoaded = false;
-  audioOnlyPlayer.style.display = "none";
-  audioOnlyPlayer.removeAttribute("src");
-  loadPlayer(false);
-}
-});      
+    console.error("Direct audio failed", e);
+    streamLoaded = false;
+    audioOnlyPlayer.style.display = "none";
+    audioOnlyPlayer.removeAttribute("src");
+    audioOnlyPlayer.load();
+  }
+});     
 
 let lastRefreshOnReturn = 0;
 
@@ -1288,11 +1296,15 @@ const sticky = sessionStorage.getItem(AUDIO_STICKY_KEY) === "1";
 const stickyTs = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
 const stickyFresh = (Date.now() - stickyTs) < AUDIO_STICKY_TTL;  
   const hasPlayer = !!mount.querySelector("iframe");
-  if ((hadAudioStarted || (sticky && stickyFresh)) && !hasPlayer) {
+  if (hadAudioStarted || (sticky && stickyFresh)) {
   primeAudioOnly();
-audioOnlyPlayer.play().catch(() => {});
-watchShell.style.display = "none";
-if (!streamLoaded) loadPlayer(true);
+  audioOnlyPlayer.style.display = "block";
+  audioOnlyPlayer.play().then(() => {
+    streamLoaded = true;
+    manualBtn.style.display = "none";
+    watchShell.classList.add("collapsed-head");
+    startWebPresence();
+  }).catch(() => {});
   return;
 }
 
@@ -1335,7 +1347,7 @@ document.addEventListener("visibilitychange", async () => {
     } catch (e) {}
   }
 
-  if (!streamLoaded) {
+  if (localStorage.getItem(AUDIO_STARTED_KEY) === "1") {
   primeAudioOnly();
 }
 refreshOnReturn();
@@ -1346,11 +1358,16 @@ window.addEventListener("pageshow", () => {
   const ts = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
   const fresh = (Date.now() - ts) < AUDIO_STICKY_TTL;
 
-  if (sticky && fresh && !mount.querySelector("iframe")) {
+  if (sticky && fresh) {
   primeAudioOnly();
-audioOnlyPlayer.play().catch(() => {});
-if (!streamLoaded) loadPlayer(true);
-return;
+  audioOnlyPlayer.style.display = "block";
+  audioOnlyPlayer.play().then(() => {
+    streamLoaded = true;
+    manualBtn.style.display = "none";
+    watchShell.classList.add("collapsed-head");
+    startWebPresence();
+  }).catch(() => {});
+  return;
 }
 
   refreshOnReturn();
@@ -1366,14 +1383,28 @@ window.addEventListener("focus", () => {
 
   document.getElementById("mcBackground")?.addEventListener("click", async () => {
   watchShell.style.display = "";
+  localStorage.setItem(AUDIO_STARTED_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
 
   if (!streamLoaded) {
     primeAudioOnly();
-    await audioOnlyPlayer.play();
-    loadPlayer(true);
-  }
+    audioOnlyPlayer.style.display = "block";
 
-  localStorage.setItem(AUDIO_STARTED_KEY, "1");
+    try {
+      await audioOnlyPlayer.play();
+      streamLoaded = true;
+      manualBtn.style.display = "none";
+      watchShell.classList.add("collapsed-head");
+      startWebPresence();
+    } catch(e) {
+      console.error("Direct audio failed", e);
+      streamLoaded = false;
+      audioOnlyPlayer.style.display = "none";
+      audioOnlyPlayer.removeAttribute("src");
+      audioOnlyPlayer.load();
+    }
+  }
 
   setTimeout(() => {
     window.scrollTo(0, 0);
@@ -1382,21 +1413,28 @@ window.addEventListener("focus", () => {
 
 document.getElementById("mcPlay")?.addEventListener("click", async () => {
   localStorage.setItem(AUDIO_STARTED_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
+
   watchShell.style.display = "";
+  mount.innerHTML = "";
 
   primeAudioOnly();
   audioOnlyPlayer.style.display = "block";
 
   try {
-  await audioOnlyPlayer.play();
-  streamLoaded = true;
-  loadPlayer(true);
+    await audioOnlyPlayer.play();
+    streamLoaded = true;
+    manualBtn.style.display = "none";
+    watchShell.classList.add("collapsed-head");
+    startWebPresence();
   } catch(e) {
-  console.error("Direct audio failed", e);
-  streamLoaded = false;
-  audioOnlyPlayer.style.display = "none";
-  loadPlayer(false);
-}
+    console.error("Direct audio failed", e);
+    streamLoaded = false;
+    audioOnlyPlayer.style.display = "none";
+    audioOnlyPlayer.removeAttribute("src");
+    audioOnlyPlayer.load();
+  }
 });
 
  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
@@ -1633,9 +1671,9 @@ window.addEventListener("beforeunload", async () => {
 <!-- MOBILE CONTROL BAR (UI ONLY) -->
 <div class="mobile-control-bar">
   <button class="mobile-control-btn" id="mcPlay" type="button">
-    <div class="icon">▶️</div>
-    <div>Play</div>
-  </button>
+  <div class="icon">▶️</div>
+  <div>Audio Only</div>
+</button>
 
   <button class="mobile-control-btn" id="mcBackground" type="button">
     <div class="icon">🔒</div>
@@ -1643,9 +1681,9 @@ window.addEventListener("beforeunload", async () => {
   </button>
 
   <button class="mobile-control-btn" id="mcLive" type="button">
-    <div class="icon">🔴</div>
-    <div>Live</div>
-  </button>
+  <div class="icon">🔴</div>
+  <div>Watch Live</div>
+</button>
 
   <button class="mobile-control-btn" id="mcRefresh" type="button">
   <div class="icon">🔄</div>
