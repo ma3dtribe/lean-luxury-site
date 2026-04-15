@@ -1424,11 +1424,13 @@ document.getElementById("mcPlay")?.addEventListener("click", async () => {
   mount.innerHTML = "";
 
   try {
-  primeAudioOnly();
-  audioOnlyPlayer.style.display = "block";
-  audioOnlyPlayer.muted = false;
+    primeAudioOnly();
+    audioOnlyPlayer.style.display = "block";
+    audioOnlyPlayer.muted = true;
 
-  await audioOnlyPlayer.play();
+    await audioOnlyPlayer.play();
+
+    audioOnlyPlayer.muted = false;
 
     streamLoaded = true;
     manualBtn.style.display = "none";
@@ -1436,11 +1438,11 @@ document.getElementById("mcPlay")?.addEventListener("click", async () => {
     startWebPresence();
   } catch(e) {
     console.error("Direct audio failed", e);
+    alert("Audio start failed: " + (e?.name || "unknown") + " - " + (e?.message || "no message"));
     streamLoaded = false;
     audioOnlyPlayer.style.display = "none";
     audioOnlyPlayer.removeAttribute("src");
     audioOnlyPlayer.load();
-    alert("Audio could not start. Tap Audio Only again.");
   }
 });
 
