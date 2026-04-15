@@ -1055,15 +1055,9 @@ audioOnlyPlayer.addEventListener("error", () => {
 function primeAudioOnly() {
   if (!audioOnlyPlayer) return;
 
-  try {
-    audioOnlyPlayer.pause();
-  } catch (e) {}
-
-  audioOnlyPlayer.removeAttribute("src");
-  audioOnlyPlayer.load();
-
-  audioOnlyPlayer.src = DIRECT_AUDIO_URL;
-  audioOnlyPlayer.load();
+  if (audioOnlyPlayer.src !== DIRECT_AUDIO_URL) {
+    audioOnlyPlayer.src = DIRECT_AUDIO_URL;
+  }
 }
 
 const chatFrame = document.querySelector('#chat iframe');
