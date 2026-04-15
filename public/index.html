@@ -1054,12 +1054,16 @@ audioOnlyPlayer.addEventListener("error", () => {
 
 function primeAudioOnly() {
   if (!audioOnlyPlayer) return;
-  if (audioOnlyPlayer.src !== DIRECT_AUDIO_URL) {
-    audioOnlyPlayer.src = DIRECT_AUDIO_URL;
-  }
-  if (!streamLoaded) {
-    audioOnlyPlayer.load();
-  }
+
+  try {
+    audioOnlyPlayer.pause();
+  } catch (e) {}
+
+  audioOnlyPlayer.removeAttribute("src");
+  audioOnlyPlayer.load();
+
+  audioOnlyPlayer.src = DIRECT_AUDIO_URL;
+  audioOnlyPlayer.load();
 }
 
 const chatFrame = document.querySelector('#chat iframe');
@@ -1419,11 +1423,14 @@ document.getElementById("mcPlay")?.addEventListener("click", async () => {
   watchShell.style.display = "";
   mount.innerHTML = "";
 
-  primeAudioOnly();
-  audioOnlyPlayer.style.display = "block";
-
   try {
+    primeAudioOnly();
+    audioOnlyPlayer.style.display = "block";
+    audioOnlyPlayer.muted = false;
+    audioOnlyPlayer.currentTime = 0;
+
     await audioOnlyPlayer.play();
+
     streamLoaded = true;
     manualBtn.style.display = "none";
     watchShell.classList.add("collapsed-head");
@@ -1434,6 +1441,7 @@ document.getElementById("mcPlay")?.addEventListener("click", async () => {
     audioOnlyPlayer.style.display = "none";
     audioOnlyPlayer.removeAttribute("src");
     audioOnlyPlayer.load();
+    alert("Audio could not start. Tap Audio Only again.");
   }
 });
 
