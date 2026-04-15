@@ -1424,12 +1424,11 @@ document.getElementById("mcPlay")?.addEventListener("click", async () => {
   mount.innerHTML = "";
 
   try {
-    primeAudioOnly();
-    audioOnlyPlayer.style.display = "block";
-    audioOnlyPlayer.muted = false;
-    audioOnlyPlayer.currentTime = 0;
+  primeAudioOnly();
+  audioOnlyPlayer.style.display = "block";
+  audioOnlyPlayer.muted = false;
 
-    await audioOnlyPlayer.play();
+  await audioOnlyPlayer.play();
 
     streamLoaded = true;
     manualBtn.style.display = "none";
