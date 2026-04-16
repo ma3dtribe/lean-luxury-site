@@ -1409,35 +1409,11 @@ window.addEventListener("focus", () => {
   }, 300);
 });
 
-document.getElementById("mcPlay")?.addEventListener("click", async () => {
+document.getElementById("mcPlay")?.addEventListener("click", () => {
   localStorage.setItem(AUDIO_STARTED_KEY, "1");
   sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
   sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
-
-  watchShell.style.display = "";
-  mount.innerHTML = "";
-
-  try {
-    primeAudioOnly();
-    audioOnlyPlayer.style.display = "block";
-    audioOnlyPlayer.muted = true;
-
-    await audioOnlyPlayer.play();
-
-    audioOnlyPlayer.muted = false;
-
-    streamLoaded = true;
-    manualBtn.style.display = "none";
-    watchShell.classList.add("collapsed-head");
-    startWebPresence();
-  } catch(e) {
-    console.error("Direct audio failed", e);
-    alert("Audio start failed: " + (e?.name || "unknown") + " - " + (e?.message || "no message"));
-    streamLoaded = false;
-    audioOnlyPlayer.style.display = "none";
-    audioOnlyPlayer.removeAttribute("src");
-    audioOnlyPlayer.load();
-  }
+  window.location.href = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
 });
 
  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
