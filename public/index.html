@@ -1503,10 +1503,7 @@ streamLoaded = false;
     
   })
 .catch(() => {
-  watchShell.style.display = "";
-  watchShell.classList.remove("collapsed-head");
-  desc.textContent = "Status unavailable. Tap to start audio.";
-  manualBtn.style.display = "inline-flex";
+  console.log("Live status check temporarily unavailable");
 });
 startWebPresence();      
     });
