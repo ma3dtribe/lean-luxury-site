@@ -1406,6 +1406,17 @@ document.getElementById("mcPlay")?.addEventListener("click", () => {
   window.location.href = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
 });
 
+document.getElementById("mcLive")?.addEventListener("click", () => {
+  try {
+    audioOnlyPlayer.pause();
+    audioOnlyPlayer.removeAttribute("src");
+    audioOnlyPlayer.load();
+  } catch(e) {}
+
+  streamLoaded = false;
+  loadPlayer(true);
+});
+      
  document.getElementById("notifyBtn")?.addEventListener("click", async () => {
   alert("Notify button clicked");
 
