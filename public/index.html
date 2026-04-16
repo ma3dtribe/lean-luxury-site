@@ -1417,20 +1417,26 @@ document.getElementById("mcLive")?.addEventListener("click", () => {
   loadPlayer(true);
 });
       
- document.getElementById("notifyBtn")?.addEventListener("click", async () => {
-  alert("Notify button clicked");
-
+ document.getElementById("notifyBtn")?.addEventListener("click", () => {
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(async function(OneSignal) {
     try {
-      const permission = await OneSignal.Notifications.requestPermission();
+      const permission = OneSignal.Notifications.permission;
 
-      if (permission) {
+      if (permission === "granted") {
+        alert("Notifications already enabled 🔔");
+        return;
+      }
+
+      const granted = await OneSignal.Notifications.requestPermission();
+
+      if (granted) {
         alert("Notifications enabled 🔔");
       } else {
         alert("Notifications blocked ❌");
       }
     } catch (e) {
+      console.error("OneSignal notify error:", e);
       alert("Try again — notifications not ready yet");
     }
   });
