@@ -1237,19 +1237,9 @@ iframe.setAttribute("allow", "autoplay; fullscreen");
 iframe.style.border = "0";
 iframe.style.borderRadius = "18px";
 
-if (
-  USE_DIRECT_AUDIO_ON_MOBILE &&
-  window.innerWidth <= 980 &&
-  streamLoaded &&
-  audioOnlyPlayer.style.display === "block"
-) {
-  mount.innerHTML = "";
-  return;
-} else {
-  mount.innerHTML = "";
-  iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=false&muted=true`;
-  mount.appendChild(iframe);
-}
+mount.innerHTML = "";
+iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=false&muted=true`;
+mount.appendChild(iframe);
 
         
 document.getElementById("explicitWarning").style.display = "block";
