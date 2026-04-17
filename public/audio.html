@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>MA3DTribe Audio</title>
+  <link rel="apple-touch-icon" href="/icons/ma3d-192.png">
+  <style>
+    :root{
+      --bg:#1c1718;
+      --text:#f2eded;
+      --muted:rgba(242,237,237,.78);
+      --border:rgba(255,255,255,.12);
+      --card:rgba(255,255,255,.05);
+      --red:#ff3b3b;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:Inter,system-ui,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    .card{
+      width:min(100%,520px);
+      border-radius:20px;
+      padding:24px;
+      background:var(--card);
+      border:1px solid var(--border);
+      box-shadow:0 12px 40px rgba(0,0,0,.32);
+      text-align:center;
+    }
+
+    .logo{
+      width:100%;
+      max-width:320px;
+      margin:0 auto 20px;
+      display:block;
+    }
+
+    h1{
+      margin:0 0 10px;
+      font-size:28px;
+    }
+
+    p{
+      margin:0 0 18px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:52px;
+      padding:0 18px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,59,59,.16);
+      color:var(--text);
+      text-decoration:none;
+      font-weight:800;
+      cursor:pointer;
+      margin:8px 6px 0;
+    }
+
+    audio{
+      width:100%;
+      margin-top:18px;
+      border-radius:12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="/images/ma3dtribebanner_cropped.png" alt="MA3DTribe Media" class="logo" />
+    <h1>MA3DTribe Audio</h1>
+    <p>Background listening mode for MA3DTribe.</p>
+
+    <a class="btn" href="/" id="backBtn">Back to Site</a>
+
+    <audio id="audioPlayer" controls playsinline preload="auto">
+      <source src="https://audio.ma3dtribe.com/liveaudio/index.m3u8" type="application/x-mpegURL">
+    </audio>
+  </div>
+
+  <script>
+    const audio = document.getElementById("audioPlayer");
+if ("mediaSession" in navigator) {
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: "MA3DTribe Live",
+    artist: "Live DJ Set",
+    album: "MA3DTribe Radio",
+    artwork: [
+      { src: "/icons/ma3d-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icons/ma3d-512.png", sizes: "512x512", type: "image/png" }
+    ]
+  });
+
+  navigator.mediaSession.setActionHandler("play", async () => {
+    try { await audio.play(); } catch(e){}
+  });
+
+  navigator.mediaSession.setActionHandler("pause", () => {
+    audio.pause();
+  });
+}
+    
+  </script>
+</body>
+</html>
