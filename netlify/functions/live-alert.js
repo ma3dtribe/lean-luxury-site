@@ -46,17 +46,15 @@ export default async () => {
   const isLive = !lower.includes("offline");
 
   if (!isLive) {
-    return new Response(JSON.stringify({
-  ok: true,
-  sent: true,
-  uptimeText,
-  idempotencyKey,
-  onesignalStatus: sendRes.status,
-  onesignalResponse: data
-}), {
-  headers: { "content-type": "application/json" }
-});
-  }
+  return new Response(JSON.stringify({
+    ok: true,
+    sent: false,
+    reason: "offline",
+    uptimeText
+  }), {
+    headers: { "content-type": "application/json" }
+  });
+}
 
   const uptimeSeconds = parseUptimeToSeconds(uptimeText);
   const startedAtMs = Date.now() - (uptimeSeconds * 1000);
