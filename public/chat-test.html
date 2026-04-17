@@ -433,22 +433,30 @@
 
     /* EMOJI + STICKERS */
     .emojiPopup{
-      position: fixed;
-      right: 18px;
-      bottom: 92px;
-      width: 420px;
-      max-width: calc(100vw - 20px);
-      background: #0f1623;
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 14px;
-      box-shadow: 0 20px 80px rgba(0,0,0,.55);
-      display: none;
-      z-index: 100000;
-      max-height: 52vh;
-      overflow: auto;
-      pointer-events:none;
-    }
+  position: fixed;
+  left: 50%;
+transform: translateX(-50%);
+  bottom: 92px;
+  width: 420px;
+  max-width: calc(100vw - 20px);
+  background: #0f1623;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 14px;
+  box-shadow: 0 20px 80px rgba(0,0,0,.55);
+  display: none;
+  z-index: 100000;
+  max-height: 52vh;
+  overflow: auto;
+  pointer-events:none;
+}
 
+@media (min-width: 981px){
+  .emojiPopup{
+    top: 90px;
+    bottom: auto;
+    max-height: 70vh;
+  }
+}    
     .emojiPopup.show{
       display:block;
       pointer-events:auto;
