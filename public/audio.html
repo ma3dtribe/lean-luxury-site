@@ -86,6 +86,7 @@
     <h1>MA3DTribe Audio</h1>
     <p>Background listening mode for MA3DTribe.</p>
 
+    <button class="btn" id="startAudioBtn" type="button">Start Audio</button>
     <a class="btn" href="/" id="backBtn">Back to Site</a>
 
     <audio id="audioPlayer" controls playsinline preload="auto">
@@ -95,7 +96,8 @@
 
   <script>
   const audio = document.getElementById("audioPlayer");
-
+    const startAudioBtn = document.getElementById("startAudioBtn");
+    
   if ("mediaSession" in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: "MA3DTribe Live",
@@ -117,6 +119,13 @@
   }
 
   // 👇 THIS IS THE ONLY NEW PART
+startAudioBtn?.addEventListener("click", async () => {
+  try {
+    await audio.play();
+  } catch (e) {
+    console.log("Manual play failed.");
+  }
+});    
   window.addEventListener("load", async () => {
     try {
       await audio.play();
