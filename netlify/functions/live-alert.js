@@ -72,6 +72,9 @@ export default async () => {
   });
 
   const data = await sendRes.json();
+console.log("ONESIGNAL STATUS:", sendRes.status);
+console.log("ONESIGNAL RESPONSE:", JSON.stringify(data));
+console.log("LIVE ALERT DEBUG:", JSON.stringify({ isLive, uptimeText, idempotencyKey }));  
 
   return new Response(JSON.stringify({ ok: true, sent: true, uptimeText, idempotencyKey, data }), {
     headers: { "content-type": "application/json" }
