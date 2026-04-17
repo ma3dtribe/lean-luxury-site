@@ -12,7 +12,6 @@
       --muted:rgba(242,237,237,.78);
       --border:rgba(255,255,255,.12);
       --card:rgba(255,255,255,.05);
-      --red:#ff3b3b;
     }
 
     *{ box-sizing:border-box; }
@@ -69,8 +68,7 @@
       color:var(--text);
       text-decoration:none;
       font-weight:800;
-      cursor:pointer;
-      margin:8px 6px 0;
+      margin-top:10px;
     }
 
     audio{
@@ -82,57 +80,53 @@
 </head>
 <body>
   <div class="card">
-    <img src="/images/ma3dtribebanner_cropped.png" alt="MA3DTribe Media" class="logo" />
+    <img src="/images/ma3dtribebanner_cropped.png" class="logo" />
     <h1>MA3DTribe Audio</h1>
     <p>Background listening mode for MA3DTribe.</p>
 
-    <button class="btn" id="startAudioBtn" type="button">Start Audio</button>
-    <a class="btn" href="/" id="backBtn">Back to Site</a>
+    <a class="btn" href="/">Back to Site</a>
 
-    <audio id="audioPlayer" controls playsinline preload="auto">
-      <source src="https://audio.ma3dtribe.com/liveaudio/index.m3u8" type="application/x-mpegURL">
-    </audio>
+    <audio id="audioPlayer" controls playsinline preload="auto"></audio>
   </div>
 
   <script>
-  const audio = document.getElementById("audioPlayer");
-    const startAudioBtn = document.getElementById("startAudioBtn");
-    
-  if ("mediaSession" in navigator) {
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: "MA3DTribe Live",
-      artist: "Live DJ Set",
-      album: "MA3DTribe Radio",
-      artwork: [
-        { src: "/icons/ma3d-192.png", sizes: "192x192", type: "image/png" },
-        { src: "/icons/ma3d-512.png", sizes: "512x512", type: "image/png" }
-      ]
+    const audio = document.getElementById("audioPlayer");
+    const STREAM_URL = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
+
+    // Load stream on page load
+    window.addEventListener("load", () => {
+      if (audio.src !== STREAM_URL) {
+        audio.src = STREAM_URL;
+        audio.load();
+      }
     });
 
-    navigator.mediaSession.setActionHandler("play", async () => {
-      try { await audio.play(); } catch(e){}
-    });
+    // Media Session (lock screen)
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: "MA3DTribe Live",
+        artist: "Live DJ Set",
+        album: "MA3DTribe Radio",
+        artwork: [
+          { src: "/icons/ma3d-192.png", sizes: "192x192", type: "image/png" },
+          { src: "/icons/ma3d-512.png", sizes: "512x512", type: "image/png" }
+        ]
+      });
 
-    navigator.mediaSession.setActionHandler("pause", () => {
-      audio.pause();
-    });
-  }
+      navigator.mediaSession.setActionHandler("play", async () => {
+        try {
+          if (audio.src !== STREAM_URL) {
+            audio.src = STREAM_URL;
+            audio.load();
+          }
+          await audio.play();
+        } catch(e){}
+      });
 
-  // 👇 THIS IS THE ONLY NEW PART
-startAudioBtn?.addEventListener("click", async () => {
-  try {
-    await audio.play();
-  } catch (e) {
-    console.log("Manual play failed.");
-  }
-});    
-  window.addEventListener("load", async () => {
-    try {
-      await audio.play();
-    } catch (e) {
-      console.log("Autoplay blocked until user taps play.");
+      navigator.mediaSession.setActionHandler("pause", () => {
+        audio.pause();
+      });
     }
-  });
-</script>
+  </script>
 </body>
 </html>
