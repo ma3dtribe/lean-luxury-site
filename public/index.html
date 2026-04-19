@@ -1445,14 +1445,21 @@ document.getElementById("mcLive")?.addEventListener("click", () => {
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(async function(OneSignal) {
     try {
+      let tries = 0;
+
+      while (!window.ma3dOneSignalReady && tries < 40) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        tries++;
+      }
+
       if (!window.ma3dOneSignalReady) {
-        alert("Notifications are still loading. Tap again in a moment.");
+        alert("Notifications not ready. Close and reopen the app, then try again.");
         return;
       }
 
       const isSupported = OneSignal.Notifications.isPushSupported();
       if (!isSupported) {
-        alert("Push notifications not supported on this device.");
+        alert("Push not supported on this device.");
         return;
       }
 
@@ -1482,7 +1489,7 @@ document.getElementById("mcLive")?.addEventListener("click", () => {
       if (finalOptedIn) {
         alert("Notifications enabled 🔔");
       } else {
-        alert("Almost there — tap again to finish enabling notifications.");
+        alert("Almost there — tap again once more.");
       }
 
     } catch (e) {
