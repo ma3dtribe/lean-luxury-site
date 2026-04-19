@@ -891,8 +891,10 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
       });
 
     } catch (e) {
-      console.error("OneSignal init failed:", e);
-    }
+  console.error("OneSignal init failed:", e);
+  window.ma3dOneSignalInitError = String(e?.message || e || "unknown error");
+  alert("OneSignal init failed: " + window.ma3dOneSignalInitError);
+}
   });
 </script>
 
@@ -1455,9 +1457,12 @@ document.getElementById("mcLive")?.addEventListener("click", () => {
       }
 
       if (!window.ma3dOneSignalReady) {
-        alert("Notifications not ready. Close and reopen the app, then try again.");
-        return;
-      }
+  const msg = window.ma3dOneSignalInitError
+    ? "Notifications not ready. Init error: " + window.ma3dOneSignalInitError
+    : "Notifications not ready. Close and reopen the app, then try again.";
+  alert(msg);
+  return;
+}
 
       const isSupported = await OneSignal.Notifications.isPushSupported();
       if (!isSupported) {
