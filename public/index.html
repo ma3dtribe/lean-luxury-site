@@ -1480,14 +1480,18 @@ document.getElementById("mcLive")?.addEventListener("click", () => {
         return;
       }
 
-      if (permission !== "granted") {
-        await OneSignal.Notifications.requestPermission();
-      }
+      if (!optedIn) {
+  await OneSignal.User.PushSubscription.optIn();
+}
 
-      if (OneSignal.Notifications.permission !== "granted") {
-        alert("Notifications blocked ❌");
-        return;
-      }
+const finalOptedIn = OneSignal.User.PushSubscription.optedIn;
+
+if (finalOptedIn) {
+  alert("Notifications enabled 🔔");
+} else {
+  alert("Notifications blocked ❌");
+  return;
+}
 
       await OneSignal.User.PushSubscription.optIn();
 
