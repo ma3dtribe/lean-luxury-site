@@ -1490,18 +1490,7 @@ if (finalOptedIn) {
   alert("Notifications enabled 🔔");
 } else {
   alert("Notifications blocked ❌");
-  return;
 }
-
-      await OneSignal.User.PushSubscription.optIn();
-
-      const finalOptedIn = OneSignal.User.PushSubscription.optedIn;
-
-      if (finalOptedIn) {
-        alert("Notifications enabled 🔔");
-      } else {
-        alert("Almost there — tap again once more.");
-      }
 
     } catch (e) {
       console.error("OneSignal notify error:", e);
