@@ -877,7 +877,9 @@ gap: 10px;
       window.ma3dOneSignalReady = true;
       console.log("OneSignal init complete");
 
-      OneSignal.Notifications.addEventListener("permissionChange", function(permission) {
+console.log("Push supported:", await OneSignal.Notifications.isPushSupported());
+
+OneSignal.Notifications.addEventListener("permissionChange", function(permission) {
         console.log("OneSignal permissionChange:", permission);
       });
 
@@ -896,9 +898,9 @@ gap: 10px;
 
 <script>
   window.addEventListener("load", () => {
-    console.log("OneSignal ready");
+    console.log("Page loaded");
+    console.log("OneSignal ready flag:", window.ma3dOneSignalReady);
   });
-
 </script>
   
 <link rel="manifest" href="/manifest.json">  
@@ -1457,7 +1459,7 @@ document.getElementById("mcLive")?.addEventListener("click", () => {
         return;
       }
 
-      const isSupported = OneSignal.Notifications.isPushSupported();
+      const isSupported = await OneSignal.Notifications.isPushSupported();
       if (!isSupported) {
         alert("Push not supported on this device.");
         return;
