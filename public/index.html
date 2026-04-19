@@ -918,7 +918,7 @@ gap: 10px;
       </p>
 
       <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-        <button id="manualLoadBtn" class="btn" style="display:none;">Tap to Start Audio 🔊</button>
+        <button id="manualLoadBtn" class="btn" style="display:none;">Watch Live 🔴</button>
       </div>
     </div>
 
@@ -1223,7 +1223,7 @@ sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
 sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));         
 localStorage.setItem(AUDIO_STARTED_KEY, "1");         
         
-        manualBtn.style.display = "none";
+        if (window.innerWidth > 980) manualBtn.style.display = "none";
          watchShell.classList.add("collapsed-head");
          
          
@@ -1238,8 +1238,21 @@ iframe.style.border = "0";
 iframe.style.borderRadius = "18px";
 
 mount.innerHTML = "";
-iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=false&muted=true`;
+iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true`;
 mount.appendChild(iframe);
+// Smart fallback (desktop only)
+let playerLoaded = false;
+
+iframe.addEventListener("load", () => {
+  playerLoaded = true;
+  if (window.innerWidth > 980) manualBtn.style.display = "none";
+});
+
+setTimeout(() => {
+  if (window.innerWidth > 980 && !playerLoaded) {
+    manualBtn.style.display = "inline-flex";
+  }
+}, 2500);         
 
         
 document.getElementById("explicitWarning").style.display = "block";
@@ -1247,29 +1260,15 @@ document.getElementById("explicitWarning").style.display = "block";
 startWebPresence();
 
        }
-manualBtn.addEventListener("click", async () => {
-  localStorage.setItem(AUDIO_STARTED_KEY, "1");
-  sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
-  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
-
-  mount.innerHTML = "";
-  watchShell.style.display = "";
-  primeAudioOnly();
-  audioOnlyPlayer.style.display = "block";
-
+manualBtn.addEventListener("click", () => {
   try {
-    await audioOnlyPlayer.play();
-    streamLoaded = true;
-    manualBtn.style.display = "none";
-    watchShell.classList.add("collapsed-head");
-    startWebPresence();
-  } catch(e) {
-    console.error("Direct audio failed", e);
-    streamLoaded = false;
-    audioOnlyPlayer.style.display = "none";
+    audioOnlyPlayer.pause();
     audioOnlyPlayer.removeAttribute("src");
     audioOnlyPlayer.load();
-  }
+  } catch(e) {}
+
+  streamLoaded = false;
+  loadPlayer(true);
 });     
 
 let lastRefreshOnReturn = 0;
@@ -1492,7 +1491,10 @@ streamLoaded = false;
     const isLive = !text.includes("offline");
 
     if (isLive) {
-  desc.textContent = "We’re live — tap Watch Live button below to start listening.";
+  desc.textContent = "We’re live now.";
+  if (window.innerWidth > 980) {
+    loadPlayer(false);
+  }
 } else {
   try {
     audioOnlyPlayer.pause();
@@ -1508,9 +1510,11 @@ streamLoaded = false;
 }
     
   })
+        
 .catch(() => {
   console.log("Live status check temporarily unavailable");
 });
+
 startWebPresence();      
     });
     /* =========================
