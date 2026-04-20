@@ -1119,8 +1119,14 @@ function getWebsiteUsername() {
   return (localStorage.getItem(USER_STORAGE_KEY) || "Guest").trim() || "Guest";
 }  
 function updateAudioTapDisplay(n = 0) {
-  const el = document.getElementById("audioTapCount");
-  if (el) el.textContent = String(Number(n || 0));
+  const count = Number(n || 0);
+
+  try {
+    chatFrame?.contentWindow?.postMessage({
+      type: "ma3d:audioCount",
+      count
+    }, "*");
+  } catch (e) {}
 }
 
 async function getCurrentAudioTapSession() {
