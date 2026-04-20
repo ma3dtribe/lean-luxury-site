@@ -1100,7 +1100,9 @@ const WEB_SESSION_KEY = "ma3d_web_session_id";
 const AUDIO_STARTED_KEY = "ma3d_audio_started";
 const AUDIO_STICKY_KEY = "ma3d_audio_sticky";
 const AUDIO_STICKY_TS_KEY = "ma3d_audio_sticky_ts";
-const AUDIO_STICKY_TTL = 1000 * 60 * 30;      
+const AUDIO_STICKY_TTL = 1000 * 60 * 30; 
+const AUDIO_TAP_SESSION_STORAGE_KEY = "ma3d_audio_tap_session_key";
+const AUDIO_TAP_LAST_LIVE_STATE_KEY = "ma3d_audio_last_live_state";      
 const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);      
 
 let webPresenceChannel = null;
@@ -1115,7 +1117,100 @@ if (!webSessionId) {
 
 function getWebsiteUsername() {
   return (localStorage.getItem(USER_STORAGE_KEY) || "Guest").trim() || "Guest";
-}      
+}  
+function updateAudioTapDisplay(n = 0) {
+  const el = document.getElementById("audioTapCount");
+  if (el) el.textContent = String(Number(n || 0));
+}
+
+async function getCurrentAudioTapSession() {
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from("audio_tap_sessions")
+    .select("id, tap_count, is_live")
+    .eq("room", ROOM)
+    .eq("is_live", true)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return null;
+  return data || null;
+}
+
+async function ensureAudioTapSessionLive() {
+  let session = await getCurrentAudioTapSession();
+  if (session) {
+    updateAudioTapDisplay(session.tap_count || 0);
+    return session;
+  }
+
+  const { data, error } = await sb
+    .from("audio_tap_sessions")
+    .insert([{
+      room: ROOM,
+      is_live: true,
+      tap_count: 0
+    }])
+    .select()
+    .single();
+
+  if (error) return null;
+
+  updateAudioTapDisplay(0);
+  return data;
+}
+
+async function incrementAudioTapCount() {
+  let session = await ensureAudioTapSessionLive();
+  if (!session) return;
+
+  const { data, error } = await sb.rpc("increment_audio_tap_session", {
+    p_session_id: session.id
+  });
+
+  if (!error) {
+    updateAudioTapDisplay(Number(data || 0));
+  }
+}
+
+async function endAudioTapSession() {
+  const session = await getCurrentAudioTapSession();
+  if (!session) {
+    updateAudioTapDisplay(0);
+    return;
+  }
+
+  await sb
+    .from("audio_tap_sessions")
+    .update({
+      is_live: false,
+      ended_at: new Date().toISOString()
+    })
+    .eq("id", session.id);
+
+  updateAudioTapDisplay(0);
+}
+
+async function handleAudioTapLiveState(isLive) {
+  const wasLive = sessionStorage.getItem(AUDIO_TAP_LAST_LIVE_STATE_KEY) === "1";
+
+  if (isLive) {
+    if (!wasLive) {
+      sessionStorage.setItem(AUDIO_TAP_LAST_LIVE_STATE_KEY, "1");
+      await ensureAudioTapSessionLive();
+    }
+  } else {
+    if (wasLive) {
+      sessionStorage.removeItem(AUDIO_TAP_LAST_LIVE_STATE_KEY);
+      await endAudioTapSession();
+    } else {
+      updateAudioTapDisplay(0);
+    }
+  }
+}
+      
 function pushWebCountToChat(count, viewers = []){
   const n = Number(count || 0);
 
@@ -1427,7 +1522,9 @@ window.addEventListener("focus", () => {
   }, 300);
 });
 
-document.getElementById("mcPlay")?.addEventListener("click", () => {
+document.getElementById("mcPlay")?.addEventListener("click", async () => {
+  await incrementAudioTapCount();
+
   localStorage.setItem(AUDIO_STARTED_KEY, "1");
   sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
   sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
@@ -1512,7 +1609,8 @@ setInterval(() => {
     .then(t => {
       const text = (t || "").toLowerCase();
       const isLive = !text.includes("offline");
-
+      handleAudioTapLiveState(isLive);
+      
       const liveBtn = document.getElementById("mcLive");
 
       if (isLive) {
@@ -1547,6 +1645,7 @@ streamLoaded = false;
   .then(t => {
     const text = (t || "").toLowerCase();
     const isLive = !text.includes("offline");
+handleAudioTapLiveState(isLive);    
 
     if (isLive) {
   desc.textContent = "We’re live now.";
@@ -1573,8 +1672,9 @@ streamLoaded = false;
   console.log("Live status check temporarily unavailable");
 });
 
+updateAudioTapDisplay(0);
 startWebPresence();      
-    });
+});
     /* =========================
    BILLBOARD SLIDER
 ========================= */
