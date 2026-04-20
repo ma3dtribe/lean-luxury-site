@@ -1152,17 +1152,23 @@ async function ensureAudioTapSessionLive() {
     return session;
   }
 
+  const sessionKey = `audio-${ROOM}-${Date.now()}`;
+
   const { data, error } = await sb
     .from("audio_tap_sessions")
     .insert([{
       room: ROOM,
+      session_key: sessionKey,
       is_live: true,
       tap_count: 0
     }])
-    .select()
+    .select("id, tap_count, is_live, session_key")
     .single();
 
-  if (error) return null;
+  if (error) {
+    console.error("ensureAudioTapSessionLive insert error:", error);
+    return null;
+  }
 
   updateAudioTapDisplay(0);
   return data;
