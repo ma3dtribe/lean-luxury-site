@@ -909,12 +909,18 @@ window.addEventListener("message", (event) => {
   const data = event.data || {};
 
   if (data.type === "ma3d:webCount") {
-  parentWebCount = Number(data.count || 0);
-  parentWebViewers = Array.isArray(data.viewers) ? data.viewers : [];
-  latestViewerRows = parentWebViewers;
-  if (viewCountEl) viewCountEl.textContent = String(parentWebCount);
-  return;
-}
+    parentWebCount = Number(data.count || 0);
+    parentWebViewers = Array.isArray(data.viewers) ? data.viewers : [];
+    latestViewerRows = parentWebViewers;
+    if (viewCountEl) viewCountEl.textContent = String(parentWebCount);
+    return;
+  }
+
+  if (data.type === "ma3d:audioCount") {
+    const el = document.getElementById("audioTapCount");
+    if (el) el.textContent = String(Number(data.count || 0));
+    return;
+  }
 
   if (data.type === "ma3d:refreshOnReturn") {
     refreshChatOnReturn();
