@@ -729,8 +729,11 @@ transform: translateX(-50%);
 </div>
 
 <div id="pinnedMessageBar" style="display:none;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);">
-  <div style="font-size:12px;font-weight:800;opacity:.9;margin-bottom:4px;">📌 Pinned message</div>
-  <div id="pinnedMessageText" style="font-size:14px;line-height:1.35;word-break:break-word;"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+    <div style="font-size:12px;font-weight:800;opacity:.9;">📌 Pinned message</div>
+    <button id="unpinBtn" type="button" class="linkBtn" style="display:none;">Unpin</button>
+  </div>
+  <div id="pinnedMessageText" style="font-size:14px;line-height:1.35;word-break:break-word;margin-top:4px;"></div>
 </div>
 
 <div id="chatMessages">
@@ -830,6 +833,7 @@ const INLINE_GIF_SIZE = window.innerWidth <= 520 ? 150 : 240;
     ========================= */
     const pinnedMessageBar = document.getElementById("pinnedMessageBar");
 const pinnedMessageText = document.getElementById("pinnedMessageText");
+const unpinBtn = document.getElementById("unpinBtn");
 const chatMessages = document.getElementById("chatMessages");
 const messageInput = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
@@ -1064,11 +1068,33 @@ async function loadPinnedMessage() {
     pinnedMessageText.textContent = "";
     return;
   }
+pinnedMessageText.textContent = data.content;
+pinnedMessageBar.style.display = "block";
 
-  pinnedMessageText.textContent = data.content;
-  pinnedMessageBar.style.display = "block";
+if (USERNAME === "CVO") {
+  unpinBtn.style.display = "inline-block";
+} else {
+  unpinBtn.style.display = "none";
+}
 }
 
+// 👇 ADD RIGHT HERE (next line)
+unpinBtn.addEventListener("click", async () => {
+  if (USERNAME !== "CVO") return;
+
+  const { error } = await sb
+    .from("pinned_messages")
+    .upsert({
+      room: ROOM,
+      content: "",
+      updated_by: USERNAME,
+      updated_at: new Date().toISOString()
+    });
+
+  if (error) {
+    alert("Unpin failed: " + error.message);
+  }
+});    
     
     function formatChatTime(ts){
   if (!ts) return "";
