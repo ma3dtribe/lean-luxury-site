@@ -1379,7 +1379,7 @@ iframe.style.border = "0";
 iframe.style.borderRadius = "18px";
 
 mount.innerHTML = "";
-iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true`;
+iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=${userStarted ? "false" : "true"}`;
 mount.appendChild(iframe);
 // Smart fallback (desktop only)
 let playerLoaded = false;
@@ -1665,8 +1665,13 @@ streamLoaded = false;
 handleAudioTapLiveState(isLive);    
 
     if (isLive) {
-  desc.textContent = "We’re live now.";
+  desc.textContent = "We’re live now — click Watch Live to start Safari audio/video.";
+
   if (window.innerWidth > 980) {
+    watchShell.style.display = "";
+    watchShell.classList.remove("collapsed-head");
+    manualBtn.style.display = "inline-flex";
+  } else {
     loadPlayer(false);
   }
 } else {
@@ -1675,12 +1680,14 @@ handleAudioTapLiveState(isLive);
     audioOnlyPlayer.removeAttribute("src");
     audioOnlyPlayer.load();
   } catch(e) {}
-streamLoaded = false;      
+
+  streamLoaded = false;
 
   watchShell.style.display = "";
   watchShell.classList.remove("collapsed-head");
-  desc.textContent = "Currently off air. Tap to start audio when we go live.";
-  manualBtn.style.display = "inline-flex";
+  desc.textContent = "Currently off air.";
+  manualBtn.style.display = "none";
+  mount.innerHTML = "";
 }
     
   })
