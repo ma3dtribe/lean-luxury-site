@@ -1696,8 +1696,15 @@ handleAudioTapLiveState(isLive);
   console.log("Live status check temporarily unavailable");
 });
 
+setTimeout(() => {
+  if (window.innerWidth > 980 && desc.textContent.includes("Checking stream status")) {
+    desc.textContent = "If we’re live, click Watch Live to start Safari audio/video.";
+    manualBtn.style.display = "inline-flex";
+  }
+}, 3000);
+
 updateAudioTapDisplay(0);
-startWebPresence();      
+startWebPresence();    
 });
     /* =========================
    BILLBOARD SLIDER
