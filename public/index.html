@@ -1589,11 +1589,22 @@ document.getElementById("mcLive")?.addEventListener("click", () => {
 
       console.log("Notify state:", { permission, optedIn });
 
-      await OneSignal.User.PushSubscription.optOut();
-await new Promise(resolve => setTimeout(resolve, 800));
-await OneSignal.User.PushSubscription.optIn();
+      if (permission === "granted" && optedIn) {
+  alert("Notifications already enabled 🔔");
+  return;
+}
 
-alert("Notifications refreshed 🔔");
+if (!optedIn) {
+  await OneSignal.User.PushSubscription.optIn();
+}
+
+const finalOptedIn = OneSignal.User.PushSubscription.optedIn;
+
+if (finalOptedIn) {
+  alert("Notifications enabled 🔔");
+} else {
+  alert("Notifications blocked ❌");
+}
 
     } catch (e) {
       console.error("OneSignal notify error:", e);
