@@ -1635,12 +1635,11 @@ setInterval(() => {
       if (isLive) {
   liveBtn?.classList.add("live-glow");
 
-  if (!streamLoaded) {
-    setTimeout(() => {
-      if (!streamLoaded) {
-        loadPlayer(false);
-      }
-    }, 150);
+  if (!mount.querySelector("iframe")) {
+    desc.textContent = "We’re live now. Tap Watch Live to start.";
+    watchShell.style.display = "";
+    watchShell.classList.remove("collapsed-head");
+    manualBtn.style.display = "inline-flex";
   }
 }
       
@@ -1671,13 +1670,10 @@ streamLoaded = false;
 handleAudioTapLiveState(isLive);    
 
     if (isLive) {
-  desc.textContent = "We’re live now.";
-
-  setTimeout(() => {
-    if (!streamLoaded) {
-      loadPlayer(false);
-    }
-  }, 150);
+  desc.textContent = "We’re live now. Tap Watch Live to start.";
+  watchShell.style.display = "";
+  watchShell.classList.remove("collapsed-head");
+  manualBtn.style.display = "inline-flex";
 }
     else {
   try {
@@ -1703,8 +1699,10 @@ handleAudioTapLiveState(isLive);
 
 setTimeout(() => {
   if (!mount.querySelector("iframe") && desc.textContent.includes("Checking stream status")) {
-    desc.textContent = "Loading live player…";
-    loadPlayer(false);
+    desc.textContent = "Tap Watch Live to start.";
+    watchShell.style.display = "";
+    watchShell.classList.remove("collapsed-head");
+    manualBtn.style.display = "inline-flex";
   }
 }, 1200);
 
