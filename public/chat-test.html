@@ -60,6 +60,37 @@
 
     .linkBtn:hover{ text-decoration:underline; }
 
+.userPill{
+  width:100%;
+  justify-content:center;
+  font-size:15px;
+  min-height:32px;
+}
+
+#userDisplay{
+  font-size:18px;
+  font-weight:900;
+}
+
+.changeNameBtn{
+  font-size:15px;
+  font-weight:800;
+}
+
+#viewCount,
+#twViewCount,
+#audioTapCount{
+  font-size:18px;
+  font-weight:900;
+}
+
+.viewerBtn,
+.presRow .pill{
+  font-size:13px;
+  min-height:30px;
+  padding:6px 8px;
+}
+    
     .chatRule{
       margin:6px 8px 4px;
   padding:7px 8px;
@@ -693,20 +724,23 @@ transform: translateX(-50%);
       <div class="chatRule">Be <span>RESPECTFUL</span> to all <span>VIEWERS</span> and <span>DJs</span> or <span>BE BLOCKED</span>.</div>
 
       <div class="presence">
+  <div class="userLine">
+    <span class="pill userPill">
+      <button id="pinUserBtn" class="linkBtn" type="button" title="Pin this username">📌</button>
+      <b id="userDisplay">...</b>
+      <button id="changeName" class="linkBtn changeNameBtn" type="button">Change</button>
+    </span>
+  </div>
+
   <div class="presRow">
-    <span class="pill">
-  <button id="pinUserBtn" class="linkBtn" type="button" title="Pin this username">📌</button>
-  <b id="userDisplay">...</b>
-  <button id="changeName" class="linkBtn" type="button">Change</button>
-</span>
-  <button id="viewerBtn" class="viewerBtn" type="button" aria-haspopup="dialog" aria-controls="viewerModal">
-  Web <b id="viewCount">0</b>
-</button>
+    <button id="viewerBtn" class="viewerBtn" type="button" aria-haspopup="dialog" aria-controls="viewerModal">
+      Web <b id="viewCount">0</b>
+    </button>
 
-<span class="pill">TW <b id="twViewCount">0</b></span>
+    <span class="pill">TW <b id="twViewCount">0</b></span>
 
-<span class="pill">Audio <b id="audioTapCount">0</b></span>
-</div>
+    <span class="pill">Audio <b id="audioTapCount">0</b></span>
+  </div>
 </div>
 
 <div class="composer">
