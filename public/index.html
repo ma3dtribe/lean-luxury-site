@@ -1702,11 +1702,11 @@ handleAudioTapLiveState(isLive);
 });
 
 setTimeout(() => {
-  if (window.innerWidth > 980 && desc.textContent.includes("Checking stream status")) {
-    desc.textContent = "If we’re live, click Watch Live to start Safari audio/video.";
-    manualBtn.style.display = "inline-flex";
+  if (!mount.querySelector("iframe") && desc.textContent.includes("Checking stream status")) {
+    desc.textContent = "Loading live player…";
+    loadPlayer(false);
   }
-}, 3000);
+}, 1200);
 
 updateAudioTapDisplay(0);
 startWebPresence();    
