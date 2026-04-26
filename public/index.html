@@ -1636,10 +1636,13 @@ setInterval(() => {
   liveBtn?.classList.add("live-glow");
 
   if (!streamLoaded) {
-    desc.textContent = "We’re live now.";
-    loadPlayer(false);
+    setTimeout(() => {
+      if (!streamLoaded) {
+        loadPlayer(false);
+      }
+    }, 150);
   }
-} 
+}
       
       else {
   liveBtn?.classList.remove("live-glow");
@@ -1669,7 +1672,12 @@ handleAudioTapLiveState(isLive);
 
     if (isLive) {
   desc.textContent = "We’re live now.";
-  loadPlayer(false);
+
+  setTimeout(() => {
+    if (!streamLoaded) {
+      loadPlayer(false);
+    }
+  }, 150);
 }
     else {
   try {
