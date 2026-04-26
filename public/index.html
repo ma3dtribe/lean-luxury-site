@@ -1636,7 +1636,8 @@ setInterval(() => {
   liveBtn?.classList.add("live-glow");
 
   if (!streamLoaded) {
-    desc.textContent = "We’re live — tap watch live button below to start listening.";
+    desc.textContent = "We’re live now.";
+    loadPlayer(false);
   }
 } 
       
@@ -1667,16 +1668,10 @@ streamLoaded = false;
 handleAudioTapLiveState(isLive);    
 
     if (isLive) {
-  desc.textContent = "We’re live now — click Watch Live to start Safari audio/video.";
-
-  if (window.innerWidth > 980) {
-    watchShell.style.display = "";
-    watchShell.classList.remove("collapsed-head");
-    manualBtn.style.display = "inline-flex";
-  } else {
-    loadPlayer(false);
-  }
-} else {
+  desc.textContent = "We’re live now.";
+  loadPlayer(false);
+}
+    else {
   try {
     audioOnlyPlayer.pause();
     audioOnlyPlayer.removeAttribute("src");
