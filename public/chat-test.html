@@ -1089,7 +1089,10 @@ async function setPinnedMessage(text) {
   let safe = escapeHtml(clean).replace(/\n/g, "<br>");
 safe = safe.replace(
   /((https?:\/\/|www\.)[^\s<]+)/g,
-  '<a href="$1" onclick="this.href=this.href.startsWith(\'http\') ? this.href : \'https://\' + this.textContent" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;text-decoration:underline;">$1</a>'
+  (url) => {
+    const href = url.startsWith("http") ? url : "https://" + url;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;text-decoration:underline;">${url}</a>`;
+  }
 );
 pinnedMessageText.innerHTML = safe;
   pinnedMessageBar.style.display = "block";
@@ -1110,7 +1113,10 @@ async function loadPinnedMessage() {
 let safe = escapeHtml(data.content).replace(/\n/g, "<br>");
 safe = safe.replace(
   /((https?:\/\/|www\.)[^\s<]+)/g,
-  '<a href="$1" onclick="this.href=this.href.startsWith(\'http\') ? this.href : \'https://\' + this.textContent" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;text-decoration:underline;">$1</a>'
+  (url) => {
+    const href = url.startsWith("http") ? url : "https://" + url;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;text-decoration:underline;">${url}</a>`;
+  }
 );
 pinnedMessageText.innerHTML = safe;
 pinnedMessageBar.style.display = "block";
@@ -1571,7 +1577,10 @@ div.style.overflowWrap = "anywhere";
 // ✅ Website only: make pasted URLs clickable
 safe = safe.replace(
   /((https?:\/\/|www\.)[^\s<]+)/g,
-  '<a href="$1" onclick="this.href=this.href.startsWith(\'http\') ? this.href : \'https://\' + this.textContent" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;text-decoration:underline;">$1</a>'
+  (url) => {
+    const href = url.startsWith("http") ? url : "https://" + url;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;text-decoration:underline;">${url}</a>`;
+  }
 );
 
     safe = safe.replace(/\[sticker:(.*?)\]/g, (_, url) => {
