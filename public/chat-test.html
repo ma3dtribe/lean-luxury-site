@@ -1623,6 +1623,7 @@ safe = safe.replace(/\[gif:(.*?)\]/g, (match, url) => {
   bubble.appendChild(contentNode);
 
   bubble.addEventListener("click", (e) => {
+    if (e.target.closest("a")) return;
     if (e.target.closest(".msgActionBtn")) return;
 
     document.querySelectorAll(".msg.showActions").forEach(el => {
