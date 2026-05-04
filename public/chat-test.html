@@ -1086,7 +1086,12 @@ async function setPinnedMessage(text) {
     return;
   }
 
-  pinnedMessageText.textContent = clean;
+  let safe = escapeHtml(clean).replace(/\n/g, "<br>");
+safe = safe.replace(
+  /(https?:\/\/[^\s<]+)/g,
+  '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;text-decoration:underline;">$1</a>'
+);
+pinnedMessageText.innerHTML = safe;
   pinnedMessageBar.style.display = "block";
 }
 
@@ -1102,7 +1107,12 @@ async function loadPinnedMessage() {
     pinnedMessageText.textContent = "";
     return;
   }
-pinnedMessageText.textContent = data.content;
+let safe = escapeHtml(data.content).replace(/\n/g, "<br>");
+safe = safe.replace(
+  /(https?:\/\/[^\s<]+)/g,
+  '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;text-decoration:underline;">$1</a>'
+);
+pinnedMessageText.innerHTML = safe;
 pinnedMessageBar.style.display = "block";
 
 if (USERNAME === "CVO") {
