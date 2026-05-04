@@ -1558,6 +1558,12 @@ div.style.overflowWrap = "anywhere";
 
       let safe = escapeHtml(String(parsed.body || "")).replace(/\n/g, "<br>");
 
+// ✅ Website only: make pasted URLs clickable
+safe = safe.replace(
+  /(https?:\/\/[^\s<]+)/g,
+  '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;text-decoration:underline;">$1</a>'
+);
+
     safe = safe.replace(/\[sticker:(.*?)\]/g, (_, url) => {
   const rawUrl = url.replace(/"/g, "&quot;");
   const cleanUrl = rawUrl + (rawUrl.includes("?") ? `&v=${STICKER_CACHE_VERSION}` : `?v=${STICKER_CACHE_VERSION}`);
