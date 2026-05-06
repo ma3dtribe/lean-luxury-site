@@ -24,12 +24,13 @@
       const { data, error } = await supabase
         .from("shows")
         .select("*")
-        .order("show_date", { ascending: false });
+        .order("id", { ascending: false });
 
       if (error) {
-        box.innerHTML = "Could not load replays.";
-        return;
-      }
+  console.log(error);
+  box.innerHTML = JSON.stringify(error);
+  return;
+}
 
       if (!data || data.length === 0) {
         box.innerHTML = "No replays available yet.";
