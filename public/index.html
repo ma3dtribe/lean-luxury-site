@@ -305,7 +305,7 @@
   grid-template-areas:
     "video chat"
     "billboard chat"
-    "calendar chat";
+    "calendar replay";
   gap:16px;
   align-items:start;
 }
@@ -330,6 +330,10 @@
   grid-area:calendar;
 }
 
+#replayCard{
+  grid-area:replay;
+}
+    
 #chat h3{
   margin:0 0 12px;
 }
@@ -371,11 +375,12 @@
     grid-template-areas:
       "video"
       "chat"
+      "replay"
       "billboard"
       "calendar";
   }
-
-  #chat{
+    
+    #chat{
     min-height:auto;
   }
 
@@ -979,6 +984,26 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
     scrolling="yes">
   </iframe>
 </div>
+
+<div class="card" id="replayCard">
+  <a href="/replays.html" style="text-decoration:none;color:inherit;display:block;">
+    <img
+      src="/ads/ad22.webp"
+      alt="Show and Podcast Replay"
+      style="width:100%;border-radius:14px;display:block;"
+    />
+
+    <h3 style="margin:14px 0 6px;">
+      Show & Podcast Replays
+    </h3>
+
+    <p style="margin:0;opacity:.78;line-height:1.5;">
+      Watch previous MA3DTribe live shows, mixes, interviews and podcast replays.
+    </p>
+  </a>
+</div>
+
+  <!-- BILLBOARD -->
 
   <!-- BILLBOARD -->
   <div class="card billboard-card" aria-label="MA3DTribe Billboard">
