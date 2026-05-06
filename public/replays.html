@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MA3DTribe Replays</title>
+</head>
+<body style="background:#050505;color:white;font-family:Arial;padding:20px;">
+  <h1>MA3DTribe Replays</h1>
+  <p>Replay past shows below.</p>
+
+  <div id="replayList">Loading replays...</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function loadReplays() {
+      const box = document.getElementById("replayList");
+
+      const { data, error } = await supabase
+        .from("shows")
+        .select("*")
+        .order("show_date", { ascending: false });
+
+      if (error) {
+        box.innerHTML = "Could not load replays.";
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        box.innerHTML = "No replays available yet.";
+        return;
+      }
+
+      box.innerHTML = data.map(show => {
+        const player = show.type === "video"
+          ? `<video controls style="width:100%;max-width:800px;" src="${show.file_path}"></video>`
+          : `<audio controls style="width:100%;" src="${show.file_path}"></audio>`;
+
+        return `
+          <div style="margin:25px 0;padding:18px;border:1px solid #333;border-radius:12px;background:#111;">
+            <h2>${show.title}</h2>
+            <p>${show.show_date || ""}</p>
+            ${player}
+          </div>
+        `;
+      }).join("");
+    }
+
+    loadReplays();
+  </script>
+</body>
+</html>
