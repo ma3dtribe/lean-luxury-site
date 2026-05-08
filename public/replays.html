@@ -52,7 +52,11 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         return;
       }
 
-      box.innerHTML = data.map(show => {
+      box.innerHTML = (await Promise.all(data.map(async show => {
+const { count } = await supabase
+  .from("replay_views")
+  .select("*", { count: "exact", head: true })
+  .eq("replay_id", String(show.id));        
         const player = show.type === "video"
   ? `<video controls data-replay-id="${show.id}" style="width:100%;max-width:800px;" src="${show.file_path}"></video>`
   : `<audio controls data-replay-id="${show.id}" style="width:100%;" src="${show.file_path}"></audio>`;
@@ -61,10 +65,13 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
           <div style="margin:25px 0;padding:18px;border:1px solid #333;border-radius:12px;background:#111;">
             <h2>${show.title}</h2>
             <p>${show.show_date || ""}</p>
+<p style="color:#aaa;font-size:14px;margin-top:6px;">
+  ▶️ ${count || 0} replays
+</p>
             ${player}
           </div>
         `;
-      }).join("");
+      }))).join("");
 
 document.querySelectorAll("[data-replay-id]").forEach(player => {
   player.addEventListener("play", () => {
