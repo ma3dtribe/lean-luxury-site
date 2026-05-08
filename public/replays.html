@@ -27,6 +27,13 @@ if (!window.supabase) {
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    async function trackReplayView(show) {
+  await supabase.from("replay_views").insert({
+    replay_id: String(show.id),
+    replay_title: show.title || "",
+    user_agent: navigator.userAgent
+  });
+}    
     async function loadReplays() {
       
       const { data, error } = await supabase
@@ -47,8 +54,8 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
       box.innerHTML = data.map(show => {
         const player = show.type === "video"
-          ? `<video controls style="width:100%;max-width:800px;" src="${show.file_path}"></video>`
-          : `<audio controls style="width:100%;" src="${show.file_path}"></audio>`;
+  ? `<video controls data-replay-id="${show.id}" style="width:100%;max-width:800px;" src="${show.file_path}"></video>`
+  : `<audio controls data-replay-id="${show.id}" style="width:100%;" src="${show.file_path}"></audio>`;
 
         return `
           <div style="margin:25px 0;padding:18px;border:1px solid #333;border-radius:12px;background:#111;">
@@ -58,7 +65,19 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
           </div>
         `;
       }).join("");
+
+document.querySelectorAll("[data-replay-id]").forEach(player => {
+  player.addEventListener("play", () => {
+    const show = data.find(item => String(item.id) === String(player.dataset.replayId));
+
+    if (show && !player.dataset.tracked) {
+      player.dataset.tracked = "true";
+      trackReplayView(show);
     }
+  });
+});
+
+}
 
     loadReplays().catch(error => {
   console.log(error);
