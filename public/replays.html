@@ -58,7 +58,7 @@ const { count } = await supabase
   .select("*", { count: "exact", head: true })
   .eq("replay_id", String(show.id));        
         const thumbnail = show.thumbnail_url
-  ? `<img src="${show.thumbnail_url}" alt="${show.title}" style="width:33%;max-width:260px;border-radius:12px;margin-bottom:14px;display:block;">`
+  ? `<img src="${show.thumbnail_url}" alt="${show.title}" style="width:360px;max-width:100%;border-radius:12px;display:block;object-fit:cover;">`
   : "";
 
 const player = show.type === "video"
@@ -66,14 +66,20 @@ const player = show.type === "video"
   : `<audio controls data-replay-id="${show.id}" style="width:100%;" src="${show.file_path}"></audio>`;
 
         return `
-          <div style="margin:25px 0;padding:18px;border:1px solid #333;border-radius:12px;background:#111;">
+          <div style="margin:25px 0;padding:18px;border:1px solid #333;border-radius:12px;background:#111;display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
             ${thumbnail}
-<h2>${show.title}</h2>
-<p>${show.show_date || ""}</p>
-<p style="color:#aaa;font-size:14px;margin-top:6px;">
-  ▶️ ${count || 0} replays
-</p>
-            ${player}
+
+<div style="flex:1;min-width:260px;">
+  <h2>${show.title}</h2>
+
+  <p>${show.show_date || ""}</p>
+
+  <p style="color:#aaa;font-size:14px;margin-top:6px;">
+    ▶️ ${count || 0} replays
+  </p>
+
+  ${player}
+</div>
           </div>
         `;
       }))).join("");
