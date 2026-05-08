@@ -58,7 +58,7 @@ const { count } = await supabase
   .select("*", { count: "exact", head: true })
   .eq("replay_id", String(show.id));        
         const thumbnail = show.thumbnail_url
-  ? `<img src="${show.thumbnail_url}" alt="${show.title}" style="width:100%;max-width:800px;border-radius:12px;margin-bottom:14px;display:block;">`
+  ? `<img src="${show.thumbnail_url}" alt="${show.title}" style="width:33%;max-width:260px;border-radius:12px;margin-bottom:14px;display:block;">`
   : "";
 
 const player = show.type === "video"
