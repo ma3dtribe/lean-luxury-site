@@ -49,6 +49,26 @@
   font-weight:bold;
   color:#ff9500;
 }    
+
+.summary-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+  gap:16px;
+  margin-top:24px;
+}
+
+.summary-card{
+  background:#151515;
+  border:1px solid rgba(255,149,0,.25);
+  border-radius:16px;
+  padding:18px;
+  line-height:1.8;
+}
+
+.summary-card h3{
+  margin-top:0;
+  color:#ff9500;
+}    
     button{
       background:#ff9500;
       color:black;
@@ -86,21 +106,32 @@
   </div>
 
   <div class="stat-card">
-    <div class="stat-label">Twitch Pulls</div>
+    <div class="stat-label">Twitch Viewers</div>
     <div class="stat-number" id="twitchTotal">0</div>
   </div>
 
 </div>
 
-<div id="todayBox" style="margin-top:25px; line-height:1.8;"></div>
+<div class="summary-grid">
 
-<div id="weekBox" style="margin-top:25px; line-height:1.8;"></div>  
+  <div class="summary-card">
+    <h3>Today</h3>
+    <div id="todayBox"></div>
+  </div>
+
+  <div class="summary-card">
+    <h3>Last 7 Days</h3>
+    <div id="weekBox"></div>
+  </div>
+
+</div> 
 <p>
   <button onclick="loadDashboardStats()">
     Refresh Dashboard Totals
   </button>
 </p>
-  
+
+<p id="lastUpdated" style="color:#aaa; font-size:13px;"></p>  
 </div>
 
 <script>
@@ -184,10 +215,9 @@ const todayTwitch = twitchData.filter(
 );
 
 document.getElementById("todayBox").innerHTML =
-  "<br><strong>TODAY (EST Approx)</strong><br><br>" +
-  "Website Visits Today: " + todaySite.length + "<br>" +
-  "Audio Plays Today: " + todayAudio.length + "<br>" +
-  "Twitch Pulls Today: " + todayTwitch.length;
+  "Website Visits: " + todaySite.length + "<br>" +
+  "Audio Plays: " + todayAudio.length + "<br>" +
+  "Twitch Views: " + todayTwitch.length;
 
 const sevenDaysAgo = new Date();
 sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -205,12 +235,18 @@ const weekTwitch = twitchData.filter(
 );
 
 document.getElementById("weekBox").innerHTML =
-  "<br><strong>LAST 7 DAYS</strong><br><br>" +
   "Website Visits: " + weekSite.length + "<br>" +
   "Audio Plays: " + weekAudio.length + "<br>" +
-  "Twitch Pulls: " + weekTwitch.length;  
+  "Twitch Views: " + weekTwitch.length;  
+document.getElementById("lastUpdated").innerText =
+  "Last Updated: " +
+  new Date().toLocaleString("en-US", {
+    timeZone: "America/New_York"
+  });  
 }
-  
+  window.onload = () => {
+  loadDashboardStats();
+}; 
 </script>
 
 <div class="card">
