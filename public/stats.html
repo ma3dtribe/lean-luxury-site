@@ -48,6 +48,7 @@
   </button>
 
   <p id="status"></p>
+<div id="totalsBox" style="margin-top:15px; line-height:1.8;"></div>  
 <p>
   <button onclick="loadDashboardStats()">
     Refresh Dashboard Totals
@@ -114,11 +115,10 @@ async function loadDashboardStats(){
   const audioData = await audioResponse.json();
   const twitchData = await twitchResponse.json();
 
-  alert(
-    "Website Visits: " + siteData.length +
-    "\nAudio Plays: " + audioData.length +
-    "\nTwitch Pulls: " + twitchData.length
-  );
+    document.getElementById("totalsBox").innerHTML =
+    "<strong>Website Visits:</strong> " + siteData.length + "<br>" +
+    "<strong>Audio Plays:</strong> " + audioData.length + "<br>" +
+    "<strong>Twitch Pulls:</strong> " + twitchData.length;
 }
   
 </script>
