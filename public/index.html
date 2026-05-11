@@ -1586,6 +1586,17 @@ window.addEventListener("focus", () => {
 });
 
 document.getElementById("mcPlay")?.addEventListener("click", async () => {
+
+  await sb.from("audio_stats")
+  .insert([
+    {
+      listener_id: webSessionId
+    }
+  ])
+  .then(({ error }) => {
+    console.log("audio_stats insert:", error || "success");
+  });
+
   await incrementAudioTapCount();
 
   localStorage.setItem(AUDIO_STARTED_KEY, "1");
