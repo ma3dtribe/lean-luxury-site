@@ -24,6 +24,31 @@
       margin-bottom:20px;
     }
 
+.dashboard-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+  gap:16px;
+  margin-top:20px;
+}
+
+.stat-card{
+  background:#151515;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;
+  padding:18px;
+}
+
+.stat-label{
+  color:#aaa;
+  font-size:13px;
+  margin-bottom:8px;
+}
+
+.stat-number{
+  font-size:34px;
+  font-weight:bold;
+  color:#ff9500;
+}    
     button{
       background:#ff9500;
       color:black;
@@ -48,10 +73,28 @@
   </button>
 
   <p id="status"></p>
-<div id="totalsBox" style="margin-top:15px; line-height:1.8;"></div>
+<div class="dashboard-grid">
 
-<div id="todayBox" style="margin-top:15px; line-height:1.8;"></div>
-<div id="weekBox" style="margin-top:15px; line-height:1.8;"></div>  
+  <div class="stat-card">
+    <div class="stat-label">Website Visits</div>
+    <div class="stat-number" id="siteTotal">0</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Audio Plays</div>
+    <div class="stat-number" id="audioTotal">0</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Twitch Pulls</div>
+    <div class="stat-number" id="twitchTotal">0</div>
+  </div>
+
+</div>
+
+<div id="todayBox" style="margin-top:25px; line-height:1.8;"></div>
+
+<div id="weekBox" style="margin-top:25px; line-height:1.8;"></div>  
 <p>
   <button onclick="loadDashboardStats()">
     Refresh Dashboard Totals
@@ -118,10 +161,14 @@ async function loadDashboardStats(){
   const audioData = await audioResponse.json();
   const twitchData = await twitchResponse.json();
 
-document.getElementById("totalsBox").innerHTML =
-  "<strong>Website Visits:</strong> " + siteData.length + "<br>" +
-  "<strong>Audio Plays:</strong> " + audioData.length + "<br>" +
-  "<strong>Twitch Pulls:</strong> " + twitchData.length;  
+document.getElementById("siteTotal").innerText =
+  siteData.length;
+
+document.getElementById("audioTotal").innerText =
+  audioData.length;
+
+document.getElementById("twitchTotal").innerText =
+  twitchData.length;  
     const today = new Date().toISOString().split("T")[0];
 
 const todaySite = siteData.filter(
