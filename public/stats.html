@@ -48,7 +48,9 @@
   </button>
 
   <p id="status"></p>
-<div id="totalsBox" style="margin-top:15px; line-height:1.8;"></div>  
+<div id="totalsBox" style="margin-top:15px; line-height:1.8;"></div>
+
+<div id="todayBox" style="margin-top:15px; line-height:1.8;"></div>  
 <p>
   <button onclick="loadDashboardStats()">
     Refresh Dashboard Totals
@@ -115,10 +117,29 @@ async function loadDashboardStats(){
   const audioData = await audioResponse.json();
   const twitchData = await twitchResponse.json();
 
-    document.getElementById("totalsBox").innerHTML =
-    "<strong>Website Visits:</strong> " + siteData.length + "<br>" +
-    "<strong>Audio Plays:</strong> " + audioData.length + "<br>" +
-    "<strong>Twitch Pulls:</strong> " + twitchData.length;
+document.getElementById("totalsBox").innerHTML =
+  "<strong>Website Visits:</strong> " + siteData.length + "<br>" +
+  "<strong>Audio Plays:</strong> " + audioData.length + "<br>" +
+  "<strong>Twitch Pulls:</strong> " + twitchData.length;  
+    const today = new Date().toISOString().split("T")[0];
+
+const todaySite = siteData.filter(
+  x => x.created_at.startsWith(today)
+);
+
+const todayAudio = audioData.filter(
+  x => x.created_at.startsWith(today)
+);
+
+const todayTwitch = twitchData.filter(
+  x => x.created_at.startsWith(today)
+);
+
+document.getElementById("todayBox").innerHTML =
+  "<br><strong>TODAY (EST Approx)</strong><br><br>" +
+  "Website Visits Today: " + todaySite.length + "<br>" +
+  "Audio Plays Today: " + todayAudio.length + "<br>" +
+  "Twitch Pulls Today: " + todayTwitch.length;
 }
   
 </script>
