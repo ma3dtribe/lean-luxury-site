@@ -50,7 +50,8 @@
   <p id="status"></p>
 <div id="totalsBox" style="margin-top:15px; line-height:1.8;"></div>
 
-<div id="todayBox" style="margin-top:15px; line-height:1.8;"></div>  
+<div id="todayBox" style="margin-top:15px; line-height:1.8;"></div>
+<div id="weekBox" style="margin-top:15px; line-height:1.8;"></div>  
 <p>
   <button onclick="loadDashboardStats()">
     Refresh Dashboard Totals
@@ -140,6 +141,27 @@ document.getElementById("todayBox").innerHTML =
   "Website Visits Today: " + todaySite.length + "<br>" +
   "Audio Plays Today: " + todayAudio.length + "<br>" +
   "Twitch Pulls Today: " + todayTwitch.length;
+
+const sevenDaysAgo = new Date();
+sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+const weekSite = siteData.filter(
+  x => new Date(x.created_at) >= sevenDaysAgo
+);
+
+const weekAudio = audioData.filter(
+  x => new Date(x.created_at) >= sevenDaysAgo
+);
+
+const weekTwitch = twitchData.filter(
+  x => new Date(x.created_at) >= sevenDaysAgo
+);
+
+document.getElementById("weekBox").innerHTML =
+  "<br><strong>LAST 7 DAYS</strong><br><br>" +
+  "Website Visits: " + weekSite.length + "<br>" +
+  "Audio Plays: " + weekAudio.length + "<br>" +
+  "Twitch Pulls: " + weekTwitch.length;  
 }
   
 </script>
