@@ -1138,13 +1138,19 @@ const AUDIO_TAP_LAST_LIVE_STATE_KEY = "ma3d_audio_last_live_state";
 const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 if (sb) {
-  sb.from("site_stats").insert([
-    {
-      stat_type: "website_visit",
-      value: 1
-    }
-  ]);
-}      
+  sb.from("site_stats")
+    .insert([
+      {
+        stat_type: "website_visit",
+        value: 1
+      }
+    ])
+    .then(({ data, error }) => {
+      console.log("MA3D site_stats insert result:", { data, error });
+    });
+} else {
+  console.error("MA3D Supabase client not created");
+}     
 let webPresenceChannel = null;
 let webHeartbeat = null;
 let streamLoaded = false;
