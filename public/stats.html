@@ -48,6 +48,12 @@
   </button>
 
   <p id="status"></p>
+<p>
+  <button onclick="loadDashboardStats()">
+    Refresh Dashboard Totals
+  </button>
+</p>
+  
 </div>
 
 <script>
@@ -74,6 +80,47 @@ async function pullTwitchStats(){
 
   }
 }
+
+async function loadDashboardStats(){
+
+  const siteResponse = await fetch(
+    "https://tgqfplueqjhsywkcjaal.supabase.co/rest/v1/site_stats?select=*",
+    {
+      headers:{
+        apikey:"YOUR_SUPABASE_ANON_KEY"
+      }
+    }
+  );
+
+  const audioResponse = await fetch(
+    "https://tgqfplueqjhsywkcjaal.supabase.co/rest/v1/audio_stats?select=*",
+    {
+      headers:{
+        apikey:"YOUR_SUPABASE_ANON_KEY"
+      }
+    }
+  );
+
+  const twitchResponse = await fetch(
+    "https://tgqfplueqjhsywkcjaal.supabase.co/rest/v1/twitch_stats?select=*",
+    {
+      headers:{
+        apikey:"YOUR_SUPABASE_ANON_KEY"
+      }
+    }
+  );
+
+  const siteData = await siteResponse.json();
+  const audioData = await audioResponse.json();
+  const twitchData = await twitchResponse.json();
+
+  alert(
+    "Website Visits: " + siteData.length +
+    "\nAudio Plays: " + audioData.length +
+    "\nTwitch Pulls: " + twitchData.length
+  );
+}
+  
 </script>
 
 <div class="card">
