@@ -1137,6 +1137,12 @@ const AUDIO_TAP_SESSION_STORAGE_KEY = "ma3d_audio_tap_session_key";
 const AUDIO_TAP_LAST_LIVE_STATE_KEY = "ma3d_audio_last_live_state";      
 const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);      
 
+sb.from("site_stats").insert([
+  {
+    stat_type: "website_visit",
+    value: 1
+  }
+]);      
 let webPresenceChannel = null;
 let webHeartbeat = null;
 let streamLoaded = false;
