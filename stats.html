@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MA3DTribe Stats</title>
+
+  <style>
+    body{
+      background:#050505;
+      color:white;
+      font-family:Arial;
+      padding:20px;
+    }
+
+    h1{
+      color:#ff9500;
+    }
+
+    .card{
+      background:#111;
+      border-radius:14px;
+      padding:20px;
+      margin-bottom:20px;
+    }
+
+    button{
+      background:#ff9500;
+      color:black;
+      border:none;
+      padding:14px 20px;
+      border-radius:10px;
+      font-weight:bold;
+      cursor:pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>MA3DTribe Analytics</h1>
+
+<div class="card">
+  <h2>Manual Twitch Pull</h2>
+
+  <button onclick="pullTwitchStats()">
+    Pull Twitch Stats
+  </button>
+
+  <p id="status"></p>
+</div>
+
+<script>
+async function pullTwitchStats(){
+
+  document.getElementById("status").innerText =
+    "Pulling Twitch stats...";
+
+  try {
+
+    const response = await fetch(
+      "/.netlify/functions/twitch-stats"
+    );
+
+    const data = await response.json();
+
+    document.getElementById("status").innerText =
+      "Success. Twitch viewers: " + data.viewers;
+
+  } catch(err){
+
+    document.getElementById("status").innerText =
+      "Error pulling stats.";
+
+  }
+}
+</script>
+
+<div class="card">
+  <h2>Quick Links</h2>
+
+  <p>
+    <a href="https://ma3dtribe.com"
+       style="color:#ff9500;">
+       Main Site
+    </a>
+  </p>
+</div>  
+</body>
+</html>
