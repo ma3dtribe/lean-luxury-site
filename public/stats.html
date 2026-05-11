@@ -36,6 +36,12 @@
   border:1px solid rgba(255,255,255,.12);
   border-radius:16px;
   padding:18px;
+  transition:.2s ease;
+}
+
+.stat-card:hover{
+  transform:translateY(-3px);
+  border-color:rgba(255,149,0,.5);
 }
 
 .stat-label{
@@ -125,7 +131,9 @@ button:hover{
 
 </div>
 
-<div class="summary-grid">
+  <h2 style="margin-top:35px; color:#ff9500;">
+  Performance Breakdown
+</h2><div class="summary-grid">
 
   <div class="summary-card">
     <h3>Today</h3>
@@ -139,9 +147,7 @@ button:hover{
 
   <div class="summary-card">
   <h3>Hourly Analytics</h3>
-  <div id="hourlyBox">
-    Hourly charts coming next...
-  </div>
+  <div id="hourlyBox"></div>
 </div>
 <div class="summary-card">
   <h3>This Month</h3>
@@ -241,7 +247,41 @@ document.getElementById("todayBox").innerHTML =
   "Website Visits: " + todaySite.length + "<br>" +
   "Audio Plays: " + todayAudio.length + "<br>" +
   "Twitch Views: " + todayTwitch.length;
+  const currentHour = new Date().getHours();
 
+const lastHourSite = siteData.filter(
+  x => new Date(x.created_at).getHours() === currentHour
+);
+
+const lastHourAudio = audioData.filter(
+  x => new Date(x.created_at).getHours() === currentHour
+);
+
+const lastHourTwitch = twitchData.filter(
+  x => new Date(x.created_at).getHours() === currentHour
+);
+
+document.getElementById("hourlyBox").innerHTML =
+  "<div style='margin-bottom:10px;'>" +
+  "Website: " + lastHourSite.length +
+  "</div>" +
+
+  "<div style='height:12px;background:#ff9500;border-radius:999px;width:" +
+  (lastHourSite.length * 20) + "px; margin-bottom:14px;'></div>" +
+
+  "<div style='margin-bottom:10px;'>" +
+  "Audio: " + lastHourAudio.length +
+  "</div>" +
+
+  "<div style='height:12px;background:#22c55e;border-radius:999px;width:" +
+  (lastHourAudio.length * 20) + "px; margin-bottom:14px;'></div>" +
+
+  "<div style='margin-bottom:10px;'>" +
+  "Twitch: " + lastHourTwitch.length +
+  "</div>" +
+
+  "<div style='height:12px;background:#9146ff;border-radius:999px;width:" +
+  (lastHourTwitch.length * 20) + "px;'></div>";
 const sevenDaysAgo = new Date();
 sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -290,6 +330,10 @@ document.getElementById("lastUpdated").innerText =
 }
   window.onload = () => {
   loadDashboardStats();
+
+  setInterval(() => {
+    loadDashboardStats();
+  }, 300000);
 }; 
 </script>
 
