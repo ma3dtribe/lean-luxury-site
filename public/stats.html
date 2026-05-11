@@ -58,11 +58,16 @@
 }
 
 .summary-card{
-  background:#151515;
+  background:linear-gradient(
+    180deg,
+    #151515,
+    #101010
+  );
   border:1px solid rgba(255,149,0,.25);
-  border-radius:16px;
-  padding:18px;
-  line-height:1.8;
+  border-radius:18px;
+  padding:22px;
+  line-height:1.9;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
 }
 
 .summary-card h3{
@@ -70,21 +75,29 @@
   color:#ff9500;
 }    
     button{
-      background:#ff9500;
-      color:black;
-      border:none;
-      padding:14px 20px;
-      border-radius:10px;
-      font-weight:bold;
-      cursor:pointer;
-    }
+  background:#ff9500;
+  color:black;
+  border:none;
+  padding:14px 20px;
+  border-radius:12px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+button:hover{
+  transform:scale(1.03);
+  opacity:.92;
+}
   </style>
 </head>
 
 <body>
 
 <h1>MA3DTribe Analytics</h1>
-
+  <p style="color:#aaa; margin-top:-10px;">
+  Live website, audio, and Twitch performance dashboard
+</p>
 <div class="card">
   <h2>Manual Twitch Pull</h2>
 
@@ -124,6 +137,16 @@
     <div id="weekBox"></div>
   </div>
 
+  <div class="summary-card">
+  <h3>Hourly Analytics</h3>
+  <div id="hourlyBox">
+    Hourly charts coming next...
+  </div>
+</div>
+<div class="summary-card">
+  <h3>This Month</h3>
+  <div id="monthBox"></div>
+</div>  
 </div> 
 <p>
   <button onclick="loadDashboardStats()">
@@ -237,7 +260,28 @@ const weekTwitch = twitchData.filter(
 document.getElementById("weekBox").innerHTML =
   "Website Visits: " + weekSite.length + "<br>" +
   "Audio Plays: " + weekAudio.length + "<br>" +
-  "Twitch Views: " + weekTwitch.length;  
+  "Twitch Views: " + weekTwitch.length; 
+
+const monthStart = new Date();
+monthStart.setDate(1);
+monthStart.setHours(0, 0, 0, 0);
+
+const monthSite = siteData.filter(
+  x => new Date(x.created_at) >= monthStart
+);
+
+const monthAudio = audioData.filter(
+  x => new Date(x.created_at) >= monthStart
+);
+
+const monthTwitch = twitchData.filter(
+  x => new Date(x.created_at) >= monthStart
+);
+
+document.getElementById("monthBox").innerHTML =
+  "Website Visits: " + monthSite.length + "<br>" +
+  "Audio Plays: " + monthAudio.length + "<br>" +
+  "Twitch Views: " + monthTwitch.length;  
 document.getElementById("lastUpdated").innerText =
   "Last Updated: " +
   new Date().toLocaleString("en-US", {
