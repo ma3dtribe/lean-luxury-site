@@ -146,7 +146,7 @@ button:hover{
   </div>
 
   <div class="summary-card">
-  <h3>Hourly Analytics</h3>
+  <h3>Hourly Traffic Trends</h3>
   <div id="hourlyBox"></div>
 </div>
 <div class="summary-card">
@@ -247,41 +247,93 @@ document.getElementById("todayBox").innerHTML =
   "Website Visits: " + todaySite.length + "<br>" +
   "Audio Plays: " + todayAudio.length + "<br>" +
   "Twitch Views: " + todayTwitch.length;
-  const currentHour = new Date().getHours();
+const hourlyMap = {};
 
-const lastHourSite = siteData.filter(
-  x => new Date(x.created_at).getHours() === currentHour
-);
+for(let i = 0; i < 24; i++){
+  hourlyMap[i] = {
+    site:0,
+    audio:0,
+    twitch:0
+  };
+}
 
-const lastHourAudio = audioData.filter(
-  x => new Date(x.created_at).getHours() === currentHour
-);
+siteData.forEach(x => {
+  const hr = new Date(x.created_at).getHours();
+  hourlyMap[hr].site++;
+});
 
-const lastHourTwitch = twitchData.filter(
-  x => new Date(x.created_at).getHours() === currentHour
-);
+audioData.forEach(x => {
+  const hr = new Date(x.created_at).getHours();
+  hourlyMap[hr].audio++;
+});
+
+twitchData.forEach(x => {
+  const hr = new Date(x.created_at).getHours();
+  hourlyMap[hr].twitch++;
+});
+
+let hourlyHTML = "";
+
+Object.keys(hourlyMap).forEach(hr => {
+
+  const data = hourlyMap[hr];
+
+  hourlyHTML += `
+    <div style="
+      margin-bottom:22px;
+      padding-bottom:18px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    ">
+
+      <div style="
+        margin-bottom:12px;
+        font-weight:bold;
+        color:#fff;
+      ">
+        ${hr}:00
+      </div>
+
+      <div style="margin-bottom:8px;">
+        Website (${data.site})
+      </div>
+
+      <div style="
+        height:12px;
+        width:${Math.max(data.site * 12, 8)}px;
+        background:linear-gradient(90deg,#ff9500,#ffb347);
+        border-radius:999px;
+        margin-bottom:14px;
+      "></div>
+
+      <div style="margin-bottom:8px;">
+        Audio (${data.audio})
+      </div>
+
+      <div style="
+        height:12px;
+        width:${Math.max(data.audio * 12, 8)}px;
+        background:linear-gradient(90deg,#22c55e,#4ade80);
+        border-radius:999px;
+        margin-bottom:14px;
+      "></div>
+
+      <div style="margin-bottom:8px;">
+        Twitch (${data.twitch})
+      </div>
+
+      <div style="
+        height:12px;
+        width:${Math.max(data.twitch * 12, 8)}px;
+        background:linear-gradient(90deg,#9146ff,#b084ff);
+        border-radius:999px;
+      "></div>
+
+    </div>
+  `;
+});
 
 document.getElementById("hourlyBox").innerHTML =
-  "<div style='margin-bottom:10px;'>" +
-  "Website: " + lastHourSite.length +
-  "</div>" +
-
-  "<div style='height:12px;background:#ff9500;border-radius:999px;width:" +
-  (lastHourSite.length * 20) + "px; margin-bottom:14px;'></div>" +
-
-  "<div style='margin-bottom:10px;'>" +
-  "Audio: " + lastHourAudio.length +
-  "</div>" +
-
-  "<div style='height:12px;background:#22c55e;border-radius:999px;width:" +
-  (lastHourAudio.length * 20) + "px; margin-bottom:14px;'></div>" +
-
-  "<div style='margin-bottom:10px;'>" +
-  "Twitch: " + lastHourTwitch.length +
-  "</div>" +
-
-  "<div style='height:12px;background:#9146ff;border-radius:999px;width:" +
-  (lastHourTwitch.length * 20) + "px;'></div>";
+  hourlyHTML;
 const sevenDaysAgo = new Date();
 sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
