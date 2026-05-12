@@ -89,18 +89,64 @@
     <audio id="audioPlayer" controls playsinline preload="auto"></audio>
   </div>
 
-  <script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
     const audio = document.getElementById("audioPlayer");
     const STREAM_URL = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
+const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
 
-    // Load stream on page load
-    window.addEventListener("load", () => {
-      if (audio.src !== STREAM_URL) {
-        audio.src = STREAM_URL;
-        audio.load();
-      }
-    });
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
 
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const audioSessionId = crypto.randomUUID();
+
+const audioSessionStart = Date.now();
+
+let currentAudioStatId = null;
+
+let audioDurationTimer = null;
+  
+    // Load stream and start audio tracking on page load
+window.addEventListener("load", async () => {
+  if (audio.src !== STREAM_URL) {
+    audio.src = STREAM_URL;
+    audio.load();
+  }
+
+  const { data, error } = await sb
+    .from("audio_stats")
+    .insert([{
+      session_id: audioSessionId,
+      duration_seconds: 0,
+      last_seen: new Date().toISOString()
+    }])
+    .select()
+    .single();
+
+  if (data?.id) {
+    currentAudioStatId = data.id;
+  }
+
+  console.log("audio_stats insert:", { data, error });
+});
+
+  audioDurationTimer = setInterval(async () => {
+
+  if (!currentAudioStatId) return;
+
+  const seconds = Math.floor((Date.now() - audioSessionStart) / 1000);
+
+  await sb
+    .from("audio_stats")
+    .update({
+      duration_seconds: seconds,
+      last_seen: new Date().toISOString()
+    })
+    .eq("id", currentAudioStatId);
+
+}, 30000);
+  
     // Media Session (lock screen)
     if ("mediaSession" in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -126,7 +172,22 @@
       navigator.mediaSession.setActionHandler("pause", () => {
         audio.pause();
       });
+      
     }
+window.addEventListener("beforeunload", () => {
+
+  if (!currentAudioStatId) return;
+
+  const seconds = Math.floor((Date.now() - audioSessionStart) / 1000);
+
+  navigator.sendBeacon(
+    `${SUPABASE_URL}/rest/v1/audio_stats?id=eq.${currentAudioStatId}`,
+    JSON.stringify({
+      duration_seconds: seconds,
+      last_seen: new Date().toISOString()
+    })
+  );
+});  
   </script>
 </body>
 </html>
