@@ -6,7 +6,8 @@
 <title>MA3DTribe Analytics</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
 <style>
 :root{
   --bg:#05070b;
@@ -704,7 +705,9 @@ let customStart = null;
 let customEnd = null;
 
 let charts = {};
-
+  let livePresenceChannel = null;
+let liveWebCount = 0;
+const ROOM = "ma3dtribe";
 const colors = {
   site:"#ff8a00",
   audio:"#18d860",
@@ -1086,10 +1089,11 @@ function renderActivityFeed(){
 }
 
 function updateLiveSection(site,audio,twitch){
+  document.getElementById("liveSite").innerText = liveWebCount;
+
   const now = Date.now();
   const last10 = arr => arr.filter(x=>now - new Date(x.created_at).getTime() <= 10 * 60 * 1000).length;
 
-  document.getElementById("liveSite").innerText = last10(site);
   document.getElementById("liveAudio").innerText = last10(audio);
   document.getElementById("liveTwitch").innerText = twitch.length ? Math.max(0, Number(twitch[twitch.length-1].viewers || twitch[twitch.length-1].viewer_count || 0)) : 0;
 }
@@ -1171,14 +1175,45 @@ function exportCSV(){
 function toggleScreenshotMode(){
   document.body.classList.toggle("screenshot-mode");
 }
+async function startLivePresence(){
 
+  if (!window.supabase) return;
+
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  livePresenceChannel = sb.channel(`web-presence:${ROOM}`, {
+    config: {
+      presence: { key: "analytics-dashboard" }
+    }
+  });
+
+  livePresenceChannel
+    .on("presence", { event: "sync" }, () => {
+
+      const state = livePresenceChannel.presenceState();
+
+      const sessions = new Set();
+
+      Object.keys(state).forEach(key => {
+        if (key !== "analytics-dashboard") {
+          sessions.add(key);
+        }
+      });
+
+      liveWebCount = sessions.size;
+
+      document.getElementById("liveSite").innerText = liveWebCount;
+    });
+
+  await livePresenceChannel.subscribe();
+}  
 window.onload = () => {
   if(SUPABASE_KEY.includes("PASTE_YOUR")){
     alert("Paste your Supabase anon key into SUPABASE_KEY before committing.");
   }
 
   loadDashboardStats();
-
+  startLivePresence();
   setInterval(() => {
     loadDashboardStats();
   }, 120000);
