@@ -131,7 +131,7 @@ window.addEventListener("load", async () => {
   console.log("audio_stats insert:", { data, error });
 audioDurationTimer = setInterval(async () => {
 
-  if (!currentAudioStatId) return;
+  if (!audioSessionId) return;
 
   const seconds = Math.floor((Date.now() - audioSessionStart) / 1000);
 
@@ -141,7 +141,7 @@ audioDurationTimer = setInterval(async () => {
       duration_seconds: seconds,
       last_seen: new Date().toISOString()
     })
-    .eq("id", currentAudioStatId);
+    .eq("session_id", audioSessionId);
 
 }, 30000);
   
@@ -177,12 +177,12 @@ audioDurationTimer = setInterval(async () => {
     }
 window.addEventListener("beforeunload", () => {
 
-  if (!currentAudioStatId) return;
+if (!audioSessionId) return;
 
   const seconds = Math.floor((Date.now() - audioSessionStart) / 1000);
 
   navigator.sendBeacon(
-    `${SUPABASE_URL}/rest/v1/audio_stats?id=eq.${currentAudioStatId}`,
+    `${SUPABASE_URL}/rest/v1/audio_stats?session_id=eq.${audioSessionId}`,
     JSON.stringify({
       duration_seconds: seconds,
       last_seen: new Date().toISOString()
