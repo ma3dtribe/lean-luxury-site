@@ -1138,16 +1138,34 @@ const AUDIO_TAP_LAST_LIVE_STATE_KEY = "ma3d_audio_last_live_state";
 const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 if (sb) {
-  sb.from("site_stats")
-    .insert([
-      {
-        stat_type: "website_visit",
-        value: 1
-      }
-    ])
-    .then(({ data, error }) => {
-      console.log("MA3D site_stats insert result:", { data, error });
+
+  fetch("https://ipapi.co/json/")
+    .then(res => res.json())
+    .then(loc => {
+
+      const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+
+      sb.from("site_stats")
+        .insert([
+          {
+            stat_type: "website_visit",
+            value: 1,
+
+            city: loc.city || null,
+            region: loc.region || null,
+            country: loc.country_name || null,
+            country_code: loc.country_code || null,
+
+            device_type: isMobile ? "Mobile" : "Desktop"
+          }
+        ])
+        .then(({ data, error }) => {
+          console.log("MA3D site_stats insert result:", { data, error });
+        });
+
     });
+
+}
 } else {
   console.error("MA3D Supabase client not created");
 }     
