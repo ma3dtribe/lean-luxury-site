@@ -570,6 +570,12 @@ select{
         <div class="big" id="replayTotal">0</div>
         <div class="up" id="replayChange">▲ 0% vs previous range</div>
       </div>
+
+<div class="card stat-card orange-border">
+  <div class="label">⏱ Avg Time on Site</div>
+  <div class="big" id="avgTimeOnSite">0s</div>
+  <div class="up" id="totalTimeOnSite">Total time: 0s</div>
+</div>      
     </section>
 
     <section class="grid-main">
@@ -847,7 +853,24 @@ function pctChange(current, previous){
 function formatNum(n){
   return Number(n || 0).toLocaleString();
 }
+function formatDuration(seconds){
 
+  seconds = Number(seconds || 0);
+
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+
+  if (h > 0) {
+    return `${h}h ${m}m`;
+  }
+
+  if (m > 0) {
+    return `${m}m ${s}s`;
+  }
+
+  return `${s}s`;
+}  
 function dayKey(dateStr){
   return new Date(dateStr).toLocaleDateString("en-US",{
     timeZone:"America/New_York",
@@ -1215,7 +1238,18 @@ function renderDashboard(){
 
   const audienceTotal = site.length + audio.length + twitch.length + replay.length;
   document.getElementById("audienceTotal").innerText = formatNum(audienceTotal);
+const totalDuration = site.reduce((sum, x) =>
+  sum + Number(x.duration_seconds || 0), 0);
 
+const avgDuration = site.length
+  ? Math.floor(totalDuration / site.length)
+  : 0;
+
+document.getElementById("avgTimeOnSite").innerText =
+  formatDuration(avgDuration);
+
+document.getElementById("totalTimeOnSite").innerText =
+  "Total time: " + formatDuration(totalDuration);  
   renderTrafficChart(site,audio,twitch);
   renderDailyBar(site,audio,twitch);
   renderReplayTrend(replay);
