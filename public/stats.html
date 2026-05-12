@@ -631,7 +631,29 @@ select{
         <div id="platformText" class="muted"></div>
       </div>
     </section>
+<section class="grid-2">
 
+  <div class="card">
+    <div class="card-head">
+      <h2>Device Breakdown</h2>
+    </div>
+
+    <div class="chart-box small">
+      <canvas id="deviceChart"></canvas>
+    </div>
+
+    <div id="deviceText" class="muted"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Viewer Locations</h2>
+    </div>
+
+    <div id="locationBox"></div>
+  </div>
+
+</section>    
     <section class="grid-2">
       <div class="card blue-border">
         <div class="card-head">
@@ -978,6 +1000,75 @@ function renderPlatformChart(site,audio,twitch,replay){
     `Website ${Math.round(site.length/total*100)}% · Audio ${Math.round(audio.length/total*100)}% · Twitch ${Math.round(twitch.length/total*100)}% · Replay ${Math.round(replay.length/total*100)}%`;
 }
 
+function renderDeviceChart(site){
+
+  let mobile = 0;
+  let desktop = 0;
+
+  site.forEach(x=>{
+    if((x.device_type || "").toLowerCase() === "mobile"){
+      mobile++;
+    } else {
+      desktop++;
+    }
+  });
+
+  makeChart("deviceChart","doughnut",{
+    labels:["Mobile","Desktop"],
+    datasets:[{
+      data:[mobile,desktop],
+      backgroundColor:["#18d860","#0ea5e9"],
+      borderColor:"#101827",
+      borderWidth:3
+    }]
+  },{
+    cutout:"62%"
+  });
+
+  const total = mobile + desktop || 1;
+
+  document.getElementById("deviceText").innerHTML =
+    `Mobile ${Math.round(mobile/total*100)}% · Desktop ${Math.round(desktop/total*100)}%`;
+}
+
+function renderLocations(site){
+
+  const map = {};
+
+  site.forEach(x=>{
+
+    const city = x.city || "Unknown";
+    const region = x.region || "";
+    const country = x.country || "";
+
+    const label = `${city}${region ? ", " + region : ""}`;
+
+    map[label] = (map[label] || 0) + 1;
+  });
+
+  const rows = Object.entries(map)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,8);
+
+  if(!rows.length){
+    document.getElementById("locationBox").innerHTML =
+      `<div class="muted">No location data yet.</div>`;
+    return;
+  }
+
+  const max = Math.max(...rows.map(r=>r[1]));
+
+  document.getElementById("locationBox").innerHTML = rows.map(([name,count])=>`
+    <div class="hour-row">
+      <div style="width:180px">${name}</div>
+      <div class="track">
+        <div class="fill" style="width:${(count/max)*100}%"></div>
+      </div>
+      <div>${count}</div>
+    </div>
+  `).join("");
+}  
+
 function renderHourly(site,audio,twitch,replay){
   const map = {};
   for(let i=0;i<24;i++) map[i] = 0;
@@ -1130,6 +1221,8 @@ function renderDashboard(){
   renderReplayTrend(replay);
   renderGrowthChart(site,audio,twitch,replay);
   renderPlatformChart(site,audio,twitch,replay);
+renderDeviceChart(site);
+renderLocations(site);  
 
   const hourData = renderHourly(site,audio,twitch,replay);
   renderInsights(site,audio,twitch,replay,hourData);
@@ -1156,8 +1249,18 @@ async function loadDashboardStats(){
 }
 
 function exportCSV(){
-  const rows = [["type","created_at"]];
-  filterRange(allSiteData).forEach(x=>rows.push(["website",x.created_at]));
+  const rows = [["type","created_at","device_type","city","region","country","country_code"]];
+  filterRange(allSiteData).forEach(x=>
+  rows.push([
+    "website",
+    x.created_at,
+    x.device_type || "",
+    x.city || "",
+    x.region || "",
+    x.country || "",
+    x.country_code || ""
+  ])
+);
   filterRange(allAudioData).forEach(x=>rows.push(["audio",x.created_at]));
   filterRange(allTwitchData).forEach(x=>rows.push(["twitch",x.created_at]));
   filterRange(allReplayData).forEach(x=>rows.push(["replay",x.created_at]));
