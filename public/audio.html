@@ -141,10 +141,9 @@ audioDurationTimer = setInterval(async () => {
       duration_seconds: seconds,
       last_seen: new Date().toISOString()
     })
-    .eq("session_id", audioSessionId)
-    .select();
+    .eq("session_id", audioSessionId);
 
-  console.log("audio duration update:", { seconds, data, error });
+console.log("audio duration update sent:", seconds);
 
 }, 30000);
 
