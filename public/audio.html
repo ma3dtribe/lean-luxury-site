@@ -129,9 +129,7 @@ window.addEventListener("load", async () => {
   }
 
   console.log("audio_stats insert:", { data, error });
-});
-
-  audioDurationTimer = setInterval(async () => {
+audioDurationTimer = setInterval(async () => {
 
   if (!currentAudioStatId) return;
 
@@ -146,6 +144,9 @@ window.addEventListener("load", async () => {
     .eq("id", currentAudioStatId);
 
 }, 30000);
+  
+});
+
   
     // Media Session (lock screen)
     if ("mediaSession" in navigator) {
