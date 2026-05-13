@@ -16,11 +16,9 @@ exports.handler = async function () {
         "Prefer": "return=representation"
       },
       body: JSON.stringify({
-        viewers: viewers,
-        viewer_count: viewers
-      })
-    });
-
+  viewers: viewers
+})
+});
     const saveText = await saveResponse.text();
 
     if (!saveResponse.ok) {
