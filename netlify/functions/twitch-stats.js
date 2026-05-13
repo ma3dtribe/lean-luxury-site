@@ -7,23 +7,40 @@ exports.handler = async function () {
     const text = await response.text();
     const viewers = parseInt(text, 10) || 0;
 
-    await fetch(`${SUPABASE_URL}/rest/v1/twitch_stats`, {
+    const saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/twitch_stats`, {
       method: "POST",
       headers: {
         "apikey": SUPABASE_KEY,
         "Authorization": `Bearer ${SUPABASE_KEY}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
       },
       body: JSON.stringify({
-        viewers: viewers
+        viewers: viewers,
+        viewer_count: viewers
       })
     });
+
+    const saveText = await saveResponse.text();
+
+    if (!saveResponse.ok) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
+          success: false,
+          viewers,
+          saveStatus: saveResponse.status,
+          saveError: saveText
+        })
+      };
+    }
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         success: true,
-        viewers: viewers
+        viewers,
+        saved: saveText
       })
     };
   } catch (error) {
@@ -35,4 +52,4 @@ exports.handler = async function () {
       })
     };
   }
-};;
+};
