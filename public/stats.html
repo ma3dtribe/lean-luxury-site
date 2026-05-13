@@ -850,6 +850,26 @@ function pctChange(current, previous){
   return `${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct)}% vs previous range`;
 }
 
+function uniqueCount(data, key){
+  const set = new Set();
+
+  data.forEach(x => {
+    const value = x[key];
+    if (value) set.add(value);
+  });
+
+  return set.size;
+}
+
+function latestTwitchViewers(twitch){
+  if (!twitch.length) return 0;
+
+  const latest = twitch
+    .slice()
+    .sort((a,b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+  return Number(latest.viewers || 0);
+}  
 function formatNum(n){
   return Number(n || 0).toLocaleString();
 }
@@ -1226,9 +1246,13 @@ function renderDashboard(){
 
   updateRangeLabel();
 
-  document.getElementById("siteTotal").innerText = formatNum(site.length);
-  document.getElementById("audioTotal").innerText = formatNum(audio.length);
-  document.getElementById("twitchTotal").innerText = formatNum(twitch.length);
+  const uniqueSiteTotal = uniqueCount(site, "session_id");
+const uniqueAudioTotal = uniqueCount(audio, "listener_id");
+const liveTwitchTotal = latestTwitchViewers(twitch);
+
+document.getElementById("siteTotal").innerText = formatNum(uniqueSiteTotal);
+document.getElementById("audioTotal").innerText = formatNum(uniqueAudioTotal);
+document.getElementById("twitchTotal").innerText = formatNum(liveTwitchTotal);
   document.getElementById("replayTotal").innerText = formatNum(replay.length);
 
   document.getElementById("siteChange").innerText = pctChange(site.length, previousRangeCount(allSiteData));
@@ -1236,7 +1260,7 @@ function renderDashboard(){
   document.getElementById("twitchChange").innerText = pctChange(twitch.length, previousRangeCount(allTwitchData));
   document.getElementById("replayChange").innerText = pctChange(replay.length, previousRangeCount(allReplayData));
 
-  const audienceTotal = site.length + audio.length + twitch.length + replay.length;
+  const audienceTotal = uniqueSiteTotal + uniqueAudioTotal + liveTwitchTotal + replay.length;
   document.getElementById("audienceTotal").innerText = formatNum(audienceTotal);
 const totalDuration = site.reduce((sum, x) =>
   sum + Number(x.duration_seconds || 0), 0);
@@ -1254,7 +1278,9 @@ document.getElementById("totalTimeOnSite").innerText =
   renderDailyBar(site,audio,twitch);
   renderReplayTrend(replay);
   renderGrowthChart(site,audio,twitch,replay);
-  renderPlatformChart(site,audio,twitch,replay);
+const dedupedSite = [...new Map(site.map(x => [x.session_id, x])).values()];
+const dedupedAudio = [...new Map(audio.map(x => [x.listener_id, x])).values()];  
+  renderPlatformChart(dedupedSite,dedupedAudio,twitch,replay);
 renderDeviceChart(site);
 renderLocations(site);  
 
