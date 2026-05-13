@@ -1902,9 +1902,8 @@ viewport?.addEventListener("touchend", (e) => {
 startAuto();  
 });
 
-window.addEventListener("pagehide", async () => {
+window.addEventListener("pagehide", () => {
   sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
-  try { await stopWebPresence(); } catch (e) {}
 });
 
 window.addEventListener("beforeunload", async () => {
@@ -1921,7 +1920,7 @@ if (currentSiteStatId) {
     })
   );
 }  
-  try { await stopWebPresence(); } catch (e) {}
+  
 });    
     
   </script>
