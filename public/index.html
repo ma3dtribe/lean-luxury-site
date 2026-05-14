@@ -999,7 +999,7 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
     </div>
 
     <div id="playerMount" style="margin-top:10px;"></div>
-<video
+<audio
   id="audioOnlyPlayer"
   playsinline
   webkit-playsinline
@@ -1007,7 +1007,7 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
   muted
   controls
   style="position:fixed; left:-9999px; bottom:0; width:1px; height:1px; opacity:0; pointer-events:none;"
-></video>
+></audio>
     
   </div>
 
@@ -1136,6 +1136,9 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
       const manualBtn = document.getElementById("manualLoadBtn");
       const watchShell = document.getElementById("watchShell");
 const audioOnlyPlayer = document.getElementById("audioOnlyPlayer");
+audioOnlyPlayer.setAttribute("playsinline", "");
+audioOnlyPlayer.setAttribute("webkit-playsinline", "");
+audioOnlyPlayer.crossOrigin = "anonymous";      
 const DIRECT_AUDIO_URL = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
 const USE_DIRECT_AUDIO_ON_MOBILE = true;
 audioOnlyPlayer.addEventListener("play", () => {
@@ -1152,24 +1155,7 @@ audioOnlyPlayer.addEventListener("error", () => {
   audioOnlyPlayer.removeAttribute("src");
 });      
 
-async function startDirectAudioBehindVideo() {
-  localStorage.setItem(AUDIO_STARTED_KEY, "1");
-  sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
-  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
 
-  primeAudioOnly();
-
-  audioOnlyPlayer.muted = false;
-  audioOnlyPlayer.style.display = "block";
-
-  try {
-    await audioOnlyPlayer.play();
-    streamLoaded = true;
-    startWebPresence();
-  } catch (e) {
-    console.error("Direct audio behind video failed", e);
-  }
-}      
 function primeAudioOnly() {
   if (!audioOnlyPlayer) return;
 
@@ -1197,6 +1183,26 @@ const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
 let webPresenceChannel = null;
 let webHeartbeat = null;
 let streamLoaded = false;
+
+async function startDirectAudioBehindVideo() {
+  localStorage.setItem(AUDIO_STARTED_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
+
+  primeAudioOnly();
+
+  audioOnlyPlayer.muted = false;
+  audioOnlyPlayer.volume = 1;
+  audioOnlyPlayer.style.display = "block";
+
+  try {
+    await audioOnlyPlayer.play();
+    streamLoaded = true;
+    startWebPresence();
+  } catch (e) {
+    console.error("Direct audio behind video failed", e);
+  }
+}            
 
 let webSessionId = localStorage.getItem(WEB_SESSION_KEY);
 if (!webSessionId) {
@@ -1471,7 +1477,7 @@ iframe.style.border = "0";
 iframe.style.borderRadius = "18px";
 
 mount.innerHTML = "";
-iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true`;
+iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true&playsinline=true`;
 mount.appendChild(iframe);
 // Smart fallback (desktop only)
 let playerLoaded = false;
