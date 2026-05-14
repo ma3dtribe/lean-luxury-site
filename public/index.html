@@ -1510,7 +1510,7 @@ document.addEventListener("visibilitychange", async () => {
   if (!mount.querySelector("iframe") && localStorage.getItem(AUDIO_STARTED_KEY) === "1") {
   primeAudioOnly();
 }
-refreshOnReturn();
+// refreshOnReturn();
 });
 
 window.addEventListener("pageshow", () => {
@@ -1530,7 +1530,7 @@ window.addEventListener("pageshow", () => {
   return;
 }
 
-  refreshOnReturn();
+  // refreshOnReturn();
 });
 
 window.addEventListener("focus", () => {
