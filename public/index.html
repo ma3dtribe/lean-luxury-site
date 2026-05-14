@@ -1390,14 +1390,17 @@ watchShell.style.display = "";
          
   if (userStarted) {
   mount.innerHTML = "";
-  localStorage.setItem(AUDIO_STARTED_KEY, "1");
-
+  localStorage.removeItem(AUDIO_STARTED_KEY);
+  sessionStorage.removeItem(AUDIO_STICKY_KEY);
+  sessionStorage.removeItem(AUDIO_STICKY_TS_KEY);
 }
 
   
-sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
-sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));         
-localStorage.setItem(AUDIO_STARTED_KEY, "1");         
+if (!userStarted) {
+  sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
+  localStorage.setItem(AUDIO_STARTED_KEY, "1");
+}        
         
         if (window.innerWidth > 980) manualBtn.style.display = "none";
          watchShell.classList.add("collapsed-head");
@@ -1414,7 +1417,7 @@ iframe.style.border = "0";
 iframe.style.borderRadius = "18px";
 
 mount.innerHTML = "";
-iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=${userStarted ? "false" : "true"}`;
+iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=true`;
 mount.appendChild(iframe);
 // Smart fallback (desktop only)
 let playerLoaded = false;
