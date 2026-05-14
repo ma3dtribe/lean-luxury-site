@@ -1501,11 +1501,11 @@ startWebPresence();
        }
 manualBtn.addEventListener("click", async () => {
   loadPlayer(true);
-  window.open("https://audio.ma3dtribe.com/liveaudio/index.m3u8", "_blank");
+  startDirectAudioBehindVideo();
 });      
 document.getElementById("mcLive")?.addEventListener("click", async () => {
   loadPlayer(true);
-  window.open("https://audio.ma3dtribe.com/liveaudio/index.m3u8", "_blank");
+  startDirectAudioBehindVideo();
 });     
 
 let lastRefreshOnReturn = 0;
