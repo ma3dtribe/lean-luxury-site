@@ -1535,10 +1535,14 @@ window.addEventListener("pageshow", () => {
 
 window.addEventListener("focus", () => {
   if (document.hidden) return;
-if (!streamLoaded && !mount.querySelector("iframe")) {
-  primeAudioOnly();
-}
-  refreshOnReturn();
+
+  if (!streamLoaded && !mount.querySelector("iframe")) {
+    primeAudioOnly();
+  }
+
+  // Disabled because Safari can trigger focus during scroll,
+  // which can interrupt the Twitch iframe.
+  // refreshOnReturn();
 });
 
   document.getElementById("mcBackground")?.addEventListener("click", async () => {
