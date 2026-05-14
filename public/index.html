@@ -1189,14 +1189,20 @@ async function startDirectAudioBehindVideo() {
   sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
   sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
 
-  primeAudioOnly();
+  audioOnlyPlayer.pause();
+audioOnlyPlayer.src = DIRECT_AUDIO_URL;
+audioOnlyPlayer.load();
 
-  audioOnlyPlayer.muted = false;
-  audioOnlyPlayer.volume = 1;
+audioOnlyPlayer.muted = false;
+audioOnlyPlayer.volume = 1;
   audioOnlyPlayer.style.display = "block";
 
   try {
     await audioOnlyPlayer.play();
+
+setTimeout(() => {
+  audioOnlyPlayer.play().catch(() => {});
+}, 500);
     streamLoaded = true;
     startWebPresence();
   } catch (e) {
@@ -1501,11 +1507,11 @@ startWebPresence();
        }
 manualBtn.addEventListener("click", async () => {
   loadPlayer(true);
-  startDirectAudioBehindVideo();
+  await startDirectAudioBehindVideo();
 });      
 document.getElementById("mcLive")?.addEventListener("click", async () => {
   loadPlayer(true);
-  startDirectAudioBehindVideo();
+  await startDirectAudioBehindVideo();
 });     
 
 let lastRefreshOnReturn = 0;
