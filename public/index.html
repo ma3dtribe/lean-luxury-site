@@ -1507,7 +1507,7 @@ document.addEventListener("visibilitychange", async () => {
     } catch (e) {}
   }
 
-  if (localStorage.getItem(AUDIO_STARTED_KEY) === "1") {
+  if (!mount.querySelector("iframe") && localStorage.getItem(AUDIO_STARTED_KEY) === "1") {
   primeAudioOnly();
 }
 refreshOnReturn();
@@ -1518,7 +1518,7 @@ window.addEventListener("pageshow", () => {
   const ts = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
   const fresh = (Date.now() - ts) < AUDIO_STICKY_TTL;
 
-  if (sticky && fresh) {
+  if (!mount.querySelector("iframe") && sticky && fresh) {
   primeAudioOnly();
   audioOnlyPlayer.style.display = "block";
   audioOnlyPlayer.play().then(() => {
@@ -1535,9 +1535,9 @@ window.addEventListener("pageshow", () => {
 
 window.addEventListener("focus", () => {
   if (document.hidden) return;
-  if (!streamLoaded) {
-    primeAudioOnly();
-  }
+if (!streamLoaded && !mount.querySelector("iframe")) {
+  primeAudioOnly();
+}
   refreshOnReturn();
 });
 
