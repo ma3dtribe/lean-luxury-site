@@ -1000,26 +1000,19 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
     </div>
 
     <div id="playerMount" style="margin-top:10px;"></div>
-<div id="liveAudioDock" style="
-position:fixed;
-left:50%;
-transform:translateX(-50%);
-bottom:84px;
-z-index:99999;
+<<div id="liveAudioDock" style="
 display:none;
+margin-top:10px;
 background:rgba(15,15,15,.92);
 border:1px solid rgba(255,255,255,.14);
 border-radius:14px;
-padding:8px 12px;
+padding:10px 12px;
 box-shadow:0 10px 28px rgba(0,0,0,.35);
-backdrop-filter:blur(10px);
-align-items:center;
-gap:10px;
 color:white;
 font-size:12px;
 font-weight:800;
 ">
-  <span>🔊 LIVE AUDIO ACTIVE</span>
+  <div style="margin-bottom:8px;">🔊 LIVE AUDIO</div>
 
   <audio
     id="audioOnlyPlayer"
@@ -1027,7 +1020,7 @@ font-weight:800;
     webkit-playsinline
     preload="auto"
     controls
-    style="height:32px; width:180px;"
+    style="width:100%; height:36px;"
   ></audio>
 </div>
     
