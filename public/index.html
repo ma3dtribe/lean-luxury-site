@@ -574,7 +574,7 @@
 /* Prevent horizontal growth */
 *{ box-sizing: border-box; }
 html, body{ width:100%; overflow-x:hidden; }
-.container{ width:100%; } 
+.container{ width:100%; overflow-x:hidden; } 
 
 /* =========================
    GOOGLE SHEETS CALENDAR
@@ -988,16 +988,19 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
 <div class="card" id="replayCard">
   <a href="/replays.html" style="text-decoration:none;color:inherit;display:block;">
     <img
-  src="/ads/ad22.webp?v=1"
-  alt="Show and Podcast Replay"
-  style="width:100%;border-radius:14px;display:block;"
-/>
+      src="/ads/ad22.webp"
+      alt="Show and Podcast Replay"
+      style="width:100%;border-radius:14px;display:block;"
+    />
 
     <h3 style="margin:14px 0 6px;">
-     DJ Shows & Podcasts Replay
+      Show & Podcast Replays
     </h3>
 
-          </a>
+    <p style="margin:0;opacity:.78;line-height:1.5;">
+      Watch previous MA3DTribe live shows, mixes, interviews and podcast replays.
+    </p>
+  </a>
 </div>
 
   <!-- BILLBOARD -->
@@ -1133,7 +1136,8 @@ const AUDIO_STARTED_KEY = "ma3d_audio_started";
 const AUDIO_STICKY_KEY = "ma3d_audio_sticky";
 const AUDIO_STICKY_TS_KEY = "ma3d_audio_sticky_ts";
 const AUDIO_STICKY_TTL = 1000 * 60 * 30; 
-     
+const AUDIO_TAP_SESSION_STORAGE_KEY = "ma3d_audio_tap_session_key";
+const AUDIO_TAP_LAST_LIVE_STATE_KEY = "ma3d_audio_last_live_state";      
 const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);      
 
 let webPresenceChannel = null;
@@ -1149,7 +1153,115 @@ if (!webSessionId) {
 function getWebsiteUsername() {
   return (localStorage.getItem(USER_STORAGE_KEY) || "Guest").trim() || "Guest";
 }  
+function updateAudioTapDisplay(n = 0) {
+  const count = Number(n || 0);
 
+  try {
+    chatFrame?.contentWindow?.postMessage({
+      type: "ma3d:audioCount",
+      count
+    }, "*");
+  } catch (e) {}
+}
+
+async function getCurrentAudioTapSession() {
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from("audio_tap_sessions")
+    .select("id, tap_count, is_live")
+    .eq("room", ROOM)
+    .eq("is_live", true)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return null;
+  return data || null;
+}
+
+async function ensureAudioTapSessionLive() {
+  let session = await getCurrentAudioTapSession();
+  if (session) {
+    updateAudioTapDisplay(session.tap_count || 0);
+    return session;
+  }
+
+  const sessionKey = `audio-${ROOM}-${Date.now()}`;
+
+  const { data, error } = await sb
+    .from("audio_tap_sessions")
+    .insert([{
+      room: ROOM,
+      session_key: sessionKey,
+      is_live: true,
+      tap_count: 0
+    }])
+    .select("id, tap_count, is_live, session_key")
+    .single();
+
+  if (error) {
+    console.error("ensureAudioTapSessionLive insert error:", error);
+    return null;
+  }
+
+  updateAudioTapDisplay(0);
+  return data;
+}
+
+async function incrementAudioTapCount() {
+  let session = await ensureAudioTapSessionLive();
+  if (!session) return;
+
+  const { data, error } = await sb.rpc("increment_audio_tap_session", {
+    p_session_id: session.id
+  });
+
+  if (!error) {
+    updateAudioTapDisplay(Number(data || 0));
+  }
+}
+
+async function endAudioTapSession() {
+  const session = await getCurrentAudioTapSession();
+  if (!session) {
+    updateAudioTapDisplay(0);
+    return;
+  }
+
+  await sb
+    .from("audio_tap_sessions")
+    .update({
+      is_live: false,
+      ended_at: new Date().toISOString()
+    })
+    .eq("id", session.id);
+
+  updateAudioTapDisplay(0);
+}
+
+async function handleAudioTapLiveState(isLive) {
+  const wasLive = sessionStorage.getItem(AUDIO_TAP_LAST_LIVE_STATE_KEY) === "1";
+
+  if (isLive) {
+    let session = await getCurrentAudioTapSession();
+
+    if (!session) {
+      sessionStorage.setItem(AUDIO_TAP_LAST_LIVE_STATE_KEY, "1");
+      session = await ensureAudioTapSessionLive();
+    } else {
+      sessionStorage.setItem(AUDIO_TAP_LAST_LIVE_STATE_KEY, "1");
+      updateAudioTapDisplay(session.tap_count || 0);
+    }
+  } else {
+    if (wasLive) {
+      sessionStorage.removeItem(AUDIO_TAP_LAST_LIVE_STATE_KEY);
+      await endAudioTapSession();
+    } else {
+      updateAudioTapDisplay(0);
+    }
+  }
+}
       
 function pushWebCountToChat(count, viewers = []){
   const n = Number(count || 0);
@@ -1347,7 +1459,7 @@ const sticky = sessionStorage.getItem(AUDIO_STICKY_KEY) === "1";
 const stickyTs = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
 const stickyFresh = (Date.now() - stickyTs) < AUDIO_STICKY_TTL;  
   const hasPlayer = !!mount.querySelector("iframe");
- if (!mount.querySelector("iframe") && (hadAudioStarted || (sticky && stickyFresh))) {
+  if (hadAudioStarted || (sticky && stickyFresh)) {
   primeAudioOnly();
   audioOnlyPlayer.style.display = "block";
   audioOnlyPlayer.play().then(() => {
@@ -1398,10 +1510,10 @@ document.addEventListener("visibilitychange", async () => {
     } catch (e) {}
   }
 
-  if (!mount.querySelector("iframe") && localStorage.getItem(AUDIO_STARTED_KEY) === "1") {
+  if (localStorage.getItem(AUDIO_STARTED_KEY) === "1") {
   primeAudioOnly();
 }
-// refreshOnReturn();
+refreshOnReturn();
 });
 
 window.addEventListener("pageshow", () => {
@@ -1409,7 +1521,7 @@ window.addEventListener("pageshow", () => {
   const ts = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
   const fresh = (Date.now() - ts) < AUDIO_STICKY_TTL;
 
-  if (!mount.querySelector("iframe") && sticky && fresh) {
+  if (sticky && fresh) {
   primeAudioOnly();
   audioOnlyPlayer.style.display = "block";
   audioOnlyPlayer.play().then(() => {
@@ -1421,19 +1533,15 @@ window.addEventListener("pageshow", () => {
   return;
 }
 
-  // refreshOnReturn();
+  refreshOnReturn();
 });
 
 window.addEventListener("focus", () => {
   if (document.hidden) return;
-
-  if (!streamLoaded && !mount.querySelector("iframe")) {
+  if (!streamLoaded) {
     primeAudioOnly();
   }
-
-  // Disabled because Safari can trigger focus during scroll,
-  // which can interrupt the Twitch iframe.
-  // refreshOnReturn();
+  refreshOnReturn();
 });
 
   document.getElementById("mcBackground")?.addEventListener("click", async () => {
@@ -1467,7 +1575,7 @@ window.addEventListener("focus", () => {
 });
 
 document.getElementById("mcPlay")?.addEventListener("click", async () => {
-  
+  await incrementAudioTapCount();
 
   localStorage.setItem(AUDIO_STARTED_KEY, "1");
   sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
@@ -1544,8 +1652,47 @@ if (finalOptedIn) {
     window.location.reload();
   });
 
-    
-  
+      
+setInterval(() => {
+  if (document.hidden) return;
+
+  fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
+    .then(r => r.text())
+    .then(t => {
+      const text = (t || "").toLowerCase();
+      const isLive = !text.includes("offline");
+      handleAudioTapLiveState(isLive);
+      
+      const liveBtn = document.getElementById("mcLive");
+
+      if (isLive) {
+  liveBtn?.classList.add("live-glow");
+
+  if (!mount.querySelector("iframe")) {
+    desc.textContent = "We’re live now. Tap Watch Live to start.";
+    watchShell.style.display = "";
+    watchShell.classList.remove("collapsed-head");
+    manualBtn.style.display = "inline-flex";
+  }
+}
+      
+      else {
+  liveBtn?.classList.remove("live-glow");
+
+  try {
+    audioOnlyPlayer.pause();
+    audioOnlyPlayer.removeAttribute("src");
+    audioOnlyPlayer.load();
+  } catch(e) {}
+
+  localStorage.removeItem(AUDIO_STARTED_KEY);
+  sessionStorage.removeItem(AUDIO_STICKY_KEY);
+  sessionStorage.removeItem(AUDIO_STICKY_TS_KEY);
+streamLoaded = false;        
+}
+    })
+    .catch(() => {});
+}, 20000);      
       
 
       fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
@@ -1553,7 +1700,7 @@ if (finalOptedIn) {
   .then(t => {
     const text = (t || "").toLowerCase();
     const isLive = !text.includes("offline");
-   
+handleAudioTapLiveState(isLive);    
 
     if (isLive) {
   desc.textContent = "We’re live now. Tap Watch Live to start.";
@@ -1592,6 +1739,7 @@ setTimeout(() => {
   }
 }, 1200);
 
+updateAudioTapDisplay(0);
 startWebPresence();    
 });
     /* =========================
