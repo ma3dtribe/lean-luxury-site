@@ -1579,7 +1579,7 @@ window.addEventListener("scroll", () => {
 
   const rect = mount.getBoundingClientRect();
 
-  if (rect.bottom < 120) {
+  if (rect.top < -40) {
     mount.classList.add("floating");
   } else {
     mount.classList.remove("floating");
