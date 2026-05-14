@@ -356,6 +356,8 @@
   aspect-ratio:16/9;
   height:auto;
   min-height:220px;
+transform: translateZ(0);
+  will-change: transform;  
 }    
 
 #playerMount.floating{
@@ -1573,18 +1575,7 @@ window.addEventListener("pageshow", () => {
   refreshOnReturn();
 });
 
-window.addEventListener("scroll", () => {
-  const iframe = mount.querySelector("iframe");
-  if (!iframe) return;
-
-  const rect = mount.getBoundingClientRect();
-
-  if (rect.top < -40) {
-    mount.classList.add("floating");
-  } else {
-    mount.classList.remove("floating");
-  }
-}, { passive:true });      
+     
 window.addEventListener("focus", () => {
   if (document.hidden) return;
   if (!streamLoaded) {
