@@ -312,9 +312,6 @@
 
 .video-card{
   grid-area:video;
-  position: sticky;
-  top: 12px;
-  z-index: 5;
 }
 
 #chat{
@@ -1547,46 +1544,8 @@ if (finalOptedIn) {
     window.location.reload();
   });
 
-      
-setInterval(() => {
-  if (document.hidden) return;
-
-  fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
-    .then(r => r.text())
-    .then(t => {
-      const text = (t || "").toLowerCase();
-      const isLive = !text.includes("offline");
-            
-      const liveBtn = document.getElementById("mcLive");
-
-      if (isLive) {
-  liveBtn?.classList.add("live-glow");
-
-  if (!mount.querySelector("iframe")) {
-    desc.textContent = "We’re live now. Tap Watch Live to start.";
-    watchShell.style.display = "";
-    watchShell.classList.remove("collapsed-head");
-    manualBtn.style.display = "inline-flex";
-  }
-}
-      
-      else {
-  liveBtn?.classList.remove("live-glow");
-
-  try {
-    audioOnlyPlayer.pause();
-    audioOnlyPlayer.removeAttribute("src");
-    audioOnlyPlayer.load();
-  } catch(e) {}
-
-  localStorage.removeItem(AUDIO_STARTED_KEY);
-  sessionStorage.removeItem(AUDIO_STICKY_KEY);
-  sessionStorage.removeItem(AUDIO_STICKY_TS_KEY);
-streamLoaded = false;        
-}
-    })
-    .catch(() => {});
-}, 20000);      
+    
+  
       
 
       fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
