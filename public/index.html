@@ -1152,6 +1152,24 @@ audioOnlyPlayer.addEventListener("error", () => {
   audioOnlyPlayer.removeAttribute("src");
 });      
 
+async function startDirectAudioBehindVideo() {
+  localStorage.setItem(AUDIO_STARTED_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
+
+  primeAudioOnly();
+
+  audioOnlyPlayer.muted = false;
+  audioOnlyPlayer.style.display = "block";
+
+  try {
+    await audioOnlyPlayer.play();
+    streamLoaded = true;
+    startWebPresence();
+  } catch (e) {
+    console.error("Direct audio behind video failed", e);
+  }
+}      
 function primeAudioOnly() {
   if (!audioOnlyPlayer) return;
 
@@ -1475,15 +1493,9 @@ document.getElementById("explicitWarning").style.display = "block";
 startWebPresence();
 
        }
-manualBtn.addEventListener("click", () => {
-  try {
-    audioOnlyPlayer.pause();
-    audioOnlyPlayer.removeAttribute("src");
-    audioOnlyPlayer.load();
-  } catch(e) {}
-
-  streamLoaded = false;
+manualBtn.addEventListener("click", async () => {
   loadPlayer(true);
+  await startDirectAudioBehindVideo();
 });     
 
 let lastRefreshOnReturn = 0;
@@ -1623,15 +1635,9 @@ document.getElementById("mcPlay")?.addEventListener("click", async () => {
   window.location.href = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
 });
 
-document.getElementById("mcLive")?.addEventListener("click", () => {
-  try {
-    audioOnlyPlayer.pause();
-    audioOnlyPlayer.removeAttribute("src");
-    audioOnlyPlayer.load();
-  } catch(e) {}
-
-  streamLoaded = false;
+document.getElementById("mcLive")?.addEventListener("click", async () => {
   loadPlayer(true);
+  await startDirectAudioBehindVideo();
 });
       
  document.getElementById("notifyBtn")?.addEventListener("click", () => {
