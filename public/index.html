@@ -967,10 +967,9 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
   id="audioOnlyPlayer"
   playsinline
   webkit-playsinline
-  preload="auto"
+  preload="none"
   muted
-  controls
-  style="position:fixed; left:-9999px; bottom:0; width:1px; height:1px; opacity:0; pointer-events:none;"
+  style="display:none;"
 ></video>
     
   </div>
@@ -1809,7 +1808,7 @@ setTimeout(() => {
 }, 1200);
 
 updateAudioTapDisplay(0);
-startWebPresence();    
+// startWebPresence(); disabled during playback testing    
 });
     /* =========================
    BILLBOARD SLIDER
