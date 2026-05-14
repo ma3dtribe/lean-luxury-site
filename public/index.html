@@ -1136,8 +1136,7 @@ const AUDIO_STARTED_KEY = "ma3d_audio_started";
 const AUDIO_STICKY_KEY = "ma3d_audio_sticky";
 const AUDIO_STICKY_TS_KEY = "ma3d_audio_sticky_ts";
 const AUDIO_STICKY_TTL = 1000 * 60 * 30; 
-const AUDIO_TAP_SESSION_STORAGE_KEY = "ma3d_audio_tap_session_key";
-const AUDIO_TAP_LAST_LIVE_STATE_KEY = "ma3d_audio_last_live_state";      
+     
 const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);      
 
 let webPresenceChannel = null;
@@ -1153,16 +1152,6 @@ if (!webSessionId) {
 function getWebsiteUsername() {
   return (localStorage.getItem(USER_STORAGE_KEY) || "Guest").trim() || "Guest";
 }  
-function updateAudioTapDisplay(n = 0) {
-  const count = Number(n || 0);
-
-  try {
-    chatFrame?.contentWindow?.postMessage({
-      type: "ma3d:audioCount",
-      count
-    }, "*");
-  } catch (e) {}
-}
 
       
 function pushWebCountToChat(count, viewers = []){
@@ -1644,7 +1633,6 @@ setTimeout(() => {
   }
 }, 1200);
 
-updateAudioTapDisplay(0);
 startWebPresence();    
 });
     /* =========================
