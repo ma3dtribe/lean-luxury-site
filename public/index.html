@@ -1179,21 +1179,9 @@ if (sb) {
   .then(loc => saveVisit(loc))
   .catch(() => saveVisit());
 
-durationTimer = setInterval(async () => {
-
-  if (!currentSiteStatId) return;
-
-  const seconds = Math.floor((Date.now() - sessionStart) / 1000);
-
-  await sb
-    .from("site_stats")
-    .update({
-      duration_seconds: seconds,
-      last_seen: new Date().toISOString()
-    })
-    .eq("id", currentSiteStatId);
-
-}, 30000);
+// Disabled during playback testing — retro duration updates should not run live on homepage
+// durationTimer = setInterval(async () => {
+// }, 30000);
 } else {
   console.error("MA3D Supabase client not created");
 }     
@@ -1763,7 +1751,7 @@ setTimeout(() => {
 }, 1200);
 
 updateAudioTapDisplay(0);
-// startWebPresence(); disabled during playback testing    
+startWebPresence();   
 });
     /* =========================
    BILLBOARD SLIDER
