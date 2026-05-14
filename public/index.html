@@ -173,6 +173,1894 @@
   color:#eafff2;
   font-weight:900;
 }
+    .card {
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 22px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 42px rgba(0,0,0,.30);
+      backdrop-filter: blur(6px);
+    }
+
+    .card h3 {
+      margin: 0 0 12px;
+      font-size: 20px;
+    }
+
+    /* =========================
+       Live/Offline pill + hero status line
+    ========================= */
+    .statusbar{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    .status-dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background:#6b7280;
+      box-shadow:none;
+    }
+
+    .status-text{
+      opacity:.82;
+      font-size:14px;
+      line-height:1.45;
+      color: var(--muted);
+    }
+
+    /* Offline state */
+    #livebar[data-state="offline"] .status-dot{
+      background:#6b7280;
+    }
+
+    /* Live state */
+    #livebar[data-state="live"] .status-pill{
+      border-color: rgba(255,59,59,.45);
+      background: rgba(255,59,59,.12);
+      box-shadow: 0 0 0 1px rgba(255,59,59,.10), 0 0 18px rgba(255,59,59,.14);
+    }
+
+    #livebar[data-state="live"] .status-dot{
+      background: var(--red);
+      box-shadow: 0 0 0 4px rgba(255,59,59,.18);
+      animation: pulse 1.4s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,59,59,.55); }
+      70% { box-shadow: 0 0 0 10px rgba(255,59,59,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,59,59,0); }
+    }
+
+    /* Watch shell */
+    .watch-shell {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.14);
+      background:
+        radial-gradient(900px 320px at 20% 18%, rgba(255,59,59,.18), transparent 60%),
+        radial-gradient(700px 260px at 80% 70%, rgba(120,10,10,.16), transparent 62%),
+        rgba(255,255,255,.03);
+      box-shadow: 0 12px 40px rgba(0,0,0,.28);
+      padding: 18px;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    /* Glow the watch shell when live */
+    .watch-shell.is-live{
+      border-color: rgba(255,59,59,.28);
+      box-shadow: 0 0 0 1px rgba(255,59,59,.10), 0 18px 60px rgba(0,0,0,.34);
+    }
+
+    .watch-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+
+    .watch-title {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .watch-desc {
+  margin: 0;
+  opacity: .78;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.watch-shell.collapsed-head .watch-head,
+.watch-shell.collapsed-head #watchDesc,
+.watch-shell.collapsed-head #manualLoadBtn{
+  display: none !important;
+}
+    
+.watch-chat{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  grid-template-areas:
+    "video chat"
+    "billboard chat"
+    "calendar replay";
+  gap:16px;
+  align-items:start;
+}
+
+.video-card{
+  grid-area:video;
+}
+
+#chat{
+  grid-area:chat;
+  display:flex;
+  flex-direction:column;
+  min-height:900px;
+  overflow:hidden;
+}
+
+.billboard-card{
+  grid-area:billboard;
+}
+
+#calendarCard{
+  grid-area:calendar;
+}
+
+#replayCard{
+  grid-area:replay;
+}
+    
+#chat h3{
+  margin:0 0 12px;
+}
+
+#chat iframe{
+  display:block;
+  width:100%;
+  flex:1;
+  min-height:900px;
+  border:0;
+  border-radius:16px;
+}
+
+.watch-chat .card{
+  margin-bottom:0;
+}
+
+#playerMount iframe{
+  width:100%;
+  aspect-ratio:16/9;
+  height:auto;
+}
+
+#calendarCard iframe{
+  width:100%;
+  height:520px;
+  border:0;
+  border-radius:14px;
+  display:block;
+}
+
+.mobile-chat-link{
+  display:none;
+}
+
+@media (max-width:980px){
+  .watch-chat{
+    grid-template-columns:1fr;
+    grid-template-areas:
+      "video"
+      "chat"
+      "replay"
+      "billboard"
+      "calendar";
+  }
+    
+    #chat{
+    min-height:auto;
+  }
+
+  #playerMount iframe{
+    height:260px;
+  }
+
+  #chat iframe{
+  display:block;
+  min-height:720px;
+}
+
+  .mobile-chat-link{
+    display:none;
+  }
+}
+
+    
+   .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .tile {
+      padding: 16px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .tile-title {
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+      .tile-title {
+    font-weight: 900;
+    margin-bottom: 6px;
+  }
+
+  /* =========================
+     Social icons footer (bigger + centered)
+  ========================= */
+  .social-footer{
+    padding: 28px 0 40px;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,.18);
+  }
+
+  .social-footer .container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 22px;
+  }
+
+.social-icon{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.10);
+  text-decoration: none;
+  line-height: 1;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+  color: #ffffff;
+}
+
+.social-icon svg{
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+
+  .social-icon:hover{
+  transform: translateY(-2px) scale(1.05);
+  background: rgba(255,255,255,.18);
+  border-color: rgba(255,255,255,.45);
+}
+
+/* ADD THESE BELOW */
+.social-wrap{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.social-title{
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-size: 13px;
+  opacity: .85;
+}
+
+.social-icons{
+  display: flex;
+  gap: 22px;
+  justify-content: center;
+  align-items: center;
+}
+/* =========================
+   BILLBOARD
+========================= */
+
+.billboard{
+  margin-top: 0;
+  margin-bottom: 0;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.bb-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+
+.bb-title{
+  margin:0;
+  font-size:16px;
+  font-weight:900;
+}
+
+.bb-actions{
+  display:flex;
+  gap:8px;
+}
+
+.bb-nav{
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(0,0,0,.25);
+  color:white;
+  width:36px;
+  height:32px;
+  border-radius:8px;
+  font-size:18px;
+  cursor:pointer;
+}
+
+.bb-viewport{
+  overflow:hidden;
+  border-radius:14px;
+}
+
+.bb-track{
+  display:flex;
+  transition:transform .35s ease;
+}
+
+.bb-slide{
+  min-width:100%;
+  display:block;
+  text-decoration:none;
+  color:inherit;
+  position:relative;
+}
+
+.bb-slide img{
+  width:100%;
+  aspect-ratio:14/9;
+  object-fit:cover;
+  display:block;
+  border-radius:12px;
+}
+
+.bb-dots{
+  display:flex;
+  justify-content:center;
+  gap:6px;
+  margin-top:10px;
+}
+
+.bb-dot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.3);
+}
+
+.bb-dot.active{
+  background:white;
+}
+/* Prevent horizontal growth */
+*{ box-sizing: border-box; }
+html, body{ width:100%; overflow-x:hidden; }
+.container{ width:100%; overflow-x:hidden; } 
+
+/* =========================
+   GOOGLE SHEETS CALENDAR
+========================= */    
+    
+#ma3dCalendar{
+  margin-top:16px;
+}
+
+    #calendarCard{
+  border: 1px solid rgba(255,59,59,.28);
+  background:
+    radial-gradient(900px 320px at 20% 10%, rgba(255,59,59,.14), transparent 60%),
+    rgba(255,255,255,.03);
+  box-shadow:
+    0 0 0 1px rgba(255,59,59,.08),
+    0 18px 60px rgba(0,0,0,.35);
+}
+#calendarGrid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
+.cal-item{
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+  border-radius:16px;
+  padding:14px;
+}
+
+.cal-date{
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  opacity:.78;
+  margin-bottom:6px;
+}
+
+.cal-title{
+  font-size:17px;
+  font-weight:900;
+  margin-bottom:4px;
+}
+
+.cal-time{
+  font-size:13px;
+  opacity:.82;
+  margin-bottom:6px;
+}
+
+.cal-details{
+  font-size:13px;
+  opacity:.78;
+  line-height:1.45;
+}
+
+.cal-link{
+  display:inline-flex;
+  margin-top:10px;
+  text-decoration:none;
+}   
+
+.cal-link{
+  display:inline-flex;
+  margin-top:10px;
+  text-decoration:none;
+}
+
+/* =========================
+   MISSION + CALENDAR LAYOUT
+========================= */
+
+.info-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:22px;
+  margin-top:22px;
+  align-items:stretch;
+}
+
+.info-row .card{
+  height:100%;
+}
+
+@media (max-width:980px){
+  .info-row{
+    grid-template-columns:1fr;
+  }
+
+  #calendarCard{
+    order:1;
+  }
+
+  #missionCard{
+    order:2;
+    padding:24px;
+  }
+
+  #missionCard h3{
+    font-size:24px;
+  }
+
+  .mission-text{
+    font-size:17px;
+    line-height:1.75;
+  }
+
+  .mission-eyebrow{
+    font-size:12px;
+    padding:8px 14px;
+  }
+}  
+    
+#missionCard,
+#calendarCard{
+  margin-bottom:0;
+}
+
+#missionCard{
+  padding:32px;
+  position:relative;
+  align-self:stretch;
+  overflow:hidden;
+  border: 1px solid rgba(255,59,59,.24);
+  background:
+    radial-gradient(760px 260px at 14% 10%, rgba(255,59,59,.16), transparent 58%),
+    radial-gradient(540px 220px at 88% 82%, rgba(120,10,10,.14), transparent 62%),
+    linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.025));
+  box-shadow:
+    0 0 0 1px rgba(255,59,59,.05),
+    0 20px 55px rgba(0,0,0,.34);
+}
+
+#missionCard::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:4px;
+  background:linear-gradient(180deg, rgba(255,59,59,.95), rgba(255,59,59,.18));
+  border-radius:18px 0 0 18px;
+}
+
+#missionCard h3{
+  margin:0 0 18px;
+  font-size:30px;
+  font-weight:900;
+  line-height:1.1;
+  letter-spacing:-.01em;
+  position:relative;
+  padding-bottom:14px;
+}
+
+#missionCard h3::after{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:0;
+  width:72px;
+  height:3px;
+  border-radius:999px;
+  background:linear-gradient(90deg, rgba(255,59,59,.95), rgba(255,59,59,.22));
+  box-shadow:0 0 18px rgba(255,59,59,.28);
+}
+
+.mission-eyebrow{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 16px;
+  margin-bottom:14px;
+  border-radius:999px;
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:#ffe3e3;
+  background:rgba(255,59,59,.12);
+  border:1px solid rgba(255,59,59,.24);
+  box-shadow:0 0 0 1px rgba(255,59,59,.04);
+}
+
+.mission-eyebrow::before{
+  content:"";
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:var(--red);
+  box-shadow:0 0 0 4px rgba(255,59,59,.16);
+}
+
+.mission-text{
+  margin:0;
+  color:rgba(242,237,237,.92);
+  line-height:1.85;
+  font-size:19px;
+  font-weight:500;
+  max-width:none;
+  text-wrap:pretty;
+}
+.explicit-warning{
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #ffe3e3;
+  background: rgba(255,59,59,.12);
+  border: 1px solid rgba(255,59,59,.24);
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px rgba(255,59,59,.04);
+}
+    
+/* =========================
+   MOBILE HOME SCREEN CONTROL BAR
+   UI ONLY
+========================= */
+.mobile-control-bar{
+  display:none;
+}
+
+@media (max-width: 980px){
+  body{
+    padding-bottom: 84px;
+  }
+
+  .mobile-control-bar{
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 760px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    z-index: 9999;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+gap: 10px;
+    padding: 10px;
+    border-radius: 18px;
+    background: rgba(20,16,17,.92);
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 12px 34px rgba(0,0,0,.35);
+    backdrop-filter: blur(10px);
+  }
+
+  .mobile-control-btn{
+    min-height: 52px;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 14px;
+    background: rgba(255,255,255,.05);
+    color: var(--text);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-control-btn:active{
+    transform: scale(.98);
+  }
+
+  .mobile-control-btn .icon{
+    font-size: 18px;
+    line-height: 1;
+  }
+
+.mobile-control-btn.live-glow{
+  background: rgba(255,59,59,.18);
+  border-color: rgba(255,59,59,.45);
+  box-shadow: 0 0 0 1px rgba(255,59,59,.15), 0 0 18px rgba(255,59,59,.45);
+  color:#ffecec;
+  font-weight:900;
+}
+  
+}
+
+</style>    
+
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.ma3dOneSignalReady = false;
+
+  OneSignalDeferred.push(async function(OneSignal) {
+    try {
+      await OneSignal.init({
+        appId: "bc727029-b445-4395-b78f-7ac3c89c1cbf",
+        serviceWorkerPath: "/onesignal/OneSignalSDKWorker.js",
+        serviceWorkerUpdaterPath: "/onesignal/OneSignalSDKUpdaterWorker.js",
+        serviceWorkerParam: { scope: "/onesignal/" },
+        notifyButton: { enable: false }
+      });
+
+      window.ma3dOneSignalReady = true;
+      console.log("OneSignal init complete");
+
+console.log("Push supported:", await OneSignal.Notifications.isPushSupported());
+
+OneSignal.Notifications.addEventListener("permissionChange", function(permission) {
+        console.log("OneSignal permissionChange:", permission);
+      });
+
+      OneSignal.User.PushSubscription.addEventListener("change", function(event) {
+        console.log("Push subscription changed:", {
+          previous: event.previous,
+          current: event.current
+        });
+      });
+
+    } catch (e) {
+  console.error("OneSignal init failed:", e);
+  window.ma3dOneSignalInitError = String(e?.message || e || "unknown error");
+  alert("OneSignal init failed: " + window.ma3dOneSignalInitError);
+}
+  });
+</script>
+
+<script>
+  window.addEventListener("load", () => {
+    console.log("Page loaded");
+    console.log("OneSignal ready flag:", window.ma3dOneSignalReady);
+  });
+</script>
+  
+<link rel="manifest" href="/manifest.json">  
+  <link rel="preload" href="/chat-test.html" as="document">
+<link rel="preload" href="/images/ma3dtribebanner_cropped.png" as="image">
+  
+</head>
+
+<body>
+  <div class="bg-glow"></div>
+
+  <!-- ✅ Banner header aligned to same content width as main -->
+  <header class="site-banner">
+  <div class="container">
+    <a href="/" aria-label="MA3DTribe Home">
+      <img
+        src="/images/ma3dtribebanner_cropped.png"
+        alt="MA3DTribe Media"
+        class="banner-img"
+        loading="eager"
+        decoding="async"
+      />
+    </a>
+  </div>
+</header>
+
+
+  <main>
+    <div class="container">
+         <!-- WATCH + CHAT (side-by-side) -->
+<section class="watch-chat" id="watch">
+
+  <!-- WATCH -->
+  <div class="card video-card">
+    <div class="watch-shell" id="watchShell">
+      <div class="watch-head">
+        <div class="watch-title">LOAD MA3D Vibes</div>
+      </div>
+
+      <p id="watchDesc" class="watch-desc">
+        Checking stream status…
+      </p>
+
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button id="manualLoadBtn" class="btn" style="display:none;">Watch Live 🔴</button>
+      </div>
+    </div>
+
+    <div id="explicitWarning" class="explicit-warning" style="display:none; margin-top:14px;">
+      ⚠️ Explicit Content – Viewer Discretion Advised
+    </div>
+
+    <div id="playerMount" style="margin-top:10px;"></div>
+<video
+  id="audioOnlyPlayer"
+  playsinline
+  webkit-playsinline
+  preload="auto"
+  muted
+  controls
+  style="position:fixed; left:-9999px; bottom:0; width:1px; height:1px; opacity:0; pointer-events:none;"
+></video>
+    
+  </div>
+
+  <!-- CHAT -->
+  <div class="card" id="chat">
+  <h3>MA3D Lounge</h3>
+  <iframe
+    src="/chat-test.html"
+    loading="lazy"
+    scrolling="yes">
+  </iframe>
+</div>
+
+<div class="card" id="replayCard">
+  <a href="/replays.html" style="text-decoration:none;color:inherit;display:block;">
+    <img
+      src="/ads/ad22.webp"
+      alt="Show and Podcast Replay"
+      style="width:100%;border-radius:14px;display:block;"
+    />
+
+    <h3 style="margin:14px 0 6px;">
+      Show & Podcast Replays
+    </h3>
+
+    <p style="margin:0;opacity:.78;line-height:1.5;">
+      Watch previous MA3DTribe live shows, mixes, interviews and podcast replays.
+    </p>
+  </a>
+</div>
+
+  <!-- BILLBOARD -->
+
+  <!-- BILLBOARD -->
+  <div class="card billboard-card" aria-label="MA3DTribe Billboard">
+    <section class="billboard">
+      <div class="bb-top">
+        <h2 class="bb-title">Billboard</h2>
+        <div class="bb-actions">
+          <button class="bb-nav" id="bbPrev" type="button" aria-label="Previous ad">‹</button>
+          <button class="bb-nav" id="bbNext" type="button" aria-label="Next ad">›</button>
+        </div>
+      </div>
+
+      <div class="bb-viewport" id="bbViewport" tabindex="0" aria-roledescription="carousel">
+        <div class="bb-track" id="bbTrack">
+
+          <a class="bb-slide" href="#" aria-label="Tonight • Live DJ Set">
+            <img src="/ads/ad1.webp" alt="Tonight • Live DJ Set flyer" loading="eager" />
+          </a>
+
+          <a class="bb-slide" href="#" aria-label="Featured Show">
+            <img src="/ads/ad2.webp" alt="Featured Show flyer" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#" aria-label="New DJ Set">
+            <img src="/ads/ad3.webp" alt="New DJ Set flyer" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad19.webp" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad6.webp" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad20.webp" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad11.webp" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad14.webp" loading="lazy" />
+          </a>
+
+          <a class="bb-slide" href="#">
+            <img src="/ads/ad13.webp" loading="lazy" />
+          </a>
+
+<a class="bb-slide" href="#">
+  <img src="/ads/ad18.webp" loading="lazy" />
+</a>   
+
+<a class="bb-slide" href="#">
+  <img src="/ads/ad21.webp" loading="lazy" />
+</a>
+          
+        </div>
+      </div>
+
+      <div class="bb-dots" id="bbDots" aria-label="Billboard navigation dots"></div>
+    </section>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="card" id="calendarCard">
+    <h3>MA3DTribe Calendar</h3>
+    <iframe
+      src="https://calendar.google.com/calendar/embed?src=ma3dlegacy%40gmail.com&ctz=America%2FNew_York&mode=AGENDA&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0"
+      frameborder="0"
+      scrolling="no">
+    </iframe>
+  </div>
+
+</section>    
+      
+      <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
+   
+      <!-- SHOWS -->
+         </div>
+  </main>
+
+  <!-- Auto-load Twitch ONLY if live -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>  
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const CHANNEL = "ma3dtribe";
+      const PARENT = window.location.hostname;
+
+      const mount = document.getElementById("playerMount");
+      const desc = document.getElementById("watchDesc");
+      const manualBtn = document.getElementById("manualLoadBtn");
+      const watchShell = document.getElementById("watchShell");
+const audioOnlyPlayer = document.getElementById("audioOnlyPlayer");
+const DIRECT_AUDIO_URL = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
+const USE_DIRECT_AUDIO_ON_MOBILE = true;
+audioOnlyPlayer.addEventListener("play", () => {
+  streamLoaded = true;
+});
+
+audioOnlyPlayer.addEventListener("pause", () => {
+  if (!document.hidden) streamLoaded = false;
+});
+
+audioOnlyPlayer.addEventListener("error", () => {
+  streamLoaded = false;
+  audioOnlyPlayer.style.display = "none";
+  audioOnlyPlayer.removeAttribute("src");
+});      
+
+function primeAudioOnly() {
+  if (!audioOnlyPlayer) return;
+
+  if (audioOnlyPlayer.src !== DIRECT_AUDIO_URL) {
+    audioOnlyPlayer.src = DIRECT_AUDIO_URL;
+  }
+}
+
+const chatFrame = document.querySelector('#chat iframe');
+      
+
+const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
+const ROOM = "ma3dtribe";
+const USER_STORAGE_KEY = "ma3dtribe_username";
+const WEB_SESSION_KEY = "ma3d_web_session_id";
+const AUDIO_STARTED_KEY = "ma3d_audio_started";
+const AUDIO_STICKY_KEY = "ma3d_audio_sticky";
+const AUDIO_STICKY_TS_KEY = "ma3d_audio_sticky_ts";
+const AUDIO_STICKY_TTL = 1000 * 60 * 30; 
+const AUDIO_TAP_SESSION_STORAGE_KEY = "ma3d_audio_tap_session_key";
+const AUDIO_TAP_LAST_LIVE_STATE_KEY = "ma3d_audio_last_live_state";      
+const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);      
+
+let webPresenceChannel = null;
+let webHeartbeat = null;
+let streamLoaded = false;
+
+let webSessionId = localStorage.getItem(WEB_SESSION_KEY);
+if (!webSessionId) {
+  webSessionId = (crypto?.randomUUID?.() || (Date.now() + "-" + Math.random().toString(16).slice(2)));
+  localStorage.setItem(WEB_SESSION_KEY, webSessionId);
+}
+
+function getWebsiteUsername() {
+  return (localStorage.getItem(USER_STORAGE_KEY) || "Guest").trim() || "Guest";
+}  
+function updateAudioTapDisplay(n = 0) {
+  const count = Number(n || 0);
+
+  try {
+    chatFrame?.contentWindow?.postMessage({
+      type: "ma3d:audioCount",
+      count
+    }, "*");
+  } catch (e) {}
+}
+
+async function getCurrentAudioTapSession() {
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from("audio_tap_sessions")
+    .select("id, tap_count, is_live")
+    .eq("room", ROOM)
+    .eq("is_live", true)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return null;
+  return data || null;
+}
+
+async function ensureAudioTapSessionLive() {
+  let session = await getCurrentAudioTapSession();
+  if (session) {
+    updateAudioTapDisplay(session.tap_count || 0);
+    return session;
+  }
+
+  const sessionKey = `audio-${ROOM}-${Date.now()}`;
+
+  const { data, error } = await sb
+    .from("audio_tap_sessions")
+    .insert([{
+      room: ROOM,
+      session_key: sessionKey,
+      is_live: true,
+      tap_count: 0
+    }])
+    .select("id, tap_count, is_live, session_key")
+    .single();
+
+  if (error) {
+    console.error("ensureAudioTapSessionLive insert error:", error);
+    return null;
+  }
+
+  updateAudioTapDisplay(0);
+  return data;
+}
+
+async function incrementAudioTapCount() {
+  let session = await ensureAudioTapSessionLive();
+  if (!session) return;
+
+  const { data, error } = await sb.rpc("increment_audio_tap_session", {
+    p_session_id: session.id
+  });
+
+  if (!error) {
+    updateAudioTapDisplay(Number(data || 0));
+  }
+}
+
+async function endAudioTapSession() {
+  const session = await getCurrentAudioTapSession();
+  if (!session) {
+    updateAudioTapDisplay(0);
+    return;
+  }
+
+  await sb
+    .from("audio_tap_sessions")
+    .update({
+      is_live: false,
+      ended_at: new Date().toISOString()
+    })
+    .eq("id", session.id);
+
+  updateAudioTapDisplay(0);
+}
+
+async function handleAudioTapLiveState(isLive) {
+  const wasLive = sessionStorage.getItem(AUDIO_TAP_LAST_LIVE_STATE_KEY) === "1";
+
+  if (isLive) {
+    let session = await getCurrentAudioTapSession();
+
+    if (!session) {
+      sessionStorage.setItem(AUDIO_TAP_LAST_LIVE_STATE_KEY, "1");
+      session = await ensureAudioTapSessionLive();
+    } else {
+      sessionStorage.setItem(AUDIO_TAP_LAST_LIVE_STATE_KEY, "1");
+      updateAudioTapDisplay(session.tap_count || 0);
+    }
+  } else {
+    if (wasLive) {
+      sessionStorage.removeItem(AUDIO_TAP_LAST_LIVE_STATE_KEY);
+      await endAudioTapSession();
+    } else {
+      updateAudioTapDisplay(0);
+    }
+  }
+}
+      
+function pushWebCountToChat(count, viewers = []){
+  const n = Number(count || 0);
+
+  try {
+    chatFrame?.contentWindow?.postMessage({
+      type: "ma3d:webCount",
+      count: n,
+      viewers
+    }, "*");
+  } catch (e) {}
+
+  try {
+    const viewCountInFrame = chatFrame?.contentDocument?.getElementById("viewCount");
+    if (viewCountInFrame) viewCountInFrame.textContent = String(n);
+  } catch (e) {}
+}
+
+function recomputeWebCount(channel){
+  if (!channel) return;
+
+  const state = channel.presenceState();
+  const now = Date.now();
+  const STALE_MS = 120000;
+
+  const sessions = new Map();
+
+  for (const key in state) {
+  const metas = (state[key] || []).filter(m => {
+    const fresh = (now - Number(m?.t || 0)) < STALE_MS;
+    const activeOnSite = m?.pageActive === true;
+    const listeningInBackground = m?.streamLoaded === true;
+    return fresh && (activeOnSite || listeningInBackground);
+  });
+
+  if (!metas.length) continue;
+
+  let latest = metas[0];
+  for (const m of metas) {
+    if (Number(m?.t || 0) > Number(latest?.t || 0)) {
+      latest = m;
+    }
+  }
+
+  sessions.set(key, latest);
+}
+
+    const viewers = Array.from(sessions.values())
+    .sort((a, b) => Number(b?.t || 0) - Number(a?.t || 0))
+    .map(m => ({
+      name: (m?.username || "Guest").toString(),
+      chatted: !!m?.chatted,
+      t: Number(m?.t || 0)
+    }));
+
+  pushWebCountToChat(sessions.size, viewers);
+}
+
+async function startWebPresence(){
+  if (!sb) return;
+  if (document.hidden) return;
+
+  if (webPresenceChannel) {
+    try { await webPresenceChannel.unsubscribe(); } catch (e) {}
+    webPresenceChannel = null;
+  }
+
+  webPresenceChannel = sb.channel(`web-presence:${ROOM}`, {
+    config: { presence: { key: webSessionId } }
+  });
+
+  webPresenceChannel
+    .on("presence", { event: "sync" }, () => recomputeWebCount(webPresenceChannel))
+    .on("presence", { event: "join" }, () => recomputeWebCount(webPresenceChannel))
+    .on("presence", { event: "leave" }, () => recomputeWebCount(webPresenceChannel));
+
+  await webPresenceChannel.subscribe(async (status) => {
+    if (status !== "SUBSCRIBED") return;
+
+        try {
+      await webPresenceChannel.track({
+  username: getWebsiteUsername(),
+  pageActive: !document.hidden,
+  streamLoaded: !!streamLoaded,
+  t: Date.now()
+});
+    } catch (e) {}
+
+    recomputeWebCount(webPresenceChannel);
+
+    if (webHeartbeat) clearInterval(webHeartbeat);
+
+            webHeartbeat = setInterval(async () => {
+      try {
+        await webPresenceChannel.track({
+          username: getWebsiteUsername(),
+          pageActive: !document.hidden,
+          streamLoaded: !!streamLoaded,
+          t: Date.now()
+        });
+        recomputeWebCount(webPresenceChannel);
+      } catch (e) {}
+    }, 20000);
+  });
+}
+
+async function stopWebPresence(){
+  try { if (webHeartbeat) clearInterval(webHeartbeat); } catch (e) {}
+  webHeartbeat = null;
+
+  try { await webPresenceChannel?.untrack(); } catch (e) {}
+  try { await webPresenceChannel?.unsubscribe(); } catch (e) {}
+  webPresenceChannel = null;
+
+  pushWebCountToChat(0);
+}
+
+chatFrame?.addEventListener("load", () => {
+  pushWebCountToChat(0);
+  if (webPresenceChannel) recomputeWebCount(webPresenceChannel);
+});      
+      
+       function loadPlayer(userStarted = false) {
+  if (streamLoaded && !userStarted && audioOnlyPlayer.style.display === "block") return;
+watchShell.style.display = "";
+         
+  if (userStarted) {
+  mount.innerHTML = "";
+  localStorage.setItem(AUDIO_STARTED_KEY, "1");
+
+}
+
+  
+sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
+sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));         
+localStorage.setItem(AUDIO_STARTED_KEY, "1");         
+        
+        if (window.innerWidth > 980) manualBtn.style.display = "none";
+         watchShell.classList.add("collapsed-head");
+         
+         
+        const iframe = document.createElement("iframe");
+
+iframe.style.width = "100%";
+iframe.style.aspectRatio = "16 / 9";
+iframe.style.height = "auto";
+iframe.allowFullscreen = true;
+iframe.setAttribute("allow", "autoplay; fullscreen");
+iframe.style.border = "0";
+iframe.style.borderRadius = "18px";
+
+mount.innerHTML = "";
+iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PARENT}&autoplay=true&muted=${userStarted ? "false" : "true"}`;
+mount.appendChild(iframe);
+// Smart fallback (desktop only)
+let playerLoaded = false;
+
+iframe.addEventListener("load", () => {
+  playerLoaded = true;
+  if (window.innerWidth > 980) manualBtn.style.display = "none";
+});
+
+setTimeout(() => {
+  if (window.innerWidth > 980 && !playerLoaded) {
+    manualBtn.style.display = "inline-flex";
+  }
+}, 2500);         
+
+        
+document.getElementById("explicitWarning").style.display = "block";
+
+startWebPresence();
+
+       }
+manualBtn.addEventListener("click", () => {
+  try {
+    audioOnlyPlayer.pause();
+    audioOnlyPlayer.removeAttribute("src");
+    audioOnlyPlayer.load();
+  } catch(e) {}
+
+  streamLoaded = false;
+  loadPlayer(true);
+});     
+
+let lastRefreshOnReturn = 0;
+
+function refreshOnReturn() {
+  const now = Date.now();
+  if (now - lastRefreshOnReturn < 1500) return;
+  lastRefreshOnReturn = now;
+
+  const hadAudioStarted = localStorage.getItem(AUDIO_STARTED_KEY) === "1";
+const sticky = sessionStorage.getItem(AUDIO_STICKY_KEY) === "1";
+const stickyTs = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
+const stickyFresh = (Date.now() - stickyTs) < AUDIO_STICKY_TTL;  
+  const hasPlayer = !!mount.querySelector("iframe");
+  if (hadAudioStarted || (sticky && stickyFresh)) {
+  primeAudioOnly();
+  audioOnlyPlayer.style.display = "block";
+  audioOnlyPlayer.play().then(() => {
+    streamLoaded = true;
+    manualBtn.style.display = "none";
+    watchShell.classList.add("collapsed-head");
+    startWebPresence();
+  }).catch(() => {});
+  return;
+}
+
+  if (webPresenceChannel) {
+    recomputeWebCount(webPresenceChannel);
+  } else if (hasPlayer || hadAudioStarted) {
+    startWebPresence();
+  }
+
+  try {
+    chatFrame?.contentWindow?.postMessage({ type: "ma3d:refreshOnReturn" }, "*");
+  } catch (e) {}
+}
+
+document.addEventListener("visibilitychange", async () => {
+  if (document.hidden) {
+    if (webPresenceChannel) {
+      try {
+        await webPresenceChannel.track({
+          username: getWebsiteUsername(),
+          pageActive: false,
+          streamLoaded: !!streamLoaded,
+          t: Date.now()
+        });
+        recomputeWebCount(webPresenceChannel);
+      } catch (e) {}
+    }
+    return;
+  }
+
+    if (webPresenceChannel) {
+    try {
+      await webPresenceChannel.track({
+        username: getWebsiteUsername(),
+        pageActive: true,
+        streamLoaded: !!streamLoaded,
+        t: Date.now()
+      });
+      recomputeWebCount(webPresenceChannel);
+    } catch (e) {}
+  }
+
+  if (localStorage.getItem(AUDIO_STARTED_KEY) === "1") {
+  primeAudioOnly();
+}
+refreshOnReturn();
+});
+
+window.addEventListener("pageshow", () => {
+  const sticky = sessionStorage.getItem(AUDIO_STICKY_KEY) === "1";
+  const ts = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
+  const fresh = (Date.now() - ts) < AUDIO_STICKY_TTL;
+
+  if (sticky && fresh) {
+  primeAudioOnly();
+  audioOnlyPlayer.style.display = "block";
+  audioOnlyPlayer.play().then(() => {
+    streamLoaded = true;
+    manualBtn.style.display = "none";
+    watchShell.classList.add("collapsed-head");
+    startWebPresence();
+  }).catch(() => {});
+  return;
+}
+
+  refreshOnReturn();
+});
+
+window.addEventListener("focus", () => {
+  if (document.hidden) return;
+  if (!streamLoaded) {
+    primeAudioOnly();
+  }
+  refreshOnReturn();
+});
+
+  document.getElementById("mcBackground")?.addEventListener("click", async () => {
+  watchShell.style.display = "";
+  localStorage.setItem(AUDIO_STARTED_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
+
+  if (!streamLoaded) {
+    primeAudioOnly();
+    audioOnlyPlayer.style.display = "block";
+
+    try {
+      await audioOnlyPlayer.play();
+      streamLoaded = true;
+      manualBtn.style.display = "none";
+      watchShell.classList.add("collapsed-head");
+      startWebPresence();
+    } catch(e) {
+      console.error("Direct audio failed", e);
+      streamLoaded = false;
+      audioOnlyPlayer.style.display = "none";
+      audioOnlyPlayer.removeAttribute("src");
+      audioOnlyPlayer.load();
+    }
+  }
+
+  setTimeout(() => {
+    window.scrollTo(0, 0);
+  }, 300);
+});
+
+document.getElementById("mcPlay")?.addEventListener("click", async () => {
+  await incrementAudioTapCount();
+
+  localStorage.setItem(AUDIO_STARTED_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
+  window.location.href = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
+});
+
+document.getElementById("mcLive")?.addEventListener("click", () => {
+  try {
+    audioOnlyPlayer.pause();
+    audioOnlyPlayer.removeAttribute("src");
+    audioOnlyPlayer.load();
+  } catch(e) {}
+
+  streamLoaded = false;
+  loadPlayer(true);
+});
+      
+ document.getElementById("notifyBtn")?.addEventListener("click", () => {
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push(async function(OneSignal) {
+    try {
+      let tries = 0;
+
+      while (!window.ma3dOneSignalReady && tries < 40) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        tries++;
+      }
+
+      if (!window.ma3dOneSignalReady) {
+  const msg = window.ma3dOneSignalInitError
+    ? "Notifications not ready. Init error: " + window.ma3dOneSignalInitError
+    : "Notifications not ready. Close and reopen the app, then try again.";
+  alert(msg);
+  return;
+}
+
+      const isSupported = await OneSignal.Notifications.isPushSupported();
+      if (!isSupported) {
+        alert("Push not supported on this device.");
+        return;
+      }
+
+      const permission = OneSignal.Notifications.permission;
+      const optedIn = OneSignal.User.PushSubscription.optedIn;
+
+      console.log("Notify state:", { permission, optedIn });
+
+      if (permission === "granted" && optedIn) {
+  alert("Notifications already enabled 🔔");
+  return;
+}
+
+if (!optedIn) {
+  await OneSignal.User.PushSubscription.optIn();
+}
+
+const finalOptedIn = OneSignal.User.PushSubscription.optedIn;
+
+if (finalOptedIn) {
+  alert("Notifications enabled 🔔");
+} else {
+  alert("Notifications blocked ❌");
+}
+
+    } catch (e) {
+      console.error("OneSignal notify error:", e);
+      alert("Notification setup failed. Try again.");
+    }
+  });
+});
+
+  document.getElementById("mcRefresh")?.addEventListener("click", () => {
+    window.location.reload();
+  });
+
+      
+setInterval(() => {
+  if (document.hidden) return;
+
+  fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
+    .then(r => r.text())
+    .then(t => {
+      const text = (t || "").toLowerCase();
+      const isLive = !text.includes("offline");
+      handleAudioTapLiveState(isLive);
+      
+      const liveBtn = document.getElementById("mcLive");
+
+      if (isLive) {
+  liveBtn?.classList.add("live-glow");
+
+  if (!mount.querySelector("iframe")) {
+    desc.textContent = "We’re live now. Tap Watch Live to start.";
+    watchShell.style.display = "";
+    watchShell.classList.remove("collapsed-head");
+    manualBtn.style.display = "inline-flex";
+  }
+}
+      
+      else {
+  liveBtn?.classList.remove("live-glow");
+
+  try {
+    audioOnlyPlayer.pause();
+    audioOnlyPlayer.removeAttribute("src");
+    audioOnlyPlayer.load();
+  } catch(e) {}
+
+  localStorage.removeItem(AUDIO_STARTED_KEY);
+  sessionStorage.removeItem(AUDIO_STICKY_KEY);
+  sessionStorage.removeItem(AUDIO_STICKY_TS_KEY);
+streamLoaded = false;        
+}
+    })
+    .catch(() => {});
+}, 20000);      
+      
+
+      fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://decapi.me/twitch/uptime/${CHANNEL}?redirect=false`), { cache: "no-store" })
+  .then(r => r.text())
+  .then(t => {
+    const text = (t || "").toLowerCase();
+    const isLive = !text.includes("offline");
+handleAudioTapLiveState(isLive);    
+
+    if (isLive) {
+  desc.textContent = "We’re live now. Tap Watch Live to start.";
+  watchShell.style.display = "";
+  watchShell.classList.remove("collapsed-head");
+  manualBtn.style.display = "inline-flex";
+}
+    else {
+  try {
+    audioOnlyPlayer.pause();
+    audioOnlyPlayer.removeAttribute("src");
+    audioOnlyPlayer.load();
+  } catch(e) {}
+
+  streamLoaded = false;
+
+  watchShell.style.display = "";
+  watchShell.classList.remove("collapsed-head");
+  desc.textContent = "Currently off air.";
+  manualBtn.style.display = "none";
+  mount.innerHTML = "";
+}
+    
+  })
+        
+.catch(() => {
+  console.log("Live status check temporarily unavailable");
+});
+
+setTimeout(() => {
+  if (!mount.querySelector("iframe") && desc.textContent.includes("Checking stream status")) {
+    desc.textContent = "Tap Watch Live to start.";
+    watchShell.style.display = "";
+    watchShell.classList.remove("collapsed-head");
+    manualBtn.style.display = "inline-flex";
+  }
+}, 1200);
+
+updateAudioTapDisplay(0);
+startWebPresence();    
+});
+    /* =========================
+   BILLBOARD SLIDER
+========================= */
+document.addEventListener("DOMContentLoaded", function initBillboard(){
+  const track = document.getElementById("bbTrack");
+  const viewport = document.getElementById("bbViewport");
+  const prevBtn = document.getElementById("bbPrev");
+  const nextBtn = document.getElementById("bbNext");
+  const dotsWrap = document.getElementById("bbDots");
+
+  if (!track || !dotsWrap) return;
+
+  const slides = Array.from(track.querySelectorAll(".bb-slide"));
+  if (!slides.length) return;
+
+  let i = 0;
+  let timer = null;
+
+  // build dots
+  dotsWrap.innerHTML = "";
+  const dots = slides.map((_, idx) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "bb-dot" + (idx === 0 ? " active" : "");
+    b.addEventListener("click", () => go(idx, true));
+    dotsWrap.appendChild(b);
+    return b;
+  });
+
+  function render(){
+    track.style.transform = `translateX(${-i * 100}%)`;
+    dots.forEach((d, idx) => d.classList.toggle("active", idx === i));
+  }
+
+  function go(nextIndex, userAction=false){
+    i = (nextIndex + slides.length) % slides.length;
+    render();
+    if (userAction) restartAuto();
+  }
+
+  function next(){ go(i + 1, true); }
+  function prev(){ go(i - 1, true); }
+
+  prevBtn?.addEventListener("click", prev);
+  nextBtn?.addEventListener("click", next);
+
+  function startAuto(){
+  stopAuto();
+  timer = setInterval(() => {
+    i = (i + 1) % slides.length;
+    render();
+  }, 60000);
+}
+
+viewport?.addEventListener("mouseenter", stopAuto);
+viewport?.addEventListener("mouseleave", startAuto);
+viewport?.addEventListener("touchstart", stopAuto);
+viewport?.addEventListener("touchend", startAuto);    
+  
+  function stopAuto(){
+    if (timer) clearInterval(timer);
+    timer = null;
+  }
+  function restartAuto(){
+    startAuto();
+  }
+
+  render();
+startAuto();
+
+// Swipe support (mobile)
+let startX = null;
+
+viewport?.addEventListener("touchstart", (e) => {
+  startX = e.touches[0].clientX;
+}, { passive: true });
+
+viewport?.addEventListener("touchend", (e) => {
+  if (startX == null) return;
+  const endX = e.changedTouches[0].clientX;
+  const dx = endX - startX;
+  startX = null;
+
+  if (Math.abs(dx) > 40) {
+    if (dx < 0) next();
+    else prev();
+  }
+}, { passive: true });
+startAuto();  
+});
+
+window.addEventListener("pagehide", async () => {
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
+  try { await stopWebPresence(); } catch (e) {}
+});
+
+window.addEventListener("beforeunload", async () => {
+  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
+  try { await stopWebPresence(); } catch (e) {}
+});    
+    
+  </script>
+  <!-- Social icons footer (bottom of page) -->
+  <footer class="social-footer">
+  <div class="container social-wrap">
+    <div class="social-title">MA3DTribe Social Media Accounts</div>
+
+    <div class="social-icons">
+      <!-- YouTube -->
+      <a class="social-icon"
+         href="https://youtube.com/@ma3dtribemedia?si=lcHGoiwCJk4SrvrA"
+         target="_blank" rel="noopener" title="YouTube" aria-label="YouTube">
+        <svg viewBox="0 0 576 512" aria-hidden="true">
+          <path fill="currentColor" d="M549.7 124.1c-6.3-23.8-24.8-42.3-48.6-48.6C458.5 64 288 64 288 64S117.5 64 74.9 75.5c-23.8 6.3-42.3 24.8-48.6 48.6C14.8 166.7 14.8 256 14.8 256s0 89.3 11.5 131.9c6.3 23.8 24.8 42.3 48.6 48.6C117.5 448 288 448 288 448s170.5 0 213.1-11.5c23.8-6.3 42.3-24.8 48.6-48.6C561.2 345.3 561.2 256 561.2 256s0-89.3-11.5-131.9zM232 336V176l142 80-142 80z"/>
+        </svg>
+      </a>
+
+      <!-- TikTok -->
+      <a class="social-icon"
+         href="https://www.tiktok.com/@ma3dtribemedia?_r=1&_t=ZP-93ynYQ2VkAI"
+         target="_blank" rel="noopener" title="TikTok" aria-label="TikTok">
+        <svg viewBox="0 0 448 512" aria-hidden="true">
+          <path fill="currentColor" d="M448 209.9v125.1c-45.2 0-89.2-14.6-125.5-41.5v92.2c0 84.7-68.6 153.3-153.3 153.3S16 470.4 16 385.7 84.6 232.4 169.3 232.4c10.8 0 21.5 1.1 32 3.3v85.3c-10-3.3-21-5.1-32-5.1-38 0-69 30.9-69 69 0 38 30.9 69 69 69s69-30.9 69-69V16h85.3c7.6 64.9 63 115.5 128.7 115.5z"/>
+        </svg>
+      </a>
+
+      <!-- Instagram -->
+      <a class="social-icon"
+         href="https://instagram.com/ma3dtribemedia"
+         target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">
+        <svg viewBox="0 0 448 512" aria-hidden="true">
+          <path fill="currentColor" d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.3 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.4 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.9-26.9 26.9-14.9 0-26.9-12-26.9-26.9s12-26.9 26.9-26.9 26.9 12 26.9 26.9zM398.8 80c-1.7-35.3-9.9-66.6-36.2-92.8C336.4-39.1 305.1-47.3 269.8-49c-35.4-2-141.7-2-177.1 0C57.4-47.3 26.1-39.1-.1-12.8-26.4 13.4-34.6 44.7-36.3 80c-2 35.4-2 141.7 0 177.1 1.7 35.3 9.9 66.6 36.2 92.8 26.2 26.3 57.5 34.5 92.8 36.2 35.4 2 141.7 2 177.1 0 35.3-1.7 66.6-9.9 92.8-36.2 26.3-26.2 34.5-57.5 36.2-92.8 2-35.4 2-141.7 0-177.1z"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</footer>
+
+<!-- MOBILE CONTROL BAR (UI ONLY) -->
+<div class="mobile-control-bar">
+  <button class="mobile-control-btn" id="mcPlay" type="button">
+  <div class="icon">▶️</div>
+  <div>Audio Only</div>
+</button>
+
+  <button class="mobile-control-btn" id="mcBackground" type="button">
+    <div class="icon">🔒</div>
+    <div>Lock</div>
+  </button>
+
+  <button class="mobile-control-btn" id="mcLive" type="button">
+  <div class="icon">🔴</div>
+  <div>Watch Live</div>
+</button>
+
+  <button class="mobile-control-btn" id="mcRefresh" type="button">
+  <div class="icon">🔄</div>
+  <div>Refresh</div>
+</button>
+
+<button class="mobile-control-btn" id="notifyBtn" type="button">
+  <div class="icon">🔔</div>
+  <div>Notify</div>
+</button>
+  
+</div>
+
+</div>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('Service Worker Registered'))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+  
+</body>
+</html>      --red-soft: rgba(255,59,59,.18);
+      --red-glow: rgba(255,59,59,.25);
+      --content-max: 1100px;
+      --content-pad: 16px;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* Red stage glow */
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(900px 380px at 14% 14%, rgba(255,59,59,.22), transparent 60%),
+        radial-gradient(800px 320px at 86% 62%, rgba(180,30,30,.18), transparent 62%),
+        radial-gradient(700px 280px at 50% 95%, rgba(120,10,10,.14), transparent 60%);
+      z-index: -1;
+      opacity: .85;
+      pointer-events: none;
+    }
+
+    /* =========================
+       ✅ SHARED CONTENT WIDTH (banner + main match perfectly)
+    ========================= */
+    .container{
+      max-width: var(--content-max);
+      margin: 0 auto;
+      padding: 0 var(--content-pad);
+    }
+
+    /* =========================
+       ✅ BANNER HEADER (matches content width + "perfect" header height)
+       - Put ma3dtribebanner_cropped.webp in /public/images/
+       - URL path is /images/ma3dtribebanner_cropped.webp (NO /public)
+    ========================= */
+    .site-banner{
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+
+    .banner-img{
+      width: 100%;
+      height: clamp(180px, 29vw, 320px); /* "perfect" header height range */
+      object-fit: contain;               /* show full banner, no cut-off */
+      display: block;
+      filter: drop-shadow(0 12px 28px rgba(0,0,0,.35));
+    }
+
+@media (max-width: 600px){
+  .banner-img{
+    height: clamp(220px, 60vw, 420px);
+  }
+}
+    
+    main{
+      padding: 14px 0 70px; /* padding handled by .container */
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+
+    @media (max-width: 860px){
+      .hero{ grid-template-columns: 1fr; }
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid var(--border);
+      letter-spacing: .35px;
+    }
+
+    .hero h2 {
+      margin: 14px 0 10px;
+      font-size: 34px;
+      line-height: 1.15;
+    }
+
+    .subtext {
+      opacity: .80;
+      max-width: 560px;
+      line-height: 1.55;
+    }
+
+    .cta-row {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-size: 14px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      color: inherit;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+    }
+
+    .btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.09);
+      border-color: rgba(255,255,255,.22);
+    }
+
+    .btn.primary {
+      background: rgba(255,255,255,.14);
+      font-weight: 800;
+    }
+/* LIVE button glow (green = GO) */
+.btn.live-glow{
+  background: rgba(34,197,94,.18);
+  border-color: rgba(34,197,94,.45);
+  box-shadow: 0 0 0 1px rgba(34,197,94,.15), 0 0 18px rgba(34,197,94,.45);
+  color:#eafff2;
+  font-weight:900;
+}
  
     .card {
       border-radius: 18px;
