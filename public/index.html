@@ -1517,7 +1517,7 @@ const sticky = sessionStorage.getItem(AUDIO_STICKY_KEY) === "1";
 const stickyTs = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
 const stickyFresh = (Date.now() - stickyTs) < AUDIO_STICKY_TTL;  
   const hasPlayer = !!mount.querySelector("iframe");
-  if (hadAudioStarted || (sticky && stickyFresh)) {
+  if (!mount.querySelector("iframe") && (hadAudioStarted || (sticky && stickyFresh))) {
   primeAudioOnly();
   audioOnlyPlayer.style.display = "block";
   audioOnlyPlayer.play().then(() => {
