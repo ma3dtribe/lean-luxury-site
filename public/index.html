@@ -1501,11 +1501,11 @@ startWebPresence();
        }
 manualBtn.addEventListener("click", async () => {
   loadPlayer(true);
-  window.location.href = "/audio.html";
+  window.open("/audio.html", "_blank");
 });      
 document.getElementById("mcLive")?.addEventListener("click", async () => {
   loadPlayer(true);
-  window.location.href = "/audio.html";
+  window.open("/audio.html", "_blank");
 });     
 
 let lastRefreshOnReturn = 0;
