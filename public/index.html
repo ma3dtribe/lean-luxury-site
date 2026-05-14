@@ -1543,25 +1543,9 @@ const stickyFresh = (Date.now() - stickyTs) < AUDIO_STICKY_TTL;
 // document.addEventListener("visibilitychange", async () => {
 // });
 
-window.addEventListener("pageshow", () => {
-  const sticky = sessionStorage.getItem(AUDIO_STICKY_KEY) === "1";
-  const ts = Number(sessionStorage.getItem(AUDIO_STICKY_TS_KEY) || 0);
-  const fresh = (Date.now() - ts) < AUDIO_STICKY_TTL;
-
-  if (sticky && fresh) {
-  primeAudioOnly();
-  audioOnlyPlayer.style.display = "block";
-  audioOnlyPlayer.play().then(() => {
-    streamLoaded = true;
-    manualBtn.style.display = "none";
-    watchShell.classList.add("collapsed-head");
-    startWebPresence();
-  }).catch(() => {});
-  return;
-}
-
-  refreshOnReturn();
-});
+// Disabled during playback testing — iPhone Safari may fire pageshow during scroll/PWA gestures
+// window.addEventListener("pageshow", () => {
+// });
 
 // Disabled during playback testing — iPhone Safari may fire focus during scroll
 // window.addEventListener("focus", () => {
