@@ -1539,39 +1539,9 @@ const stickyFresh = (Date.now() - stickyTs) < AUDIO_STICKY_TTL;
   } catch (e) {}
 }
 
-document.addEventListener("visibilitychange", async () => {
-  if (document.hidden) {
-    if (webPresenceChannel) {
-      try {
-        await webPresenceChannel.track({
-          username: getWebsiteUsername(),
-          pageActive: false,
-          streamLoaded: !!streamLoaded,
-          t: Date.now()
-        });
-        recomputeWebCount(webPresenceChannel);
-      } catch (e) {}
-    }
-    return;
-  }
-
-    if (webPresenceChannel) {
-    try {
-      await webPresenceChannel.track({
-        username: getWebsiteUsername(),
-        pageActive: true,
-        streamLoaded: !!streamLoaded,
-        t: Date.now()
-      });
-      recomputeWebCount(webPresenceChannel);
-    } catch (e) {}
-  }
-
-  if (localStorage.getItem(AUDIO_STARTED_KEY) === "1") {
-  primeAudioOnly();
-}
-refreshOnReturn();
-});
+// Disabled during playback testing — iPhone Safari may fire visibilitychange during scroll/PWA gestures
+// document.addEventListener("visibilitychange", async () => {
+// });
 
 window.addEventListener("pageshow", () => {
   const sticky = sessionStorage.getItem(AUDIO_STICKY_KEY) === "1";
@@ -1593,13 +1563,14 @@ window.addEventListener("pageshow", () => {
   refreshOnReturn();
 });
 
-window.addEventListener("focus", () => {
-  if (document.hidden) return;
-  if (!streamLoaded) {
-    primeAudioOnly();
-  }
-  refreshOnReturn();
-});
+// Disabled during playback testing — iPhone Safari may fire focus during scroll
+// window.addEventListener("focus", () => {
+//   if (document.hidden) return;
+//   if (!streamLoaded) {
+//     primeAudioOnly();
+//   }
+//   refreshOnReturn();
+// });
 
   document.getElementById("mcBackground")?.addEventListener("click", async () => {
   watchShell.style.display = "";
