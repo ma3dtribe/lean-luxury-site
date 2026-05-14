@@ -351,26 +351,29 @@
   margin-bottom:0;
 }
 
-#playerMount.mini-player{
-  position: fixed;
-  right: 14px;
-  bottom: 18px;
-  width: 220px;
-  z-index: 9998;
-  background: #000;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+#playerMount iframe{
+  width:100%;
+  aspect-ratio:16/9;
+  height:auto;
+  min-height:220px;
+}    
+
+#playerMount.floating{
+  position:fixed;
+  right:14px;
+  bottom:18px;
+  width:220px;
+  z-index:9998;
+  border-radius:14px;
+  overflow:hidden;
+  background:#000;
+  box-shadow:0 10px 30px rgba(0,0,0,.45);
 }
 
-#playerMount.mini-player iframe{
-  width: 220px;
-  height: 124px;
-  min-height: 124px;
-  aspect-ratio: 16/9;
-  border-radius: 14px;
-}
-
+#playerMount.floating iframe{
+  height:124px;
+  min-height:124px;
+}    
 #calendarCard iframe{
   width:100%;
   height:520px;
@@ -403,19 +406,22 @@
     min-height:260px;
   }
 
-  #playerMount.mini-player{
-    right: 10px;
-    top: 10px;
-    bottom: auto;
-    width: 160px;
+  #playerMount.floating{
+    position:fixed;
+    right:10px;
+    top:10px;
+    width:160px;
+    z-index:9998;
+    border-radius:14px;
+    overflow:hidden;
+    background:#000;
+    box-shadow:0 10px 30px rgba(0,0,0,.45);
   }
 
-  #playerMount.mini-player iframe{
-    width: 160px;
-    height: 90px;
-    min-height: 90px;
-  }
-
+  #playerMount.floating iframe{
+    height:90px;
+    min-height:90px;
+  }  
     #chat iframe{
     display:block;
     min-height:720px;
@@ -1573,16 +1579,12 @@ window.addEventListener("scroll", () => {
 
   const rect = mount.getBoundingClientRect();
 
-  const offscreen =
-    rect.bottom < 120 ||
-    rect.top > window.innerHeight;
-
-  if (offscreen) {
-    mount.classList.add("mini-player");
+  if (rect.bottom < 120) {
+    mount.classList.add("floating");
   } else {
-    mount.classList.remove("mini-player");
+    mount.classList.remove("floating");
   }
-}, { passive: true });      
+}, { passive:true });      
 window.addEventListener("focus", () => {
   if (document.hidden) return;
   if (!streamLoaded) {
