@@ -1501,7 +1501,11 @@ startWebPresence();
        }
 manualBtn.addEventListener("click", async () => {
   loadPlayer(true);
-  await startDirectAudioBehindVideo();
+  window.location.href = "/audio.html";
+});      
+document.getElementById("mcLive")?.addEventListener("click", async () => {
+  loadPlayer(true);
+  window.location.href = "/audio.html";
 });     
 
 let lastRefreshOnReturn = 0;
@@ -1639,11 +1643,6 @@ document.getElementById("mcPlay")?.addEventListener("click", async () => {
   sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
   sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
   window.location.href = "https://audio.ma3dtribe.com/liveaudio/index.m3u8";
-});
-
-document.getElementById("mcLive")?.addEventListener("click", async () => {
-  loadPlayer(true);
-  await startDirectAudioBehindVideo();
 });
       
  document.getElementById("notifyBtn")?.addEventListener("click", () => {
