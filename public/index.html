@@ -351,11 +351,24 @@
   margin-bottom:0;
 }
 
-#playerMount iframe{
-  width:100%;
-  aspect-ratio:16/9;
-  height:auto;
-  min-height:220px;
+#playerMount.mini-player{
+  position: fixed;
+  right: 14px;
+  bottom: 18px;
+  width: 220px;
+  z-index: 9998;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+
+#playerMount.mini-player iframe{
+  width: 220px;
+  height: 124px;
+  min-height: 124px;
+  aspect-ratio: 16/9;
+  border-radius: 14px;
 }
 
 #calendarCard iframe{
@@ -385,15 +398,28 @@
     min-height:auto;
   }
 
-  #playerMount iframe{
-  height:260px;
-  min-height:260px;
-}
+    #playerMount iframe{
+    height:260px;
+    min-height:260px;
+  }
 
-  #chat iframe{
-  display:block;
-  min-height:720px;
-}
+  #playerMount.mini-player{
+    right: 10px;
+    top: 10px;
+    bottom: auto;
+    width: 160px;
+  }
+
+  #playerMount.mini-player iframe{
+    width: 160px;
+    height: 90px;
+    min-height: 90px;
+  }
+
+    #chat iframe{
+    display:block;
+    min-height:720px;
+  }
 
   .mobile-chat-link{
     display:none;
@@ -1541,6 +1567,22 @@ window.addEventListener("pageshow", () => {
   refreshOnReturn();
 });
 
+window.addEventListener("scroll", () => {
+  const iframe = mount.querySelector("iframe");
+  if (!iframe) return;
+
+  const rect = mount.getBoundingClientRect();
+
+  const offscreen =
+    rect.bottom < 120 ||
+    rect.top > window.innerHeight;
+
+  if (offscreen) {
+    mount.classList.add("mini-player");
+  } else {
+    mount.classList.remove("mini-player");
+  }
+}, { passive: true });      
 window.addEventListener("focus", () => {
   if (document.hidden) return;
   if (!streamLoaded) {
