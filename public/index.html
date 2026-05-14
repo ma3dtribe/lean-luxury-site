@@ -1000,15 +1000,36 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
     </div>
 
     <div id="playerMount" style="margin-top:10px;"></div>
-<audio
-  id="audioOnlyPlayer"
-  playsinline
-  webkit-playsinline
-  preload="auto"
-  muted
-  controls
-  style="position:fixed; left:-9999px; bottom:0; width:1px; height:1px; opacity:0; pointer-events:none;"
-></audio>
+<div id="liveAudioDock" style="
+position:fixed;
+left:50%;
+transform:translateX(-50%);
+bottom:84px;
+z-index:99999;
+display:none;
+background:rgba(15,15,15,.92);
+border:1px solid rgba(255,255,255,.14);
+border-radius:14px;
+padding:8px 12px;
+box-shadow:0 10px 28px rgba(0,0,0,.35);
+backdrop-filter:blur(10px);
+align-items:center;
+gap:10px;
+color:white;
+font-size:12px;
+font-weight:800;
+">
+  <span>🔊 LIVE AUDIO ACTIVE</span>
+
+  <audio
+    id="audioOnlyPlayer"
+    playsinline
+    webkit-playsinline
+    preload="auto"
+    controls
+    style="height:32px; width:180px;"
+  ></audio>
+</div>
     
   </div>
 
@@ -1137,6 +1158,7 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
       const manualBtn = document.getElementById("manualLoadBtn");
       const watchShell = document.getElementById("watchShell");
 const audioOnlyPlayer = document.getElementById("audioOnlyPlayer");
+const liveAudioDock = document.getElementById("liveAudioDock");      
 audioOnlyPlayer.setAttribute("playsinline", "");
 audioOnlyPlayer.setAttribute("webkit-playsinline", "");
 audioOnlyPlayer.crossOrigin = "anonymous";      
@@ -1152,7 +1174,7 @@ audioOnlyPlayer.addEventListener("pause", () => {
 
 audioOnlyPlayer.addEventListener("error", () => {
   streamLoaded = false;
-  audioOnlyPlayer.style.display = "none";
+  liveAudioDock.style.display = "none";
   audioOnlyPlayer.removeAttribute("src");
 });      
 
@@ -1196,7 +1218,7 @@ audioOnlyPlayer.load();
 
 audioOnlyPlayer.muted = false;
 audioOnlyPlayer.volume = 1;
-  audioOnlyPlayer.style.display = "block";
+ liveAudioDock.style.display = "flex";
 
   try {
     await audioOnlyPlayer.play();
@@ -1452,7 +1474,7 @@ chatFrame?.addEventListener("load", () => {
 });      
       
        function loadPlayer(userStarted = false) {
-  if (streamLoaded && !userStarted && audioOnlyPlayer.style.display === "block") return;
+  if (streamLoaded && !userStarted && liveAudioDock.style.display === "flex") return;
 watchShell.style.display = "";
          
   if (userStarted) {
@@ -1529,7 +1551,7 @@ const stickyFresh = (Date.now() - stickyTs) < AUDIO_STICKY_TTL;
   const hasPlayer = !!mount.querySelector("iframe");
   if (hadAudioStarted || (sticky && stickyFresh)) {
   primeAudioOnly();
-  audioOnlyPlayer.style.display = "block";
+  liveAudioDock.style.display = "flex";
   audioOnlyPlayer.play().then(() => {
     streamLoaded = true;
     manualBtn.style.display = "none";
@@ -1591,7 +1613,7 @@ window.addEventListener("pageshow", () => {
 
   if (sticky && fresh) {
   primeAudioOnly();
-  audioOnlyPlayer.style.display = "block";
+  liveAudioDock.style.display = "flex";
   audioOnlyPlayer.play().then(() => {
     streamLoaded = true;
     manualBtn.style.display = "none";
@@ -1632,7 +1654,7 @@ window.addEventListener("focus", () => {
     } catch(e) {
       console.error("Direct audio failed", e);
       streamLoaded = false;
-      audioOnlyPlayer.style.display = "none";
+      liveAudioDock.style.display = "none";
       audioOnlyPlayer.removeAttribute("src");
       audioOnlyPlayer.load();
     }
