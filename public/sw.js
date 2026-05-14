@@ -1,4 +1,4 @@
-const CACHE_NAME = "ma3d-core-v1";
+const CACHE_NAME = "ma3d-core-v2";
 
 const CORE_ASSETS = [
   "/",
