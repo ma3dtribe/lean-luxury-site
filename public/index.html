@@ -1127,6 +1127,12 @@ const chatFrame = document.querySelector('#chat iframe');
 const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
 const ROOM = "ma3dtribe";
+const sessionId = crypto.randomUUID();
+
+const sessionStart = Date.now();
+
+let durationTimer = null;
+let currentSiteStatId = null;      
 const USER_STORAGE_KEY = "ma3dtribe_username";
 const WEB_SESSION_KEY = "ma3d_web_session_id";
 const AUDIO_STARTED_KEY = "ma3d_audio_started";
@@ -1135,8 +1141,63 @@ const AUDIO_STICKY_TS_KEY = "ma3d_audio_sticky_ts";
 const AUDIO_STICKY_TTL = 1000 * 60 * 30; 
 const AUDIO_TAP_SESSION_STORAGE_KEY = "ma3d_audio_tap_session_key";
 const AUDIO_TAP_LAST_LIVE_STATE_KEY = "ma3d_audio_last_live_state";      
-const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);      
+const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+if (sb) {
+  const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+
+  function saveVisit(loc = {}) {
+    sb.from("site_stats")
+      .insert([
+        {
+  stat_type: "website_visit",
+  value: 1,
+  session_id: sessionId,
+  duration_seconds: 0,
+  last_seen: new Date().toISOString(),
+  city: loc.city || null,
+  region: loc.region || null,
+  country: loc.country_name || null,
+  country_code: loc.country_code || null,
+  device_type: isMobile ? "Mobile" : "Desktop"
+}
+            ])
+      .select()
+      .single()
+      .then(({ data, error }) => {
+
+        if (data?.id) {
+          currentSiteStatId = data.id;
+        }
+
+        console.log("MA3D site_stats insert result:", { data, error });
+
+      });
+  }
+
+  fetch("https://ipapi.co/json/")
+  .then(res => res.json())
+  .then(loc => saveVisit(loc))
+  .catch(() => saveVisit());
+
+durationTimer = setInterval(async () => {
+
+  if (!currentSiteStatId) return;
+
+  const seconds = Math.floor((Date.now() - sessionStart) / 1000);
+
+  await sb
+    .from("site_stats")
+    .update({
+      duration_seconds: seconds,
+      last_seen: new Date().toISOString()
+    })
+    .eq("id", currentSiteStatId);
+
+}, 30000);
+} else {
+  console.error("MA3D Supabase client not created");
+}     
 let webPresenceChannel = null;
 let webHeartbeat = null;
 let streamLoaded = false;
@@ -1572,6 +1633,17 @@ window.addEventListener("focus", () => {
 });
 
 document.getElementById("mcPlay")?.addEventListener("click", async () => {
+
+  await sb.from("audio_stats")
+  .insert([
+    {
+      listener_id: webSessionId
+    }
+  ])
+  .then(({ error }) => {
+    console.log("audio_stats insert:", error || "success");
+  });
+
   await incrementAudioTapCount();
 
   localStorage.setItem(AUDIO_STARTED_KEY, "1");
@@ -1837,6 +1909,18 @@ window.addEventListener("pagehide", async () => {
 
 window.addEventListener("beforeunload", async () => {
   sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
+if (currentSiteStatId) {
+
+  const seconds = Math.floor((Date.now() - sessionStart) / 1000);
+
+  navigator.sendBeacon(
+    `${SUPABASE_URL}/rest/v1/site_stats?id=eq.${currentSiteStatId}`,
+    JSON.stringify({
+      duration_seconds: seconds,
+      last_seen: new Date().toISOString()
+    })
+  );
+}  
   try { await stopWebPresence(); } catch (e) {}
 });    
     
