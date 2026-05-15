@@ -2573,12 +2573,12 @@ function buildEmojiGrid(){
     
     buildEmojiGrid();
 
-    emojiBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (emojiPopup.classList.contains("show")) closeEmoji();
-      else openEmoji();
-    });
+    emojiBtn?.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (emojiPopup.classList.contains("show")) closeEmoji();
+  else openEmoji();
+});
 
     stickerBtn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -2609,7 +2609,7 @@ stickerGrid?.addEventListener("scroll", () => {
 });    
     document.addEventListener("click", (e) => {
       if (emojiPopup.classList.contains("show")) {
-        if (!emojiPopup.contains(e.target) && !emojiBtn.contains(e.target)) closeEmoji();
+        if (!emojiPopup.contains(e.target) && !emojiBtn?.contains(e.target)) closeEmoji();
       }
 
       if (stickerModal.classList.contains("show")) {
