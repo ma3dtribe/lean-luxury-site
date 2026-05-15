@@ -719,6 +719,68 @@ transform: translateX(-50%);
 /* DESKTOP: compact sticker layout */
 @media (min-width:981px){
 
+  .chatRule{
+    margin:4px 8px 4px !important;
+    padding:6px 10px !important;
+    font-size:13px !important;
+    line-height:1.25 !important;
+    border-radius:12px !important;
+  }
+
+  .presence{
+    margin:2px 8px 5px !important;
+    padding:0 !important;
+    gap:5px !important;
+  }
+
+  .userLine{
+    display:flex !important;
+    justify-content:flex-end !important;
+    align-items:center !important;
+  }
+
+  .userPill{
+    width:auto !important;
+    min-height:30px !important;
+    padding:4px 9px !important;
+    border-radius:999px !important;
+    justify-content:center !important;
+  }
+
+  #userDisplay{
+    font-size:18px !important;
+    font-weight:900 !important;
+  }
+
+  .changeNameBtn{
+    font-size:14px !important;
+    font-weight:900 !important;
+  }
+
+  .presRow{
+    display:grid !important;
+    grid-template-columns:repeat(3,1fr) !important;
+    gap:6px !important;
+    width:100% !important;
+  }
+
+  .viewerBtn,
+  .presRow .pill{
+    min-height:34px !important;
+    padding:4px 8px !important;
+    border-radius:12px !important;
+    font-size:14px !important;
+    justify-content:center !important;
+  }
+
+  #viewCount,
+  #twViewCount,
+  #audioTapCount{
+    font-size:24px !important;
+    font-weight:900 !important;
+    line-height:1 !important;
+  }
+  
   .msg{
     max-width:96%;
   }
@@ -782,58 +844,60 @@ transform: translateX(-50%);
     border-radius:12px !important;
   }
 
-  /* Compact username + counts */
-  .presence{
-    margin:2px 8px 5px !important;
-    padding:0 !important;
-    gap:5px !important;
-  }
+/* Compact username + counts - mobile + desktop */
+.presence{
+  margin:2px 8px 5px !important;
+  padding:0 !important;
+  gap:5px !important;
+}
 
-  .userLine{
-    display:flex !important;
-    justify-content:center !important;
-  }
+.userLine{
+  display:flex !important;
+  justify-content:flex-end !important;
+  align-items:center !important;
+}
 
-  .userPill{
-    width:100% !important;
-    min-height:32px !important;
-    padding:4px 8px !important;
-    border-radius:999px !important;
-    justify-content:center !important;
-  }
+.userPill{
+  width:auto !important;
+  min-height:30px !important;
+  padding:4px 9px !important;
+  border-radius:999px !important;
+  justify-content:center !important;
+}
 
-  #userDisplay{
-    font-size:18px !important;
-    font-weight:900 !important;
-  }
+#userDisplay{
+  font-size:18px !important;
+  font-weight:900 !important;
+}
 
-  .changeNameBtn{
-    font-size:14px !important;
-    font-weight:900 !important;
-  }
+.changeNameBtn{
+  font-size:14px !important;
+  font-weight:900 !important;
+}
 
-  .presRow{
-    display:grid !important;
-    grid-template-columns:repeat(3,1fr) !important;
-    gap:5px !important;
-    width:100% !important;
-  }
+.presRow{
+  display:grid !important;
+  grid-template-columns:repeat(3,1fr) !important;
+  gap:6px !important;
+  width:100% !important;
+}
 
-  .viewerBtn,
-  .presRow .pill{
-    min-height:32px !important;
-    padding:4px 6px !important;
-    border-radius:999px !important;
-    font-size:12px !important;
-    justify-content:center !important;
-  }
+.viewerBtn,
+.presRow .pill{
+  min-height:34px !important;
+  padding:4px 8px !important;
+  border-radius:12px !important;
+  font-size:14px !important;
+  justify-content:center !important;
+}
 
-  #viewCount,
-  #twViewCount,
-  #audioTapCount{
-    font-size:20px !important;
-    font-weight:900 !important;
-  }
+#viewCount,
+#twViewCount,
+#audioTapCount{
+  font-size:24px !important;
+  font-weight:900 !important;
+  line-height:1 !important;
+}
 
   /* Compact composer */
   .composer{
