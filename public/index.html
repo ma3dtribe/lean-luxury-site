@@ -966,26 +966,24 @@ gap: 10px;
 
 /* Push lounge below fixed video */
 
-#chat{
-  margin-top:56.25vw !important;
-  height:calc(100vh - 56.25vw - 108px) !important;
-}  
-  #explicitWarning{
-    display:none !important;
-  }
+/* Push lounge below fixed video + header */
 
-  #chat{
-    width:100% !important;
-    min-height:auto !important;
-    height:calc(100vh - 206px) !important;
-    margin:0 !important;
-    padding:0 !important;
-    border:0 !important;
-    border-radius:0 !important;
-    background:#050505 !important;
-    box-shadow:none !important;
-    overflow:hidden !important;
-  }
+#chat{
+  width:100% !important;
+  min-height:auto !important;
+  margin-top:calc(56.25vw + 128px) !important;
+  height:calc(100vh - 56.25vw - 236px) !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:#050505 !important;
+  box-shadow:none !important;
+  overflow:hidden !important;
+}
+
+#explicitWarning{
+  display:none !important;
+}
 
   #chat h3{
     display:none !important;
