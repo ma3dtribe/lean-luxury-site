@@ -1034,13 +1034,7 @@ transform: translateX(-50%);
       <div class="chatRule">Be <span>RESPECTFUL</span> to all <span>VIEWERS</span> and <span>DJs</span> or <span>BE BLOCKED</span>.</div>
 
       <div class="presence">
-  <div class="userLine">
-    <span class="pill userPill">
-      <button id="pinUserBtn" class="linkBtn" type="button" title="Pin this username">📌</button>
-      <b id="userDisplay">...</b>
-      <button id="changeName" class="linkBtn changeNameBtn" type="button">Change</button>
-    </span>
-  </div>
+
 
   <div class="presRow">
     <button id="viewerBtn" class="viewerBtn" type="button" aria-haspopup="dialog" aria-controls="viewerModal">
@@ -1065,10 +1059,15 @@ transform: translateX(-50%);
   <input id="messageInput" type="text" placeholder="Type your message…" autocomplete="off" />
 
   <div class="btn-row">
-    <button id="emojiBtn" class="btn" type="button">🙂</button>
     <button id="stickerBtn" class="btn" type="button">Stickers</button>
     <button id="gifBtn" class="btn" type="button">GIF</button>
-    <button id="sendBtn" class="btn btnPrimary" type="button">Send</button>
+    <span class="pill userPill">
+  <button id="pinUserBtn" class="linkBtn" type="button" title="Pin this username">📌</button>
+  <b id="userDisplay">...</b>
+  <button id="changeName" class="linkBtn changeNameBtn" type="button">Change</button>
+</span>
+
+<button id="sendBtn" class="btn btnPrimary" type="button">Send</button>
   </div>
 </div>
 
