@@ -905,7 +905,7 @@ gap: 10px;
   }
 
   .video-card{
-    position:sticky !important;
+  position:fixed !important;
     top:0 !important;
     z-index:9000 !important;
     width:100% !important;
@@ -964,6 +964,12 @@ gap: 10px;
     border:0 !important;
   }
 
+/* Push lounge below fixed video */
+
+#chat{
+  margin-top:56.25vw !important;
+  height:calc(100vh - 56.25vw - 108px) !important;
+}  
   #explicitWarning{
     display:none !important;
   }
