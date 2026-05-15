@@ -908,21 +908,19 @@ transform: translateX(-50%);
   border-radius:10px !important;
 }
 
-/* Keep multiple stickers same size, but in one swipe row */
-.msgBody:has(img),
-.msgBody:has(video){
-  white-space:nowrap !important;
-  overflow-x:auto !important;
-  overflow-y:hidden !important;
+/* Compact stickers, no sideways scroll */
+.msgBody{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  gap:1px !important;
+  align-items:flex-start !important;
   max-width:100% !important;
-  -webkit-overflow-scrolling:touch !important;
 }
 
-.msgBody:has(img) img,
-.msgBody:has(video) video{
-  display:inline-block !important;
-  vertical-align:middle !important;
-  margin-right:6px !important;
+.msgBody img,
+.msgBody video{
+  margin:0 !important;
+  flex:0 0 auto !important;
 }
 
   /* Keep actions hidden until tap */
