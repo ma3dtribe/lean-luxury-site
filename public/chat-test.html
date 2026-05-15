@@ -716,7 +716,207 @@ transform: translateX(-50%);
   }
 } 
 
-/* mobile rebuild block goes here */
+/* mobile /* =========================================================
+   MA3DTRIBE MOBILE COMPACT CHAT REBUILD
+   Mobile only — desktop untouched
+========================================================= */
+
+@media (max-width:980px){
+
+  html,
+  body{
+    height:100%;
+    overflow:hidden;
+    background:#050505;
+  }
+
+  .wrap{
+    width:100%;
+    max-width:none;
+    height:100vh;
+    margin:0;
+    padding:0;
+  }
+
+  .card{
+    height:100vh !important;
+    border-radius:0 !important;
+    border:0 !important;
+    box-shadow:none !important;
+    background:#0b0f14 !important;
+  }
+
+  /* Compact respect sign */
+  .chatRule{
+    margin:4px 8px 4px !important;
+    padding:6px 10px !important;
+    font-size:12px !important;
+    line-height:1.25 !important;
+    border-radius:12px !important;
+  }
+
+  /* Compact username + counts */
+  .presence{
+    margin:2px 8px 5px !important;
+    padding:0 !important;
+    gap:5px !important;
+  }
+
+  .userLine{
+    display:flex !important;
+    justify-content:center !important;
+  }
+
+  .userPill{
+    width:100% !important;
+    min-height:32px !important;
+    padding:4px 8px !important;
+    border-radius:999px !important;
+    justify-content:center !important;
+  }
+
+  #userDisplay{
+    font-size:18px !important;
+    font-weight:900 !important;
+  }
+
+  .changeNameBtn{
+    font-size:14px !important;
+    font-weight:900 !important;
+  }
+
+  .presRow{
+    display:grid !important;
+    grid-template-columns:repeat(3,1fr) !important;
+    gap:5px !important;
+    width:100% !important;
+  }
+
+  .viewerBtn,
+  .presRow .pill{
+    min-height:32px !important;
+    padding:4px 6px !important;
+    border-radius:999px !important;
+    font-size:12px !important;
+    justify-content:center !important;
+  }
+
+  #viewCount,
+  #twViewCount,
+  #audioTapCount{
+    font-size:20px !important;
+    font-weight:900 !important;
+  }
+
+  /* Compact composer */
+  .composer{
+    padding:6px 8px !important;
+    gap:6px !important;
+    border-bottom:1px solid rgba(255,255,255,.08) !important;
+  }
+
+  #messageInput{
+    min-height:46px !important;
+    padding:10px 12px !important;
+    font-size:17px !important;
+    border-radius:14px !important;
+  }
+
+  .btn-row{
+    grid-template-columns:auto auto auto 1fr !important;
+    gap:6px !important;
+  }
+
+  .btn{
+    min-height:38px !important;
+    padding:6px 10px !important;
+    font-size:13px !important;
+    border-radius:12px !important;
+  }
+
+  .btnPrimary{
+    min-width:78px !important;
+  }
+
+  /* Compact pinned message */
+  #pinnedMessageBar{
+    padding:6px 8px !important;
+  }
+
+  #pinnedMessageText{
+    font-size:13px !important;
+    line-height:1.25 !important;
+    margin-top:2px !important;
+  }
+
+  /* More room for messages */
+  #chatMessages{
+    flex:1 !important;
+    min-height:0 !important;
+    overflow-y:auto !important;
+    padding:6px 8px 72px !important;
+    gap:4px !important;
+  }
+
+  .msg{
+    max-width:96% !important;
+    padding:6px 9px !important;
+    border-radius:13px !important;
+    line-height:1.2 !important;
+    box-shadow:none !important;
+  }
+
+  .meta{
+    margin-bottom:2px !important;
+    gap:5px !important;
+    font-size:11px !important;
+    line-height:1.1 !important;
+  }
+
+  .meta .uname{
+    font-size:15px !important;
+    padding:3px 8px !important;
+    border-radius:999px !important;
+  }
+
+  .msgBody{
+    font-size:17px !important;
+    line-height:1.25 !important;
+  }
+
+  .replyQuote{
+    margin-bottom:4px !important;
+    padding:5px 7px !important;
+    font-size:12px !important;
+    line-height:1.25 !important;
+    border-radius:8px !important;
+  }
+
+  /* Compact GIFs and stickers */
+  .msg.stickerMsg{
+    padding:3px !important;
+    width:fit-content !important;
+    max-width:92% !important;
+  }
+
+  .msg.stickerMsg img,
+  .msg.stickerMsg video,
+  .msg img,
+  .msg video{
+    max-width:145px !important;
+    width:auto !important;
+    border-radius:10px !important;
+  }
+
+  /* Keep actions hidden until tap */
+  .msgActions{
+    display:none !important;
+  }
+
+  .msg.showActions .msgActions{
+    display:flex !important;
+  }
+} block goes here */
 
 </style>
 </head>    
