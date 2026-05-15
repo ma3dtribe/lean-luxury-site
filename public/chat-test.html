@@ -716,6 +716,33 @@ transform: translateX(-50%);
   }
 } 
 
+/* DESKTOP: compact sticker layout */
+@media (min-width:981px){
+
+  .msg{
+    max-width:96%;
+  }
+
+  .msg.stickerMsg{
+    padding:3px;
+    width:fit-content;
+    max-width:96%;
+  }
+
+  .msgBody{
+    display:flex;
+    flex-wrap:wrap;
+    gap:1px;
+    align-items:flex-start;
+    max-width:100%;
+  }
+
+  .msgBody img,
+  .msgBody video{
+    margin:0 !important;
+    flex:0 0 auto;
+  }
+}    
 /* mobile /* =========================================================
    MA3DTRIBE MOBILE COMPACT CHAT REBUILD
    Mobile only — desktop untouched
