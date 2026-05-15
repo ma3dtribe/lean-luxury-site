@@ -892,21 +892,38 @@ transform: translateX(-50%);
     border-radius:8px !important;
   }
 
-  /* Compact GIFs and stickers */
-  .msg.stickerMsg{
-    padding:3px !important;
-    width:fit-content !important;
-    max-width:92% !important;
-  }
+ /* Compact GIFs and stickers */
+.msg.stickerMsg{
+  padding:3px !important;
+  width:fit-content !important;
+  max-width:92% !important;
+}
 
-  .msg.stickerMsg img,
-  .msg.stickerMsg video,
-  .msg img,
-  .msg video{
-    max-width:145px !important;
-    width:auto !important;
-    border-radius:10px !important;
-  }
+.msg.stickerMsg img,
+.msg.stickerMsg video,
+.msg img,
+.msg video{
+  max-width:150px !important;
+  width:auto !important;
+  border-radius:10px !important;
+}
+
+/* Keep multiple stickers same size, but in one swipe row */
+.msgBody:has(img),
+.msgBody:has(video){
+  white-space:nowrap !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  max-width:100% !important;
+  -webkit-overflow-scrolling:touch !important;
+}
+
+.msgBody:has(img) img,
+.msgBody:has(video) video{
+  display:inline-block !important;
+  vertical-align:middle !important;
+  margin-right:6px !important;
+}
 
   /* Keep actions hidden until tap */
   .msgActions{
@@ -916,7 +933,7 @@ transform: translateX(-50%);
   .msg.showActions .msgActions{
     display:flex !important;
   }
-} block goes here */
+}
 
 </style>
 </head>    
