@@ -499,20 +499,21 @@ transform: translateX(-50%);
   }
 
   #stickerModal.emojiPopup.show{
-    display:flex !important;
-    align-items:flex-start !important;
-    justify-content:center !important;
-  }
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+}
 
   #stickerModal .emojiHead,
 #stickerModal .emojiGrid,
 #stickerModal .emojiHint{
-  width:100% !important;
-  max-width:920px !important;
-    margin-left:auto !important;
-    margin-right:auto !important;
-    background:#0f1623 !important;
-  }
+  width:min(920px, 94vw) !important;
+  max-width:min(920px, 94vw) !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  background:#0f1623 !important;
+}
 
   #stickerModal .emojiHead{
     border-radius:14px 14px 0 0 !important;
@@ -526,11 +527,12 @@ transform: translateX(-50%);
   max-height:62vh !important;
 
   display:grid !important;
-  grid-template-columns:repeat(3, minmax(0,1fr)) !important;
+  grid-template-columns:repeat(3, 1fr) !important;
 
-  gap:14px !important;
-  padding:14px !important;
+  gap:18px !important;
+  padding:20px !important;
   align-items:start !important;
+  justify-items:center !important;
 }
 
 #stickerModal .emojiGrid img{
