@@ -1106,17 +1106,7 @@ gap: 10px;
   }
 
   /* Desktop floating live banner */
-body.live-mode .site-banner{
-  position:fixed !important;
-  top:0 !important;
-  left:0 !important;
-  right:0 !important;
-  z-index:2000 !important;
-  background:#1c1718 !important;
-  padding-top:6px !important;
-  padding-bottom:6px !important;
-}
-
+/* Desktop live banner: larger, but scrolls away normally */
 body.live-mode .site-banner .container{
   max-width:100% !important;
   padding:0 22px !important;
@@ -1128,8 +1118,13 @@ body.live-mode .banner-img{
   object-fit:fill !important;
 }
 
-body.live-mode main{
-  padding-top:220px !important;
+/* Keep the live area polished after banner scrolls away */
+body.live-mode .video-card{
+  top:10px !important;
+}
+
+body.live-mode #chat{
+  top:10px !important;
 }
 
   .watch-chat{
