@@ -524,9 +524,18 @@ transform: translateX(-50%);
   border-left:1px solid rgba(255,255,255,.12) !important;
   border-right:1px solid rgba(255,255,255,.12) !important;
   max-height:62vh !important;
-  grid-template-columns:repeat(6,1fr) !important;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr)) !important;
   gap:18px !important;
   padding:18px !important;
+}
+
+#stickerModal .emojiGrid img{
+  width:100% !important;
+  max-width:220px !important;
+  height:220px !important;
+  object-fit:contain !important;
+  margin:auto !important;
+  display:block !important;
 }
 
   #stickerModal .emojiHint{
