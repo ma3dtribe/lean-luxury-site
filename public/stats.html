@@ -843,6 +843,20 @@ function previousRangeCount(data){
   }).length;
 }
 
+function previousRangeUniqueCount(data, key){
+  const {start,end} = getRangeDates();
+  const length = end - start;
+  const prevEnd = new Date(start.getTime());
+  const prevStart = new Date(start.getTime() - length);
+
+  const previous = data.filter(x=>{
+    const d = new Date(x.created_at);
+    return d >= prevStart && d < prevEnd;
+  });
+
+  return uniqueCount(previous, key);
+}
+  
 function pctChange(current, previous){
   if(previous === 0 && current > 0) return "▲ 100% vs previous range";
   if(previous === 0) return "▲ 0% vs previous range";
@@ -861,6 +875,45 @@ function uniqueCount(data, key){
   return set.size;
 }
 
+function uniqueSessionsWithDuration(data, key){
+  const map = new Map();
+
+  data.forEach(x => {
+    const value = x[key];
+    if (!value) return;
+
+    const existing = map.get(value);
+
+    if (!existing) {
+      map.set(value, {
+        ...x,
+        first_seen: x.created_at,
+        last_seen: x.updated_at || x.last_seen || x.created_at,
+        duration_seconds: Number(x.duration_seconds || 0)
+      });
+      return;
+    }
+
+    const existingFirst = new Date(existing.first_seen);
+    const currentFirst = new Date(x.created_at);
+
+    const existingLast = new Date(existing.last_seen);
+    const currentLast = new Date(x.updated_at || x.last_seen || x.created_at);
+
+    existing.first_seen =
+      currentFirst < existingFirst ? x.created_at : existing.first_seen;
+
+    existing.last_seen =
+      currentLast > existingLast
+        ? (x.updated_at || x.last_seen || x.created_at)
+        : existing.last_seen;
+
+    existing.duration_seconds += Number(x.duration_seconds || 0);
+  });
+
+  return [...map.values()];
+}
+  
 function latestTwitchViewers(twitch){
   if (!twitch.length) return 0;
 
@@ -1246,8 +1299,11 @@ function renderDashboard(){
 
   updateRangeLabel();
 
-  const uniqueSiteTotal = uniqueCount(site, "session_id");
-const uniqueAudioTotal = uniqueCount(audio, "listener_id");
+  const dedupedSite = uniqueSessionsWithDuration(site, "session_id");
+const dedupedAudio = uniqueRows(audio, "listener_id");
+
+const uniqueSiteTotal = dedupedSite.length;
+const uniqueAudioTotal = dedupedAudio.length;
 const liveTwitchTotal = latestTwitchViewers(twitch);
 
 document.getElementById("siteTotal").innerText = formatNum(uniqueSiteTotal);
@@ -1255,18 +1311,21 @@ document.getElementById("audioTotal").innerText = formatNum(uniqueAudioTotal);
 document.getElementById("twitchTotal").innerText = formatNum(liveTwitchTotal);
   document.getElementById("replayTotal").innerText = formatNum(replay.length);
 
-  document.getElementById("siteChange").innerText = pctChange(site.length, previousRangeCount(allSiteData));
-  document.getElementById("audioChange").innerText = pctChange(audio.length, previousRangeCount(allAudioData));
+  document.getElementById("siteChange").innerText =
+  pctChange(uniqueSiteTotal, previousRangeUniqueCount(allSiteData, "session_id"));
+
+document.getElementById("audioChange").innerText =
+  pctChange(uniqueAudioTotal, previousRangeUniqueCount(allAudioData, "listener_id"));
   document.getElementById("twitchChange").innerText = pctChange(twitch.length, previousRangeCount(allTwitchData));
   document.getElementById("replayChange").innerText = pctChange(replay.length, previousRangeCount(allReplayData));
 
   const audienceTotal = uniqueSiteTotal + uniqueAudioTotal + liveTwitchTotal + replay.length;
   document.getElementById("audienceTotal").innerText = formatNum(audienceTotal);
-const totalDuration = site.reduce((sum, x) =>
+const totalDuration = dedupedSite.reduce((sum, x) =>
   sum + Number(x.duration_seconds || 0), 0);
 
-const avgDuration = site.length
-  ? Math.floor(totalDuration / site.length)
+const avgDuration = dedupedSite.length
+  ? Math.floor(totalDuration / dedupedSite.length)
   : 0;
 
 document.getElementById("avgTimeOnSite").innerText =
@@ -1274,18 +1333,18 @@ document.getElementById("avgTimeOnSite").innerText =
 
 document.getElementById("totalTimeOnSite").innerText =
   "Total time: " + formatDuration(totalDuration);  
-  renderTrafficChart(site,audio,twitch);
-  renderDailyBar(site,audio,twitch);
-  renderReplayTrend(replay);
-  renderGrowthChart(site,audio,twitch,replay);
-const dedupedSite = [...new Map(site.map(x => [x.session_id, x])).values()];
-const dedupedAudio = [...new Map(audio.map(x => [x.listener_id, x])).values()];  
-  renderPlatformChart(dedupedSite,dedupedAudio,twitch,replay);
-renderDeviceChart(site);
-renderLocations(site);  
+  renderTrafficChart(dedupedSite,dedupedAudio,twitch);
+renderDailyBar(dedupedSite,dedupedAudio,twitch);
+renderReplayTrend(replay);
+renderGrowthChart(dedupedSite,dedupedAudio,twitch,replay);
 
-  const hourData = renderHourly(site,audio,twitch,replay);
-  renderInsights(site,audio,twitch,replay,hourData);
+renderPlatformChart(dedupedSite,dedupedAudio,twitch,replay);
+renderDeviceChart(dedupedSite);
+renderLocations(dedupedSite);
+
+const hourData = renderHourly(dedupedSite,dedupedAudio,twitch,replay);
+renderInsights(dedupedSite,dedupedAudio,twitch,replay,hourData); 
+
   renderTopReplays(replay);
   renderActivityFeed();
   updateLiveSection(allSiteData,allAudioData,allTwitchData);
