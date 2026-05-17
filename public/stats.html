@@ -875,6 +875,19 @@ function uniqueCount(data, key){
   return set.size;
 }
 
+function uniqueRows(data, key){
+  const map = new Map();
+
+  data.forEach(x => {
+    const value = x[key];
+    if (value && !map.has(value)) {
+      map.set(value, x);
+    }
+  });
+
+  return [...map.values()];
+}
+  
 function uniqueSessionsWithDuration(data, key){
   const map = new Map();
 
