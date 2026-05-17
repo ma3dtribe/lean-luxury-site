@@ -1084,8 +1084,8 @@ gap: 10px;
 
 /* =========================================================
    DESKTOP-ONLY FINAL LAYOUT
-   Sticky compact top: Video 70% / Billboard 30%
-   Bottom: Chat 65% / Calendar + Donate + Replay
+   Top: Video 65% / Billboard 35%
+   Bottom: Chat 65% / Calendar + Donate + Replay 35%
    Mobile untouched
 ========================================================= */
 @media (min-width:981px){
@@ -1108,52 +1108,65 @@ gap: 10px;
   }
 
   .banner-img{
-    height:clamp(145px,15vw,220px) !important;
+    height:clamp(135px,14vw,205px) !important;
   }
 
   .watch-chat{
     display:grid !important;
-    grid-template-columns:repeat(20, minmax(0, 1fr)) !important;
+    grid-template-columns:65% 35% !important;
     grid-template-areas:
-      "video video video video video video video video video video video video video video billboard billboard billboard billboard billboard billboard"
-      "chat chat chat chat chat chat chat chat chat chat chat chat chat calendar calendar calendar calendar calendar calendar calendar"
-      "chat chat chat chat chat chat chat chat chat chat chat chat chat donate donate donate donate donate donate donate"
-      "chat chat chat chat chat chat chat chat chat chat chat chat chat replay replay replay replay replay replay replay" !important;
+      "video billboard"
+      "chat calendar"
+      "chat donate"
+      "chat replay" !important;
     gap:16px !important;
     align-items:start !important;
   }
 
   .video-card{
     grid-area:video !important;
-    position:sticky !important;
-    top:8px !important;
-    z-index:50 !important;
-    align-self:start !important;
     padding:10px !important;
+    align-self:start !important;
   }
 
   .billboard-card{
     grid-area:billboard !important;
-    position:sticky !important;
-    top:8px !important;
-    z-index:50 !important;
-    align-self:start !important;
     padding:10px !important;
+    align-self:start !important;
   }
 
   .video-card .watch-shell{
-    padding:12px !important;
+    height:300px !important;
+    padding:14px !important;
+    margin:0 !important;
+    display:flex !important;
+    flex-direction:column !important;
+    justify-content:center !important;
+    align-items:center !important;
+    text-align:center !important;
+    border-radius:14px !important;
+  }
+
+  .video-card .watch-shell.collapsed-head{
+    display:none !important;
   }
 
   #playerMount{
-    margin-top:6px !important;
+    width:100% !important;
+    height:300px !important;
+    margin-top:0 !important;
+    background:#050505 !important;
+    border-radius:14px !important;
+    overflow:hidden !important;
   }
 
   #playerMount iframe{
+    display:block !important;
     width:100% !important;
-    height:360px !important;
-    max-height:360px !important;
+    height:300px !important;
+    max-height:300px !important;
     aspect-ratio:auto !important;
+    border:0 !important;
     border-radius:14px !important;
   }
 
@@ -1164,17 +1177,38 @@ gap: 10px;
   }
 
   .billboard{
+    height:300px !important;
     padding:10px !important;
+    display:flex !important;
+    flex-direction:column !important;
   }
 
   .bb-top{
     margin-bottom:6px !important;
+    flex:0 0 auto !important;
+  }
+
+  .bb-viewport{
+    flex:1 !important;
+    min-height:0 !important;
+  }
+
+  .bb-track,
+  .bb-slide{
+    height:100% !important;
   }
 
   .bb-slide img{
-    aspect-ratio:16/10 !important;
-    max-height:360px !important;
+    width:100% !important;
+    height:100% !important;
+    aspect-ratio:auto !important;
     object-fit:cover !important;
+    border-radius:12px !important;
+  }
+
+  .bb-dots{
+    margin-top:7px !important;
+    flex:0 0 auto !important;
   }
 
   #chat{
@@ -1213,12 +1247,6 @@ gap: 10px;
     text-align:center !important;
   }
 
-  #donateCard p{
-    margin:0 0 14px !important;
-    opacity:.82 !important;
-    line-height:1.45 !important;
-  }
-
   #replayCard{
     grid-area:replay !important;
     padding:12px !important;
@@ -1226,7 +1254,7 @@ gap: 10px;
 
   #replayCard img{
     width:100% !important;
-    max-height:210px !important;
+    max-height:190px !important;
     object-fit:cover !important;
     border-radius:14px !important;
   }
@@ -1234,7 +1262,7 @@ gap: 10px;
   .watch-chat .card{
     margin-bottom:0 !important;
   }
-}   
+}
 </style>    
 
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -1335,7 +1363,11 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
       ⚠️ Explicit Content – Viewer Discretion Advised
     </div>
 
-    <div id="playerMount" style="margin-top:10px;"></div>
+    <div id="playerMount" style="margin-top:10px;">
+  <div class="watch-shell" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;">
+    <button id="desktopThumbWatchBtn" class="btn primary" type="button">Watch Live 🔴</button>
+  </div>
+</div>
 <video
   id="audioOnlyPlayer"
   playsinline
@@ -1886,6 +1918,10 @@ manualBtn.addEventListener("click", () => {
   loadPlayer(true);
 });     
 
+      document.getElementById("desktopThumbWatchBtn")?.addEventListener("click", () => {
+  streamLoaded = false;
+  loadPlayer(true);
+});
 let lastRefreshOnReturn = 0;
 
 function refreshOnReturn() {
