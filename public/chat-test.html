@@ -483,15 +483,14 @@ transform: translateX(-50%);
 }
 
 @media (min-width: 981px){
-
-  #stickerModal.emojiPopup,
-  #emojiPopup.emojiPopup{
+  .emojiPopup{
     top:90px;
     bottom:auto;
     max-height:70vh;
   }
-}    
-    .emojiPopup.show{
+}
+
+.emojiPopup.show{
       display:block;
       pointer-events:auto;
     }
@@ -2431,30 +2430,20 @@ updateStickerHint();
   messageInput?.blur();
 
   if (!stickerModal || !stickerGrid) return;
-if (stickersOpening) return;
-if (!isTabActive) return;
+  if (stickersOpening) return;
 
-if (stickerGrid.children.length && !stickerGrid.querySelector("img, video")) {
-  stickerGrid.innerHTML = "";
-  stickersRendered = false;
-  stickerNeedsRefresh = true;
-  stickerRenderIndex = 0;
-}
-
-stickersOpening = true;
-
+  stickersOpening = true;
 
   try {
-      if (!stickersLoaded) {
-    if (!stickers.length) {
+    if (!stickersLoaded || stickerNeedsRefresh) {
       stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>Loading stickers...</div>";
       await loadStickers();
-    } else {
-      stickersLoaded = true;
+      stickerNeedsRefresh = false;
+      stickersRendered = false;
     }
-  }
 
     stickerGrid.scrollTop = 0;
+
     if (!stickers.length){
       stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
       stickerModal.classList.add("show");
@@ -2462,14 +2451,15 @@ stickersOpening = true;
       return;
     }
 
-        if (stickerNeedsRefresh || !stickersRendered || !stickerGrid.querySelector("img, video")) {
-  renderStickerBatch(true);
-  stickerNeedsRefresh = false;
-  stickersRendered = true;
-}
+    if (!stickersRendered || !stickerGrid.querySelector("img, video")) {
+      renderStickerBatch(true);
+      stickersRendered = true;
+    }
+
     updateStickerHint();
     stickerModal.classList.add("show");
     stickerModal.setAttribute("aria-hidden", "false");
+
   } finally {
     setTimeout(() => { stickersOpening = false; }, 100);
   }
