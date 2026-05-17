@@ -24,6 +24,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+
+  
   <style>
     :root{
       /* Red-forward music lounge palette */
@@ -1079,6 +1081,124 @@ gap: 10px;
   }
 }
 
+
+/* =========================================================
+   DESKTOP-ONLY FINAL LAYOUT
+   Sticky top: Video 70% / Billboard 30%
+   Bottom: Chat 65% / Calendar + Donate + Replay
+   Mobile untouched
+========================================================= */
+@media (min-width:981px){
+
+  :root{
+    --content-max:1440px;
+    --content-pad:22px;
+  }
+
+  .banner-img{
+    height:clamp(165px,18vw,250px);
+  }
+
+  .watch-chat{
+    display:grid !important;
+    grid-template-columns:65% 35% !important;
+    grid-template-areas:
+      "video billboard"
+      "chat calendar"
+      "chat donate"
+      "chat replay" !important;
+    gap:18px !important;
+    align-items:start !important;
+  }
+
+  .video-card{
+    grid-area:video !important;
+    position:sticky !important;
+    top:12px !important;
+    z-index:20 !important;
+  }
+
+  .billboard-card{
+    grid-area:billboard !important;
+    position:sticky !important;
+    top:12px !important;
+    z-index:20 !important;
+  }
+
+  #chat{
+    grid-area:chat !important;
+    display:flex !important;
+    flex-direction:column !important;
+    min-height:1100px !important;
+    height:1100px !important;
+    padding:16px !important;
+    overflow:hidden !important;
+  }
+
+  #chat iframe{
+    display:block !important;
+    width:100% !important;
+    height:1035px !important;
+    min-height:1035px !important;
+    border:0 !important;
+    border-radius:14px !important;
+  }
+
+  #calendarCard{
+    grid-area:calendar !important;
+  }
+
+  #donateCard{
+    grid-area:donate !important;
+    text-align:center !important;
+  }
+
+  #donateCard p{
+    margin:0 0 14px !important;
+    opacity:.82 !important;
+    line-height:1.45 !important;
+  }
+
+  #replayCard{
+    grid-area:replay !important;
+    padding:14px !important;
+  }
+
+  #replayCard img{
+    width:100% !important;
+    max-height:230px !important;
+    object-fit:cover !important;
+    border-radius:14px !important;
+  }
+
+  .watch-chat .card{
+    margin-bottom:0 !important;
+  }
+
+  #playerMount iframe{
+    width:100% !important;
+    aspect-ratio:16/9 !important;
+    height:auto !important;
+    border-radius:16px !important;
+  }
+
+  #calendarCard iframe{
+    width:100% !important;
+    height:430px !important;
+    border:0 !important;
+    border-radius:14px !important;
+    display:block !important;
+  }
+
+  .billboard{
+    height:100% !important;
+  }
+
+  .bb-slide img{
+    aspect-ratio:16/9 !important;
+    object-fit:cover !important;
+  }
+}    
 </style>    
 
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -1294,6 +1414,14 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
     </iframe>
   </div>
 
+<div class="card" id="donateCard">
+  <h3>Support MA3DTribe</h3>
+  <p>Help support the music, shows, podcasts, and live community.</p>
+  <a class="btn primary" href="#" target="_blank" rel="noopener">
+    Donate ❤️
+  </a>
+</div>
+  
 </section>    
       
       <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
