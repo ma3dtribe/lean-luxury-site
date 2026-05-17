@@ -722,7 +722,7 @@ select{
 const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
 
-let allSiteData = [];
+let allWebSnapshots = [];
 let allAudioData = [];
 let allTwitchData = [];
 let allReplayData = [];
@@ -733,9 +733,12 @@ let customStart = null;
 let customEnd = null;
 
 let charts = {};
-  let livePresenceChannel = null;
+let livePresenceChannel = null;
 let liveWebCount = 0;
+let lastWebSnapshotSaved = 0;
+
 const ROOM = "ma3dtribe";
+
 const colors = {
   site:"#ff8a00",
   audio:"#18d860",
@@ -749,6 +752,14 @@ function setClock(){
 }
 setInterval(setClock,1000);
 setClock();
+
+function setDashboardLabels(){
+  const labels = document.querySelectorAll(".stat-card .label");
+  if(labels[0]) labels[0].innerText = "🌐 Website Viewers";
+  if(labels[1]) labels[1].innerText = "🎧 Audio Plays";
+  if(labels[2]) labels[2].innerText = "💜 Twitch Viewers";
+  if(labels[3]) labels[3].innerText = "▶ Replay Plays";
+}
 
 function apiUrl(table){
   return `${SUPABASE_URL}/rest/v1/${table}?select=*&order=created_at.asc&limit=10000`;
@@ -769,6 +780,29 @@ async function fetchTable(table){
   }catch(err){
     return [];
   }
+}
+
+async function saveWebSnapshot(count){
+  const now = Date.now();
+
+  if(now - lastWebSnapshotSaved < 120000) return;
+  lastWebSnapshotSaved = now;
+
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/web_count_snapshots`, {
+      method:"POST",
+      headers:{
+        apikey:SUPABASE_KEY,
+        Authorization:`Bearer ${SUPABASE_KEY}`,
+        "Content-Type":"application/json",
+        Prefer:"return=minimal"
+      },
+      body:JSON.stringify({
+        room:ROOM,
+        web_count:Number(count || 0)
+      })
+    });
+  }catch(err){}
 }
 
 async function pullTwitchStats(){
@@ -831,7 +865,7 @@ function filterRange(data){
   });
 }
 
-function previousRangeCount(data){
+function previousRangeData(data){
   const {start,end} = getRangeDates();
   const length = end - start;
   const prevEnd = new Date(start.getTime());
@@ -840,39 +874,14 @@ function previousRangeCount(data){
   return data.filter(x=>{
     const d = new Date(x.created_at);
     return d >= prevStart && d < prevEnd;
-  }).length;
-}
-
-function previousRangeUniqueCount(data, key){
-  const {start,end} = getRangeDates();
-  const length = end - start;
-  const prevEnd = new Date(start.getTime());
-  const prevStart = new Date(start.getTime() - length);
-
-  const previous = data.filter(x=>{
-    const d = new Date(x.created_at);
-    return d >= prevStart && d < prevEnd;
   });
-
-  return uniqueCount(previous, key);
 }
-  
+
 function pctChange(current, previous){
   if(previous === 0 && current > 0) return "▲ 100% vs previous range";
   if(previous === 0) return "▲ 0% vs previous range";
   const pct = Math.round(((current - previous) / previous) * 100);
   return `${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct)}% vs previous range`;
-}
-
-function uniqueCount(data, key){
-  const set = new Set();
-
-  data.forEach(x => {
-    const value = x[key];
-    if (value) set.add(value);
-  });
-
-  return set.size;
 }
 
 function uniqueRows(data, key){
@@ -887,76 +896,64 @@ function uniqueRows(data, key){
 
   return [...map.values()];
 }
-  
-function uniqueSessionsWithDuration(data, key){
-  const map = new Map();
 
-  data.forEach(x => {
-    const value = x[key];
-    if (!value) return;
+function latestWebCount(web){
+  if(liveWebCount > 0) return liveWebCount;
+  if(!web.length) return 0;
 
-    const existing = map.get(value);
+  const latest = web
+    .slice()
+    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];
 
-    if (!existing) {
-      map.set(value, {
-        ...x,
-        first_seen: x.created_at,
-        last_seen: x.updated_at || x.last_seen || x.created_at,
-        duration_seconds: Number(x.duration_seconds || 0)
-      });
-      return;
-    }
-
-    const existingFirst = new Date(existing.first_seen);
-    const currentFirst = new Date(x.created_at);
-
-    const existingLast = new Date(existing.last_seen);
-    const currentLast = new Date(x.updated_at || x.last_seen || x.created_at);
-
-    existing.first_seen =
-      currentFirst < existingFirst ? x.created_at : existing.first_seen;
-
-    existing.last_seen =
-      currentLast > existingLast
-        ? (x.updated_at || x.last_seen || x.created_at)
-        : existing.last_seen;
-
-    existing.duration_seconds += Number(x.duration_seconds || 0);
-  });
-
-  return [...map.values()];
+  return Number(latest.web_count || latest.count || 0);
 }
-  
+
 function latestTwitchViewers(twitch){
-  if (!twitch.length) return 0;
+  if(!twitch.length) return 0;
 
   const latest = twitch
     .slice()
-    .sort((a,b) => new Date(b.created_at) - new Date(a.created_at))[0];
+    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];
 
-  return Number(latest.viewers || 0);
-}  
+  return Number(latest.viewers || latest.viewer_count || 0);
+}
+
+function peakWebCount(web){
+  return web.reduce((max,x)=>Math.max(max, Number(x.web_count || x.count || 0)), 0);
+}
+
+function peakTwitchCount(twitch){
+  return twitch.reduce((max,x)=>Math.max(max, Number(x.viewers || x.viewer_count || 0)), 0);
+}
+
+function avgWebCount(web){
+  if(!web.length) return 0;
+  const total = web.reduce((sum,x)=>sum + Number(x.web_count || x.count || 0), 0);
+  return Math.round(total / web.length);
+}
+
+function avgTwitchCount(twitch){
+  if(!twitch.length) return 0;
+  const total = twitch.reduce((sum,x)=>sum + Number(x.viewers || x.viewer_count || 0), 0);
+  return Math.round(total / twitch.length);
+}
+
 function formatNum(n){
   return Number(n || 0).toLocaleString();
 }
-function formatDuration(seconds){
 
+function formatDuration(seconds){
   seconds = Number(seconds || 0);
 
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
 
-  if (h > 0) {
-    return `${h}h ${m}m`;
-  }
-
-  if (m > 0) {
-    return `${m}m ${s}s`;
-  }
-
+  if(h > 0) return `${h}h ${m}m`;
+  if(m > 0) return `${m}m ${s}s`;
   return `${s}s`;
-}  
+}
+
 function dayKey(dateStr){
   return new Date(dateStr).toLocaleDateString("en-US",{
     timeZone:"America/New_York",
@@ -1008,49 +1005,93 @@ function makeChart(id,type,data,options={}){
   });
 }
 
-function buildDailyMap(site,audio,twitch,replay){
+function buildSnapshotDailyMap(web,audio,twitch,replay){
   const map = {};
-  const add = (arr,type)=>{
-    arr.forEach(x=>{
-      const k = dayKey(x.created_at);
-      if(!map[k]) map[k] = {site:0,audio:0,twitch:0,replay:0,total:0};
-      map[k][type]++;
-      map[k].total++;
-    });
+
+  const ensure = k => {
+    if(!map[k]){
+      map[k] = {
+        webTotal:0,
+        webSamples:0,
+        webPeak:0,
+        audio:0,
+        twitchTotal:0,
+        twitchSamples:0,
+        twitchPeak:0,
+        replay:0,
+        total:0
+      };
+    }
   };
-  add(site,"site"); add(audio,"audio"); add(twitch,"twitch"); add(replay,"replay");
+
+  web.forEach(x=>{
+    const k = dayKey(x.created_at);
+    const val = Number(x.web_count || x.count || 0);
+    ensure(k);
+    map[k].webTotal += val;
+    map[k].webSamples++;
+    map[k].webPeak = Math.max(map[k].webPeak, val);
+  });
+
+  audio.forEach(x=>{
+    const k = dayKey(x.created_at);
+    ensure(k);
+    map[k].audio++;
+  });
+
+  twitch.forEach(x=>{
+    const k = dayKey(x.created_at);
+    const val = Number(x.viewers || x.viewer_count || 0);
+    ensure(k);
+    map[k].twitchTotal += val;
+    map[k].twitchSamples++;
+    map[k].twitchPeak = Math.max(map[k].twitchPeak, val);
+  });
+
+  replay.forEach(x=>{
+    const k = dayKey(x.created_at);
+    ensure(k);
+    map[k].replay++;
+  });
+
+  Object.keys(map).forEach(k=>{
+    map[k].webAvg = map[k].webSamples ? Math.round(map[k].webTotal / map[k].webSamples) : 0;
+    map[k].twitchAvg = map[k].twitchSamples ? Math.round(map[k].twitchTotal / map[k].twitchSamples) : 0;
+    map[k].total = map[k].webAvg + map[k].audio + map[k].twitchAvg + map[k].replay;
+  });
+
   return map;
 }
 
-function renderTrafficChart(site,audio,twitch){
-  const map = buildDailyMap(site,audio,twitch,[]);
+function renderTrafficChart(web,audio,twitch){
+  const map = buildSnapshotDailyMap(web,audio,twitch,[]);
   const labels = Object.keys(map);
 
   makeChart("trafficChart","line",{
     labels,
     datasets:[
-      {label:"Website",data:labels.map(d=>map[d].site),borderColor:colors.site,backgroundColor:"rgba(255,138,0,.12)",tension:.42,fill:true},
-      {label:"Audio",data:labels.map(d=>map[d].audio),borderColor:colors.audio,backgroundColor:"rgba(24,216,96,.10)",tension:.42,fill:true},
-      {label:"Twitch",data:labels.map(d=>map[d].twitch),borderColor:colors.twitch,backgroundColor:"rgba(145,70,255,.10)",tension:.42,fill:true}
+      {label:"Avg Website Viewers",data:labels.map(d=>map[d].webAvg),borderColor:colors.site,backgroundColor:"rgba(255,138,0,.12)",tension:.42,fill:true},
+      {label:"Audio Plays",data:labels.map(d=>map[d].audio),borderColor:colors.audio,backgroundColor:"rgba(24,216,96,.10)",tension:.42,fill:true},
+      {label:"Avg Twitch Viewers",data:labels.map(d=>map[d].twitchAvg),borderColor:colors.twitch,backgroundColor:"rgba(145,70,255,.10)",tension:.42,fill:true}
     ]
   });
 }
 
-function renderDailyBar(site,audio,twitch){
-  const map = buildDailyMap(site,audio,twitch,[]);
+function renderDailyBar(web,audio,twitch){
+  const map = buildSnapshotDailyMap(web,audio,twitch,[]);
   const labels = Object.keys(map);
 
   makeChart("dailyBarChart","bar",{
     labels,
     datasets:[
-      {label:"Website",data:labels.map(d=>map[d].site),backgroundColor:colors.site},
-      {label:"Audio",data:labels.map(d=>map[d].audio),backgroundColor:colors.audio},
-      {label:"Twitch",data:labels.map(d=>map[d].twitch),backgroundColor:colors.twitch}
+      {label:"Peak Website Viewers",data:labels.map(d=>map[d].webPeak),backgroundColor:colors.site},
+      {label:"Audio Plays",data:labels.map(d=>map[d].audio),backgroundColor:colors.audio},
+      {label:"Peak Twitch Viewers",data:labels.map(d=>map[d].twitchPeak),backgroundColor:colors.twitch}
     ]
   },{
     scales:{
-      x:{stacked:true,ticks:{color:"#9ca3af"},grid:{color:"rgba(255,255,255,.05)"}},
-      y:{stacked:true,ticks:{color:"#9ca3af"},grid:{color:"rgba(255,255,255,.08)"},beginAtZero:true}
+      x:{stacked:false,ticks:{color:"#9ca3af"},grid:{color:"rgba(255,255,255,.05)"}},
+      y:{stacked:false,ticks:{color:"#9ca3af"},grid:{color:"rgba(255,255,255,.08)"},beginAtZero:true}
     }
   });
 }
@@ -1061,6 +1102,7 @@ function renderReplayTrend(replay){
     const k = dayKey(x.created_at);
     map[k] = (map[k] || 0) + 1;
   });
+
   const labels = Object.keys(map);
 
   makeChart("replayTrendChart","line",{
@@ -1071,32 +1113,32 @@ function renderReplayTrend(replay){
   });
 }
 
-function renderGrowthChart(site,audio,twitch,replay){
-  const map = buildDailyMap(site,audio,twitch,replay);
+function renderGrowthChart(web,audio,twitch,replay){
+  const map = buildSnapshotDailyMap(web,audio,twitch,replay);
   const labels = Object.keys(map);
-  let running = 0;
-  const data = labels.map(d=>{
-    running += map[d].total;
-    return running;
-  });
 
   makeChart("growthChart","line",{
     labels,
     datasets:[
-      {label:"Audience Growth",data,borderColor:colors.site,backgroundColor:"rgba(255,138,0,.16)",tension:.42,fill:true}
+      {label:"Daily Audience Snapshot",data:labels.map(d=>map[d].total),borderColor:colors.site,backgroundColor:"rgba(255,138,0,.16)",tension:.42,fill:true}
     ]
   },{
     plugins:{legend:{display:false}}
   });
 }
 
-function renderPlatformChart(site,audio,twitch,replay){
-  const total = site.length + audio.length + twitch.length + replay.length || 1;
+function renderPlatformChart(web,audio,twitch,replay){
+  const webVal = avgWebCount(web);
+  const audioVal = uniqueRows(audio, "listener_id").length;
+  const twitchVal = avgTwitchCount(twitch);
+  const replayVal = replay.length;
+
+  const total = webVal + audioVal + twitchVal + replayVal || 1;
 
   makeChart("platformChart","doughnut",{
-    labels:["Website","Audio","Twitch","Replay"],
+    labels:["Website Avg","Audio","Twitch Avg","Replay"],
     datasets:[{
-      data:[site.length,audio.length,twitch.length,replay.length],
+      data:[webVal,audioVal,twitchVal,replayVal],
       backgroundColor:[colors.site,colors.audio,colors.twitch,colors.replay],
       borderColor:"#101827",
       borderWidth:3
@@ -1106,100 +1148,68 @@ function renderPlatformChart(site,audio,twitch,replay){
   });
 
   document.getElementById("platformText").innerHTML =
-    `Website ${Math.round(site.length/total*100)}% · Audio ${Math.round(audio.length/total*100)}% · Twitch ${Math.round(twitch.length/total*100)}% · Replay ${Math.round(replay.length/total*100)}%`;
+    `Website ${Math.round(webVal/total*100)}% · Audio ${Math.round(audioVal/total*100)}% · Twitch ${Math.round(twitchVal/total*100)}% · Replay ${Math.round(replayVal/total*100)}%`;
 }
 
-function renderDeviceChart(site){
-
-  let mobile = 0;
-  let desktop = 0;
-
-  site.forEach(x=>{
-    if((x.device_type || "").toLowerCase() === "mobile"){
-      mobile++;
-    } else {
-      desktop++;
-    }
-  });
-
-  makeChart("deviceChart","doughnut",{
-    labels:["Mobile","Desktop"],
-    datasets:[{
-      data:[mobile,desktop],
-      backgroundColor:["#18d860","#0ea5e9"],
-      borderColor:"#101827",
-      borderWidth:3
-    }]
-  },{
-    cutout:"62%"
-  });
-
-  const total = mobile + desktop || 1;
-
+function renderDeviceChart(){
+  destroyChart("deviceChart");
   document.getElementById("deviceText").innerHTML =
-    `Mobile ${Math.round(mobile/total*100)}% · Desktop ${Math.round(desktop/total*100)}%`;
+    "Device breakdown needs site_stats. Snapshot counts do not include device data.";
 }
 
-function renderLocations(site){
+function renderLocations(){
+  document.getElementById("locationBox").innerHTML =
+    `<div class="muted">Location data needs site_stats. Snapshot counts do not include city/region data.</div>`;
+}
 
+function renderHourly(web,audio,twitch,replay){
   const map = {};
-
-  site.forEach(x=>{
-
-    const city = x.city || "Unknown";
-    const region = x.region || "";
-    const country = x.country || "";
-
-    const label = `${city}${region ? ", " + region : ""}`;
-
-    map[label] = (map[label] || 0) + 1;
-  });
-
-  const rows = Object.entries(map)
-    .sort((a,b)=>b[1]-a[1])
-    .slice(0,8);
-
-  if(!rows.length){
-    document.getElementById("locationBox").innerHTML =
-      `<div class="muted">No location data yet.</div>`;
-    return;
+  for(let i=0;i<24;i++){
+    map[i] = {webTotal:0,webSamples:0,audio:0,twitchTotal:0,twitchSamples:0,replay:0,total:0};
   }
 
-  const max = Math.max(...rows.map(r=>r[1]));
-
-  document.getElementById("locationBox").innerHTML = rows.map(([name,count])=>`
-    <div class="hour-row">
-      <div style="width:180px">${name}</div>
-      <div class="track">
-        <div class="fill" style="width:${(count/max)*100}%"></div>
-      </div>
-      <div>${count}</div>
-    </div>
-  `).join("");
-}  
-
-function renderHourly(site,audio,twitch,replay){
-  const map = {};
-  for(let i=0;i<24;i++) map[i] = 0;
-
-  [...site,...audio,...twitch,...replay].forEach(x=>{
-    map[hourNum(x.created_at)]++;
+  web.forEach(x=>{
+    const h = hourNum(x.created_at);
+    map[h].webTotal += Number(x.web_count || x.count || 0);
+    map[h].webSamples++;
   });
 
-  const max = Math.max(1,...Object.values(map));
+  audio.forEach(x=>{
+    const h = hourNum(x.created_at);
+    map[h].audio++;
+  });
+
+  twitch.forEach(x=>{
+    const h = hourNum(x.created_at);
+    map[h].twitchTotal += Number(x.viewers || x.viewer_count || 0);
+    map[h].twitchSamples++;
+  });
+
+  replay.forEach(x=>{
+    const h = hourNum(x.created_at);
+    map[h].replay++;
+  });
+
+  Object.keys(map).forEach(h=>{
+    const webAvg = map[h].webSamples ? Math.round(map[h].webTotal / map[h].webSamples) : 0;
+    const twitchAvg = map[h].twitchSamples ? Math.round(map[h].twitchTotal / map[h].twitchSamples) : 0;
+    map[h].total = webAvg + map[h].audio + twitchAvg + map[h].replay;
+  });
+
+  const max = Math.max(1,...Object.values(map).map(x=>x.total));
   let bestHour = 0;
   let bestTotal = 0;
 
   Object.keys(map).forEach(h=>{
-    if(map[h] > bestTotal){
+    if(map[h].total > bestTotal){
       bestHour = h;
-      bestTotal = map[h];
+      bestTotal = map[h].total;
     }
   });
 
   let html = "";
   Object.keys(map).forEach(h=>{
-    const val = map[h];
+    const val = map[h].total;
     html += `
       <div class="hour-row ${Number(h) === Number(bestHour) ? "highlight" : ""}">
         <div>${hourLabel(h)}</div>
@@ -1213,8 +1223,9 @@ function renderHourly(site,audio,twitch,replay){
   return {bestHour,bestTotal};
 }
 
-function renderInsights(site,audio,twitch,replay,hourData){
-  const daily = buildDailyMap(site,audio,twitch,replay);
+function renderInsights(web,audio,twitch,replay,hourData){
+  const daily = buildSnapshotDailyMap(web,audio,twitch,replay);
+
   let bestDay = "No data";
   let bestDayTotal = 0;
 
@@ -1228,21 +1239,23 @@ function renderInsights(site,audio,twitch,replay,hourData){
   const topReplay = getTopReplayName(replay);
 
   document.getElementById("insightBox").innerHTML = `
-    <div class="insight"><div class="icon">👑</div><div><strong>Peak Traffic Day</strong><br><span class="muted">${bestDay} · ${formatNum(bestDayTotal)} events</span></div></div>
-    <div class="insight"><div class="icon">⏰</div><div><strong>Peak Hour</strong><br><span class="muted">${hourLabel(hourData.bestHour)} · ${formatNum(hourData.bestTotal)} total events</span></div></div>
-    <div class="insight"><div class="icon">🎧</div><div><strong>Best Audio Day</strong><br><span class="muted">${bestDay}</span></div></div>
+    <div class="insight"><div class="icon">👑</div><div><strong>Peak Traffic Day</strong><br><span class="muted">${bestDay} · ${formatNum(bestDayTotal)} snapshot score</span></div></div>
+    <div class="insight"><div class="icon">⏰</div><div><strong>Peak Hour</strong><br><span class="muted">${hourLabel(hourData.bestHour)} · ${formatNum(hourData.bestTotal)} combined avg</span></div></div>
+    <div class="insight"><div class="icon">🌐</div><div><strong>Website Peak</strong><br><span class="muted">${formatNum(peakWebCount(web))} viewers</span></div></div>
+    <div class="insight"><div class="icon">💜</div><div><strong>Twitch Peak</strong><br><span class="muted">${formatNum(peakTwitchCount(twitch))} viewers</span></div></div>
     <div class="insight"><div class="icon">▶</div><div><strong>Top Replay</strong><br><span class="muted">${topReplay}</span></div></div>
-    <div class="insight"><div class="icon">⚡</div><div><strong>Fastest Growth Day</strong><br><span class="muted">${bestDay}</span></div></div>
   `;
 }
 
 function getTopReplayName(replay){
   if(!replay.length) return "No replay data yet";
+
   const map = {};
   replay.forEach(x=>{
     const name = x.show_title || x.title || x.replay_title || x.show || "Replay";
     map[name] = (map[name] || 0) + 1;
   });
+
   return Object.entries(map).sort((a,b)=>b[1]-a[1])[0][0];
 }
 
@@ -1272,10 +1285,10 @@ function renderTopReplays(replay){
 
 function renderActivityFeed(){
   const combined = [
-    ...allSiteData.map(x=>({...x,type:"🌐",text:"New website visit"})),
+    ...allWebSnapshots.map(x=>({...x,type:"🌐",text:`Website snapshot: ${Number(x.web_count || x.count || 0)} viewers`})),
     ...allAudioData.map(x=>({...x,type:"🎧",text:"New audio play"})),
     ...allReplayData.map(x=>({...x,type:"▶",text:"New replay launch"})),
-    ...allTwitchData.map(x=>({...x,type:"💜",text:"Twitch stat pull"})),
+    ...allTwitchData.map(x=>({...x,type:"💜",text:`Twitch snapshot: ${Number(x.viewers || x.viewer_count || 0)} viewers`})),
     ...allActivityData.map(x=>({...x,type:x.icon || "🔔",text:x.event_name || x.type || "Activity"}))
   ].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,12);
 
@@ -1288,14 +1301,14 @@ function renderActivityFeed(){
   `).join("") : `<div class="muted">No activity yet.</div>`;
 }
 
-function updateLiveSection(site,audio,twitch){
+function updateLiveSection(audio,twitch){
   document.getElementById("liveSite").innerText = liveWebCount;
 
   const now = Date.now();
   const last10 = arr => arr.filter(x=>now - new Date(x.created_at).getTime() <= 10 * 60 * 1000).length;
 
   document.getElementById("liveAudio").innerText = last10(audio);
-  document.getElementById("liveTwitch").innerText = twitch.length ? Math.max(0, Number(twitch[twitch.length-1].viewers || twitch[twitch.length-1].viewer_count || 0)) : 0;
+  document.getElementById("liveTwitch").innerText = latestTwitchViewers(twitch);
 }
 
 function updateRangeLabel(){
@@ -1305,69 +1318,69 @@ function updateRangeLabel(){
 }
 
 function renderDashboard(){
-  const site = filterRange(allSiteData);
+  const web = filterRange(allWebSnapshots);
   const audio = filterRange(allAudioData);
   const twitch = filterRange(allTwitchData);
   const replay = filterRange(allReplayData);
 
   updateRangeLabel();
 
-  const dedupedSite = uniqueSessionsWithDuration(site, "session_id");
-const dedupedAudio = uniqueRows(audio, "listener_id");
+  const currentWeb = latestWebCount(web);
+  const currentTwitch = latestTwitchViewers(twitch);
+  const uniqueAudioTotal = uniqueRows(audio, "listener_id").length;
 
-const uniqueSiteTotal = dedupedSite.length;
-const uniqueAudioTotal = dedupedAudio.length;
-const liveTwitchTotal = latestTwitchViewers(twitch);
-
-document.getElementById("siteTotal").innerText = formatNum(uniqueSiteTotal);
-document.getElementById("audioTotal").innerText = formatNum(uniqueAudioTotal);
-document.getElementById("twitchTotal").innerText = formatNum(liveTwitchTotal);
+  document.getElementById("siteTotal").innerText = formatNum(currentWeb);
+  document.getElementById("audioTotal").innerText = formatNum(uniqueAudioTotal);
+  document.getElementById("twitchTotal").innerText = formatNum(currentTwitch);
   document.getElementById("replayTotal").innerText = formatNum(replay.length);
 
+  const prevWeb = previousRangeData(allWebSnapshots);
+  const prevAudio = previousRangeData(allAudioData);
+  const prevTwitch = previousRangeData(allTwitchData);
+  const prevReplay = previousRangeData(allReplayData);
+
   document.getElementById("siteChange").innerText =
-  pctChange(uniqueSiteTotal, previousRangeUniqueCount(allSiteData, "session_id"));
+    `Peak ${formatNum(peakWebCount(web))} · Avg ${formatNum(avgWebCount(web))}`;
 
-document.getElementById("audioChange").innerText =
-  pctChange(uniqueAudioTotal, previousRangeUniqueCount(allAudioData, "listener_id"));
-  document.getElementById("twitchChange").innerText = pctChange(twitch.length, previousRangeCount(allTwitchData));
-  document.getElementById("replayChange").innerText = pctChange(replay.length, previousRangeCount(allReplayData));
+  document.getElementById("audioChange").innerText =
+    pctChange(uniqueAudioTotal, uniqueRows(prevAudio, "listener_id").length);
 
-  const audienceTotal = uniqueSiteTotal + uniqueAudioTotal + liveTwitchTotal + replay.length;
+  document.getElementById("twitchChange").innerText =
+    `Peak ${formatNum(peakTwitchCount(twitch))} · Avg ${formatNum(avgTwitchCount(twitch))}`;
+
+  document.getElementById("replayChange").innerText =
+    pctChange(replay.length, prevReplay.length);
+
+  const audienceTotal = currentWeb + uniqueAudioTotal + currentTwitch + replay.length;
   document.getElementById("audienceTotal").innerText = formatNum(audienceTotal);
-const totalDuration = dedupedSite.reduce((sum, x) =>
-  sum + Number(x.duration_seconds || 0), 0);
 
-const avgDuration = dedupedSite.length
-  ? Math.floor(totalDuration / dedupedSite.length)
-  : 0;
+  document.getElementById("avgTimeOnSite").innerText =
+    `${formatNum(avgWebCount(web))} avg`;
 
-document.getElementById("avgTimeOnSite").innerText =
-  formatDuration(avgDuration);
+  document.getElementById("totalTimeOnSite").innerText =
+    `Peak web: ${formatNum(peakWebCount(web))}`;
 
-document.getElementById("totalTimeOnSite").innerText =
-  "Total time: " + formatDuration(totalDuration);  
-  renderTrafficChart(dedupedSite,dedupedAudio,twitch);
-renderDailyBar(dedupedSite,dedupedAudio,twitch);
-renderReplayTrend(replay);
-renderGrowthChart(dedupedSite,dedupedAudio,twitch,replay);
+  renderTrafficChart(web,audio,twitch);
+  renderDailyBar(web,audio,twitch);
+  renderReplayTrend(replay);
+  renderGrowthChart(web,audio,twitch,replay);
+  renderPlatformChart(web,audio,twitch,replay);
+  renderDeviceChart();
+  renderLocations();
 
-renderPlatformChart(dedupedSite,dedupedAudio,twitch,replay);
-renderDeviceChart(dedupedSite);
-renderLocations(dedupedSite);
-
-const hourData = renderHourly(dedupedSite,dedupedAudio,twitch,replay);
-renderInsights(dedupedSite,dedupedAudio,twitch,replay,hourData); 
+  const hourData = renderHourly(web,audio,twitch,replay);
+  renderInsights(web,audio,twitch,replay,hourData);
 
   renderTopReplays(replay);
   renderActivityFeed();
-  updateLiveSection(allSiteData,allAudioData,allTwitchData);
+  updateLiveSection(audio,twitch);
 
   document.getElementById("lastUpdated").innerText =
     "Last Updated: " + new Date().toLocaleString("en-US",{timeZone:"America/New_York"});
 }
 
 async function loadDashboardStats(){
-  allSiteData = await fetchTable("site_stats");
+  allWebSnapshots = await fetchTable("web_count_snapshots");
   allAudioData = await fetchTable("audio_stats");
   allTwitchData = await fetchTable("twitch_stats");
 
@@ -1381,28 +1394,30 @@ async function loadDashboardStats(){
 }
 
 function exportCSV(){
-  const rows = [["type","created_at","device_type","city","region","country","country_code"]];
-  filterRange(allSiteData).forEach(x=>
-  rows.push([
-    "website",
-    x.created_at,
-    x.device_type || "",
-    x.city || "",
-    x.region || "",
-    x.country || "",
-    x.country_code || ""
-  ])
-);
-  filterRange(allAudioData).forEach(x=>rows.push(["audio",x.created_at]));
-  filterRange(allTwitchData).forEach(x=>rows.push(["twitch",x.created_at]));
-  filterRange(allReplayData).forEach(x=>rows.push(["replay",x.created_at]));
+  const rows = [["type","created_at","value"]];
+
+  filterRange(allWebSnapshots).forEach(x=>
+    rows.push(["website_snapshot",x.created_at,Number(x.web_count || x.count || 0)])
+  );
+
+  filterRange(allAudioData).forEach(x=>
+    rows.push(["audio_play",x.created_at,x.listener_id || ""])
+  );
+
+  filterRange(allTwitchData).forEach(x=>
+    rows.push(["twitch_snapshot",x.created_at,Number(x.viewers || x.viewer_count || 0)])
+  );
+
+  filterRange(allReplayData).forEach(x=>
+    rows.push(["replay",x.created_at,x.show_title || x.title || ""])
+  );
 
   const csv = rows.map(r=>r.map(v=>`"${String(v || "").replace(/"/g,'""')}"`).join(",")).join("\n");
   const blob = new Blob([csv],{type:"text/csv"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "ma3dtribe-analytics-export.csv";
+  a.download = "ma3dtribe-snapshot-analytics-export.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1410,9 +1425,9 @@ function exportCSV(){
 function toggleScreenshotMode(){
   document.body.classList.toggle("screenshot-mode");
 }
-async function startLivePresence(){
 
-  if (!window.supabase) return;
+async function startLivePresence(){
+  if(!window.supabase) return;
 
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1423,14 +1438,12 @@ async function startLivePresence(){
   });
 
   livePresenceChannel
-    .on("presence", { event: "sync" }, () => {
-
+    .on("presence", { event: "sync" }, async () => {
       const state = livePresenceChannel.presenceState();
-
       const sessions = new Set();
 
       Object.keys(state).forEach(key => {
-        if (key !== "analytics-dashboard") {
+        if(key !== "analytics-dashboard"){
           sessions.add(key);
         }
       });
@@ -1438,19 +1451,32 @@ async function startLivePresence(){
       liveWebCount = sessions.size;
 
       document.getElementById("liveSite").innerText = liveWebCount;
+      document.getElementById("siteTotal").innerText = formatNum(liveWebCount);
+
+      await saveWebSnapshot(liveWebCount);
     });
 
   await livePresenceChannel.subscribe();
-}  
+}
+
 window.onload = () => {
+  setDashboardLabels();
+
   if(SUPABASE_KEY.includes("PASTE_YOUR")){
     alert("Paste your Supabase anon key into SUPABASE_KEY before committing.");
   }
 
   loadDashboardStats();
   startLivePresence();
+
   setInterval(() => {
     loadDashboardStats();
+  }, 120000);
+
+  setInterval(() => {
+    if(liveWebCount >= 0){
+      saveWebSnapshot(liveWebCount);
+    }
   }, 120000);
 };
 </script>
