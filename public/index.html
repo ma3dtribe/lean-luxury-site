@@ -929,26 +929,24 @@ gap: 10px;
 
   /* Show Watch Live box in same video space */
   .video-card .watch-shell{
-    position:absolute !important;
-    inset:0 !important;
-    z-index:2 !important;
-    display:flex !important;
-    flex-direction:column !important;
-    align-items:center !important;
-    justify-content:center !important;
-    text-align:center !important;
-    gap:10px !important;
-    padding:18px !important;
-    margin:0 !important;
-    border-radius:0 !important;
-    border:0 !important;
-    background:
-      radial-gradient(circle at center, rgba(255,59,59,.22), rgba(0,0,0,.94)) !important;
-  }
+  height:300px !important;
+  padding:14px !important;
+  margin:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:center !important;
+  text-align:center !important;
+  border-radius:14px !important;
+}
 
   .video-card .watch-shell.collapsed-head{
-    display:none !important;
-  }
+  display:none !important;
+}
+
+.video-card:has(.watch-shell.collapsed-head) #playerMount{
+  margin-top:0 !important;
+}
 
   .watch-head{
     margin:0 !important;
@@ -1124,16 +1122,22 @@ gap: 10px;
   }
 
   .video-card{
-    grid-area:video !important;
-    padding:10px !important;
-    align-self:start !important;
-  }
+  grid-area:video !important;
+  position:sticky !important;
+  top:10px !important;
+  padding:10px !important;
+  align-self:start !important;
+  z-index:40 !important;
+}
 
   .billboard-card{
-    grid-area:billboard !important;
-    padding:10px !important;
-    align-self:start !important;
-  }
+  grid-area:billboard !important;
+  position:sticky !important;
+  top:10px !important;
+  padding:10px !important;
+  align-self:start !important;
+  z-index:40 !important;
+}
 
   .video-card .watch-shell{
     height:300px !important;
@@ -1363,11 +1367,7 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
       ⚠️ Explicit Content – Viewer Discretion Advised
     </div>
 
-    <div id="playerMount" style="margin-top:10px;">
-  <div class="watch-shell" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;">
-    <button id="desktopThumbWatchBtn" class="btn primary" type="button">Watch Live 🔴</button>
-  </div>
-</div>
+    <div id="playerMount" style="margin-top:10px;"></div>
 <video
   id="audioOnlyPlayer"
   playsinline
@@ -1917,11 +1917,7 @@ manualBtn.addEventListener("click", () => {
   streamLoaded = false;
   loadPlayer(true);
 });     
-
-      document.getElementById("desktopThumbWatchBtn")?.addEventListener("click", () => {
-  streamLoaded = false;
-  loadPlayer(true);
-});
+      
 let lastRefreshOnReturn = 0;
 
 function refreshOnReturn() {
