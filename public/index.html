@@ -303,8 +303,6 @@
   grid-template-columns:minmax(0, 48%) minmax(0, 52%);
   gap:18px;
   align-items:start;
-  height:calc(100vh - 340px);
-  overflow:hidden;
 }
 
 .watch-left{
@@ -314,8 +312,7 @@
   position:sticky;
   top:16px;
   align-self:start;
-  height:calc(100vh - 32px);
-  overflow:hidden;
+  height:fit-content;
   min-width:0;
 }
 
@@ -328,9 +325,6 @@
     "calendar";
   gap:16px;
   min-width:0;
-  height:calc(100vh - 360px);
-  overflow-y:auto;
-  padding-right:6px;
 }
 
 .video-card{
