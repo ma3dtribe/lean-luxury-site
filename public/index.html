@@ -1082,8 +1082,8 @@ gap: 10px;
 
 /* =========================================================
    DESKTOP-ONLY FINAL LAYOUT
-   Top: Video 65% / Billboard 35%
-   Bottom: Chat 65% / Calendar + Donate + Replay 35%
+   Left 45%: Sticky video + scrollable content
+   Right 55%: Sticky full-height chat
    Mobile untouched
 ========================================================= */
 @media (min-width:981px){
@@ -1111,33 +1111,53 @@ gap: 10px;
 
   .watch-chat{
     display:grid !important;
-    grid-template-columns:65% 35% !important;
+    grid-template-columns:45% 55% !important;
     grid-template-areas:
-      "video billboard"
-      "chat calendar"
-      "chat donate"
-      "chat replay" !important;
+      "video chat"
+      "billboard chat"
+      "calendar chat"
+      "donate chat"
+      "replay chat" !important;
     gap:16px !important;
     align-items:start !important;
   }
 
   .video-card{
-  grid-area:video !important;
-  position:sticky !important;
-  top:10px !important;
-  padding:10px !important;
-  align-self:start !important;
-  z-index:40 !important;
-}
+    grid-area:video !important;
+    position:sticky !important;
+    top:10px !important;
+    padding:10px !important;
+    align-self:start !important;
+    z-index:40 !important;
+  }
+
+  #chat{
+    grid-area:chat !important;
+    position:sticky !important;
+    top:10px !important;
+    display:flex !important;
+    flex-direction:column !important;
+    height:calc(100vh - 20px) !important;
+    padding:14px !important;
+    overflow:hidden !important;
+    z-index:45 !important;
+  }
+
+  #chat iframe{
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:100% !important;
+    border:0 !important;
+    border-radius:14px !important;
+  }
 
   .billboard-card{
-  grid-area:billboard !important;
-  position:sticky !important;
-  top:10px !important;
-  padding:10px !important;
-  align-self:start !important;
-  z-index:40 !important;
-}
+    grid-area:billboard !important;
+    position:static !important;
+    padding:10px !important;
+    align-self:start !important;
+  }
 
   .video-card .watch-shell{
     height:300px !important;
@@ -1153,6 +1173,10 @@ gap: 10px;
 
   .video-card .watch-shell.collapsed-head{
     display:none !important;
+  }
+
+  .video-card:has(.watch-shell.collapsed-head) #playerMount{
+    margin-top:0 !important;
   }
 
   #playerMount{
@@ -1213,25 +1237,6 @@ gap: 10px;
   .bb-dots{
     margin-top:7px !important;
     flex:0 0 auto !important;
-  }
-
-  #chat{
-    grid-area:chat !important;
-    display:flex !important;
-    flex-direction:column !important;
-    min-height:1050px !important;
-    height:1050px !important;
-    padding:14px !important;
-    overflow:hidden !important;
-  }
-
-  #chat iframe{
-    display:block !important;
-    width:100% !important;
-    height:990px !important;
-    min-height:990px !important;
-    border:0 !important;
-    border-radius:14px !important;
   }
 
   #calendarCard{
