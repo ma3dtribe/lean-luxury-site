@@ -1111,7 +1111,7 @@ gap: 10px;
 
   .watch-chat{
     display:grid !important;
-    grid-template-columns:45% 55% !important;
+    grid-template-columns:50% 50% !important;
     grid-template-areas:
       "video chat"
       "billboard chat"
@@ -1160,16 +1160,20 @@ gap: 10px;
   }
 
   .video-card .watch-shell{
-    height:300px !important;
-    padding:14px !important;
-    margin:0 !important;
-    display:flex !important;
-    flex-direction:column !important;
-    justify-content:center !important;
-    align-items:center !important;
-    text-align:center !important;
-    border-radius:14px !important;
-  }
+  min-height:300px !important;
+  padding:14px !important;
+  margin:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:center !important;
+  text-align:center !important;
+  border-radius:14px !important;
+  background:
+    radial-gradient(900px 320px at 20% 18%, rgba(255,59,59,.18), transparent 60%),
+    radial-gradient(700px 260px at 80% 70%, rgba(120,10,10,.16), transparent 62%),
+    rgba(255,255,255,.03) !important;
+}
 
   .video-card .watch-shell.collapsed-head{
     display:none !important;
@@ -1180,13 +1184,13 @@ gap: 10px;
   }
 
   #playerMount{
-    width:100% !important;
-    height:300px !important;
-    margin-top:0 !important;
-    background:#050505 !important;
-    border-radius:14px !important;
-    overflow:hidden !important;
-  }
+  width:100% !important;
+  height:300px !important;
+  margin-top:0 !important;
+  background:transparent !important;
+  border-radius:14px !important;
+  overflow:hidden !important;
+}
 
   #playerMount iframe{
     display:block !important;
@@ -1227,12 +1231,13 @@ gap: 10px;
   }
 
   .bb-slide img{
-    width:100% !important;
-    height:100% !important;
-    aspect-ratio:auto !important;
-    object-fit:cover !important;
-    border-radius:12px !important;
-  }
+  width:100% !important;
+  height:100% !important;
+  aspect-ratio:auto !important;
+  object-fit:contain !important;
+  background:#050505 !important;
+  border-radius:12px !important;
+}
 
   .bb-dots{
     margin-top:7px !important;
