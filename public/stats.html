@@ -1206,7 +1206,7 @@ function renderLocations(site){
   const max = Math.max(...rows.map(r=>r[1]));
 
   document.getElementById("locationBox").innerHTML = rows.map(([name,count])=>`
-    <div class="hour-row">
+    <div class="hour-row" style="grid-template-columns:260px 1fr 45px;">
       <div style="width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div>
       <div class="track">
         <div class="fill" style="width:${(count/max)*100}%"></div>
