@@ -723,6 +723,7 @@ const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
 
 let allWebSnapshots = [];
+let allSiteData = [];
 let allAudioData = [];
 let allTwitchData = [];
 let allReplayData = [];
@@ -1151,15 +1152,68 @@ function renderPlatformChart(web,audio,twitch,replay){
     `Website ${Math.round(webVal/total*100)}% · Audio ${Math.round(audioVal/total*100)}% · Twitch ${Math.round(twitchVal/total*100)}% · Replay ${Math.round(replayVal/total*100)}%`;
 }
 
-function renderDeviceChart(){
-  destroyChart("deviceChart");
+function renderDeviceChart(site){
+  let mobile = 0;
+  let desktop = 0;
+
+  site.forEach(x=>{
+    if((x.device_type || "").toLowerCase() === "mobile"){
+      mobile++;
+    } else {
+      desktop++;
+    }
+  });
+
+  makeChart("deviceChart","doughnut",{
+    labels:["Mobile","Desktop"],
+    datasets:[{
+      data:[mobile,desktop],
+      backgroundColor:["#18d860","#0ea5e9"],
+      borderColor:"#101827",
+      borderWidth:3
+    }]
+  },{
+    cutout:"62%"
+  });
+
+  const total = mobile + desktop || 1;
+
   document.getElementById("deviceText").innerHTML =
-    "Device breakdown needs site_stats. Snapshot counts do not include device data.";
+    `Mobile ${Math.round(mobile/total*100)}% · Desktop ${Math.round(desktop/total*100)}%`;
 }
 
-function renderLocations(){
-  document.getElementById("locationBox").innerHTML =
-    `<div class="muted">Location data needs site_stats. Snapshot counts do not include city/region data.</div>`;
+function renderLocations(site){
+  const map = {};
+
+  site.forEach(x=>{
+    const city = x.gps_city || x.city || "Unknown";
+    const region = x.gps_region || x.region || "";
+    const label = `${city}${region ? ", " + region : ""}`;
+
+    map[label] = (map[label] || 0) + 1;
+  });
+
+  const rows = Object.entries(map)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,8);
+
+  if(!rows.length){
+    document.getElementById("locationBox").innerHTML =
+      `<div class="muted">No location data yet.</div>`;
+    return;
+  }
+
+  const max = Math.max(...rows.map(r=>r[1]));
+
+  document.getElementById("locationBox").innerHTML = rows.map(([name,count])=>`
+    <div class="hour-row">
+      <div style="width:180px">${name}</div>
+      <div class="track">
+        <div class="fill" style="width:${(count/max)*100}%"></div>
+      </div>
+      <div>${count}</div>
+    </div>
+  `).join("");
 }
 
 function renderHourly(web,audio,twitch,replay){
@@ -1365,8 +1419,10 @@ function renderDashboard(){
   renderReplayTrend(replay);
   renderGrowthChart(web,audio,twitch,replay);
   renderPlatformChart(web,audio,twitch,replay);
-  renderDeviceChart();
-  renderLocations();
+  const site = filterRange(allSiteData);
+
+renderDeviceChart(site);
+renderLocations(site);
 
   const hourData = renderHourly(web,audio,twitch,replay);
   renderInsights(web,audio,twitch,replay,hourData);
@@ -1381,7 +1437,8 @@ function renderDashboard(){
 
 async function loadDashboardStats(){
   allWebSnapshots = await fetchTable("web_count_snapshots");
-  allAudioData = await fetchTable("audio_stats");
+allSiteData = await fetchTable("site_stats");
+allAudioData = await fetchTable("audio_stats");
   allTwitchData = await fetchTable("twitch_stats");
 
   allReplayData = await fetchTable("replay_stats");
