@@ -1566,6 +1566,49 @@ const AUDIO_TAP_SESSION_STORAGE_KEY = "ma3d_audio_tap_session_key";
 const AUDIO_TAP_LAST_LIVE_STATE_KEY = "ma3d_audio_last_live_state";      
 const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+function getBrowserGpsLocation(){
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`)
+  .then(r => r.json())
+  .then(data => {
+    resolve({
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+      gps_city:
+        data.address?.city ||
+        data.address?.town ||
+        data.address?.village ||
+        null,
+      gps_region: data.address?.state || null,
+      gps_country: data.address?.country || null,
+      location_source: "gps"
+    });
+  })
+  .catch(() => {
+    resolve({
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+      location_source: "gps"
+    });
+  });
+      },
+      () => resolve(null),
+      {
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 1000 * 60 * 30
+      }
+    );
+  });
+}      
+
 if (sb) {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
@@ -1582,7 +1625,11 @@ if (sb) {
   region: loc.region || null,
   country: loc.country_name || null,
   country_code: loc.country_code || null,
-  device_type: isMobile ? "Mobile" : "Desktop"
+gps_city: loc.gps_city || null,
+gps_region: loc.gps_region || null,
+gps_country: loc.gps_country || null,
+location_source: loc.location_source || "ip",
+device_type: isMobile ? "Mobile" : "Desktop"
 }
             ])
       .select()
@@ -1598,10 +1645,29 @@ if (sb) {
       });
   }
 
+  async function getLocationForVisit(){
+  const gps = await getBrowserGpsLocation();
+
   fetch("https://ipapi.co/json/")
-  .then(res => res.json())
-  .then(loc => saveVisit(loc))
-  .catch(() => saveVisit());
+    .then(res => res.json())
+    .then(loc => {
+      saveVisit({
+        ...loc,
+        gps_latitude: gps?.latitude || null,
+        gps_longitude: gps?.longitude || null,
+        location_source: gps ? "gps" : "ip"
+      });
+    })
+    .catch(() => {
+      saveVisit({
+        gps_latitude: gps?.latitude || null,
+        gps_longitude: gps?.longitude || null,
+        location_source: gps ? "gps" : "unknown"
+      });
+    });
+}
+
+getLocationForVisit();
 
 durationTimer = setInterval(async () => {
 
