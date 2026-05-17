@@ -298,49 +298,32 @@
 .watch-shell.collapsed-head #manualLoadBtn{
   display: none !important;
 }
-   .watch-chat{
+    
+.watch-chat{
   display:grid;
-  grid-template-columns:minmax(0, 48%) minmax(0, 52%);
-  gap:18px;
+  grid-template-columns:1fr 1fr;
+  grid-template-areas:
+    "video chat"
+    "billboard chat"
+    "calendar replay";
+  gap:16px;
   align-items:start;
 }
 
-.watch-left{
-  display:flex;
-  flex-direction:column;
-  gap:16px;
-  position:sticky;
-  top:16px;
-  align-self:start;
-  height:fit-content;
-  min-width:0;
-}
-
-.watch-right{
-  display:grid;
-  grid-template-columns:1fr;
-  grid-template-areas:
-    "chat"
-    "replay"
-    "calendar";
-  gap:16px;
-  min-width:0;
-}
-
 .video-card{
-  grid-area:auto;
+  grid-area:video;
 }
 
 #chat{
   grid-area:chat;
   display:flex;
   flex-direction:column;
-  min-height:720px;
+  min-height:900px;
   overflow:hidden;
 }
 
 .billboard-card{
-  grid-area:auto;
+  grid-area:billboard;
 }
 
 #calendarCard{
@@ -349,16 +332,8 @@
 
 #replayCard{
   grid-area:replay;
-  width:100%;
 }
-
-#replayCard img{
-  width:100%;
-  height:180px;
-  object-fit:cover;
-  object-position:center;
-}
-
+    
 #chat h3{
   margin:0 0 12px;
 }
@@ -367,7 +342,7 @@
   display:block;
   width:100%;
   flex:1;
-  min-height:720px;
+  min-height:900px;
   border:0;
   border-radius:16px;
 }
@@ -392,22 +367,6 @@
 
 .mobile-chat-link{
   display:none;
-}
-
-@media (min-width:981px){
-  :root{
-    --content-max:1680px;
-    --content-pad:24px;
-  }
-
-  .container{
-    max-width:1680px !important;
-    width:calc(100vw - 48px) !important;
-  }
-
-  .banner-img{
-    height:clamp(190px, 24vw, 360px);
-  }
 }
 
 @media (max-width:980px){
@@ -1199,9 +1158,7 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
     <div class="container">
          <!-- WATCH + CHAT (side-by-side) -->
 <section class="watch-chat" id="watch">
-  
-  <div class="watch-left">
-    
+
   <!-- WATCH -->
   <div class="card video-card">
     <div class="watch-shell" id="watchShell">
@@ -1232,10 +1189,38 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
   controls
   style="position:fixed; left:-9999px; bottom:0; width:1px; height:1px; opacity:0; pointer-events:none;"
 ></video>
-
+    
   </div>
 
-<div class="card billboard-card" aria-label="MA3DTribe Billboard">
+  <!-- CHAT -->
+  <div class="card" id="chat">
+  <h3>MA3D Lounge</h3>
+  <iframe
+    src="/chat-test.html"
+    loading="lazy"
+    scrolling="yes">
+  </iframe>
+</div>
+
+<div class="card" id="replayCard">
+  <a href="/replays.html" style="text-decoration:none;color:inherit;display:block;">
+    <img
+  src="/ads/ad22.webp?v=1"
+  alt="Show and Podcast Replay"
+  style="width:100%;border-radius:14px;display:block;"
+/>
+
+    <h3 style="margin:14px 0 6px;">
+     DJ Shows & Podcasts Replay
+    </h3>
+
+          </a>
+</div>
+
+  <!-- BILLBOARD -->
+
+  <!-- BILLBOARD -->
+  <div class="card billboard-card" aria-label="MA3DTribe Billboard">
     <section class="billboard">
       <div class="bb-top">
         <h2 class="bb-title">Billboard</h2>
@@ -1295,42 +1280,9 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
         </div>
       </div>
 
-            <div class="bb-dots" id="bbDots" aria-label="Billboard navigation dots"></div>
+      <div class="bb-dots" id="bbDots" aria-label="Billboard navigation dots"></div>
     </section>
   </div>
-
-</div>
-  
-<div class="watch-right">    
-  <!-- CHAT -->
-  <div class="card" id="chat">
-  <h3>MA3D Lounge</h3>
-  <iframe
-    src="/chat-test.html"
-    loading="lazy"
-    scrolling="yes">
-  </iframe>
-</div>
-
-<div class="card" id="replayCard">
-  <a href="/replays.html" style="text-decoration:none;color:inherit;display:block;">
-    <img
-  src="/ads/ad22.webp?v=1"
-  alt="Show and Podcast Replay"
-  style="width:100%;border-radius:14px;display:block;"
-/>
-
-    <h3 style="margin:14px 0 6px;">
-     DJ Shows & Podcasts Replay
-    </h3>
-
-          </a>
-</div>
-
-  <!-- BILLBOARD -->
-
-  <!-- BILLBOARD -->
-  
 
   <!-- CALENDAR -->
   <div class="card" id="calendarCard">
@@ -1342,9 +1294,7 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
     </iframe>
   </div>
 
-</div>
-
-</section>   
+</section>    
       
       <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
    
