@@ -301,39 +301,13 @@
     
 .watch-chat{
   display:grid;
-  grid-template-columns:1fr;
+  grid-template-columns:1fr 1fr;
+  grid-template-areas:
+    "video chat"
+    "billboard chat"
+    "calendar replay";
   gap:16px;
   align-items:start;
-}
-
-.watch-top{
-  display:grid;
-  grid-template-columns:minmax(0, 70%) minmax(0, 30%);
-  gap:16px;
-  position:sticky;
-  top:0;
-  z-index:50;
-  background:var(--bg);
-  padding-bottom:16px;
-}
-
-.watch-bottom{
-  display:grid;
-  grid-template-columns:minmax(0, 35%) minmax(0, 65%);
-  gap:16px;
-  align-items:stretch;
-}
-
-.side-stack{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:16px;
-}
-
-.thumb-row{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
 }
 
 .video-card{
@@ -1184,9 +1158,7 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
     <div class="container">
          <!-- WATCH + CHAT (side-by-side) -->
 <section class="watch-chat" id="watch">
-<div class="watch-top">
-  
-    
+
   <!-- WATCH -->
   <div class="card video-card">
     <div class="watch-shell" id="watchShell">
@@ -1217,10 +1189,38 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
   controls
   style="position:fixed; left:-9999px; bottom:0; width:1px; height:1px; opacity:0; pointer-events:none;"
 ></video>
+    
+  </div>
 
-</div>   
-  
- <div class="card billboard-card" aria-label="MA3DTribe Billboard">
+  <!-- CHAT -->
+  <div class="card" id="chat">
+  <h3>MA3D Lounge</h3>
+  <iframe
+    src="/chat-test.html"
+    loading="lazy"
+    scrolling="yes">
+  </iframe>
+</div>
+
+<div class="card" id="replayCard">
+  <a href="/replays.html" style="text-decoration:none;color:inherit;display:block;">
+    <img
+  src="/ads/ad22.webp?v=1"
+  alt="Show and Podcast Replay"
+  style="width:100%;border-radius:14px;display:block;"
+/>
+
+    <h3 style="margin:14px 0 6px;">
+     DJ Shows & Podcasts Replay
+    </h3>
+
+          </a>
+</div>
+
+  <!-- BILLBOARD -->
+
+  <!-- BILLBOARD -->
+  <div class="card billboard-card" aria-label="MA3DTribe Billboard">
     <section class="billboard">
       <div class="bb-top">
         <h2 class="bb-title">Billboard</h2>
@@ -1283,58 +1283,7 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
       <div class="bb-dots" id="bbDots" aria-label="Billboard navigation dots"></div>
     </section>
   </div>
-    
-  </div>
 
-</div>
-
-<div class="watch-bottom">
-
-<div class="side-stack">  
-  <!-- CHAT -->
-  <div class="card" id="chat">
-  <h3>MA3D Lounge</h3>
-  <iframe
-    src="/chat-test.html"
-    loading="lazy"
-    scrolling="yes">
-  </iframe>
-</div>
-
-<div class="card" id="replayCard">
-  <a href="/replays.html" style="text-decoration:none;color:inherit;display:block;">
-    <img
-  src="/ads/ad22.webp?v=1"
-  alt="Show and Podcast Replay"
-  style="width:100%;border-radius:14px;display:block;"
-/>
-
-    <h3 style="margin:14px 0 6px;">
-     DJ Shows & Podcasts Replay
-    </h3>
-
-          </a>
-</div>
-
-</div>
-
-<!-- BILLBOARD -->
-
-  <!-- BILLBOARD -->
- 
-
-<div class="thumb-row">
-
-<div class="card">
-  <img
-    src="/ads/ad1.webp"
-    alt="Donate"
-    style="width:100%;border-radius:14px;display:block;"
-  />
-</div>  
-  
-</div>  
-  
   <!-- CALENDAR -->
   <div class="card" id="calendarCard">
     <h3>MA3DTribe Calendar</h3>
@@ -1345,7 +1294,6 @@ OneSignal.Notifications.addEventListener("permissionChange", function(permission
     </iframe>
   </div>
 
-  </div>  
 </section>    
       
       <!-- BILLBOARD (replaces HERO + Tonight’s energy) -->
