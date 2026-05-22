@@ -64,6 +64,29 @@ body{
   }
 }
 
+.mobile-only{
+  display:none;
+}
+
+.desktop-only{
+  display:block;
+}
+
+@media (max-width:980px){
+
+  .mobile-only{
+    display:flex !important;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+  }
+
+  .desktop-only{
+    display:none !important;
+  }
+
+}
+
 .card{
   background:var(--card);
   border:1px solid var(--border);
@@ -156,7 +179,7 @@ body{
     </p>
   </div>
 
-  <div class="grid">
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr;">
 
     <!-- ZELLE -->
     <div class="card">
@@ -181,32 +204,51 @@ body{
 
     </div>
 
-    <!-- VENMO -->
-    <div class="card qr-wrap">
+   <div class="card qr-wrap">
 
-      <h2>Venmo</h2>
+  <h2>Venmo</h2>
 
-      <p>
-        Scan with your phone camera or Venmo app.
-      </p>
+  <p class="desktop-only">
+    Scan with your phone camera or Venmo app.
+  </p>
 
-      <img
-        src="/images/venmo-qr.png"
-        alt="Venmo QR Code"
-      />
+  <img
+    class="desktop-only"
+    src="/images/venmo-qr.png"
+    alt="Venmo QR Code"
+  />
 
-    </div>
+  <a
+    class="copy-btn mobile-only"
+    href="https://venmo.com/"
+    target="_blank">
+    Open Venmo
+  </a>
 
-  </div>
+</div>
 
-  <!-- CASH APP -->
-  <div class="card coming" style="margin-top:22px; text-align:center;">
+<div class="card qr-wrap">
 
-    <h2>Cash App</h2>
+  <h2>Cash App</h2>
 
-    <p>
-      Cash App support option coming soon.
-    </p>
+  <p class="desktop-only">
+    Scan with your camera or Cash App.
+  </p>
+
+  <img
+    class="desktop-only"
+    src="/images/cashapp-qr.png"
+    alt="Cash App QR Code"
+  />
+
+  <a
+    class="copy-btn mobile-only"
+    href="https://cash.app/"
+    target="_blank">
+    Open Cash App
+  </a>
+
+</div>
 
   </div>
 
