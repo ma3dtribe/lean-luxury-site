@@ -2110,35 +2110,7 @@ window.addEventListener("focus", () => {
   refreshOnReturn();
 });
 
-  document.getElementById("mcBackground")?.addEventListener("click", async () => {
-  watchShell.style.display = "";
-  localStorage.setItem(AUDIO_STARTED_KEY, "1");
-  sessionStorage.setItem(AUDIO_STICKY_KEY, "1");
-  sessionStorage.setItem(AUDIO_STICKY_TS_KEY, String(Date.now()));
-
-  if (!streamLoaded) {
-    primeAudioOnly();
-    audioOnlyPlayer.style.display = "block";
-
-    try {
-      await audioOnlyPlayer.play();
-      streamLoaded = true;
-      manualBtn.style.display = "none";
-      watchShell.classList.add("collapsed-head");
-      startWebPresence();
-    } catch(e) {
-      console.error("Direct audio failed", e);
-      streamLoaded = false;
-      audioOnlyPlayer.style.display = "none";
-      audioOnlyPlayer.removeAttribute("src");
-      audioOnlyPlayer.load();
-    }
-  }
-
-  setTimeout(() => {
-    window.scrollTo(0, 0);
-  }, 300);
-});
+  
 
 document.getElementById("mcPlay")?.addEventListener("click", async () => {
 
@@ -2489,10 +2461,10 @@ if (currentSiteStatId) {
   <div>Audio Only</div>
 </button>
 
- <button class="mobile-control-btn" id="mcBackground" type="button">
+ <a class="mobile-control-btn" id="mcBackground" href="/donate.html">
   <div class="icon">💸</div>
   <div>Donate</div>
-</button>
+</a>
 
   <button class="mobile-control-btn" id="mcLive" type="button">
   <div class="icon">🔴</div>
