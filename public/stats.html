@@ -1046,31 +1046,96 @@ function renderDailyBar(web,audio,twitch){
 }
 
 function renderWeeklyPerformanceChart(web,audio,twitch,replay){
-  const map = buildSnapshotDailyMap(web,audio,twitch,replay);
+  const days = [];
 
-  const labels = Object.keys(map);
+  for(let i = 6; i >= 0; i--){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+
+    days.push({
+      label:d.toLocaleDateString("en-US",{
+        timeZone:"America/New_York",
+        month:"short",
+        day:"numeric"
+      }),
+      full:d.toLocaleDateString("en-US",{
+        timeZone:"America/New_York"
+      }),
+      webTotal:0,
+      webSamples:0,
+      webAvg:0,
+      audio:0,
+      twitchTotal:0,
+      twitchSamples:0,
+      twitchAvg:0,
+      replay:0
+    });
+  }
+
+  const findDay = dateStr => {
+    const full = new Date(dateStr).toLocaleDateString("en-US",{
+      timeZone:"America/New_York"
+    });
+
+    return days.find(d=>d.full === full);
+  };
+
+  web.forEach(x=>{
+    const day = findDay(x.created_at);
+    if(!day) return;
+
+    day.webTotal += Number(x.web_count || x.count || 0);
+    day.webSamples++;
+  });
+
+  audio.forEach(x=>{
+    const day = findDay(x.created_at);
+    if(!day) return;
+
+    day.audio++;
+  });
+
+  twitch.forEach(x=>{
+    const day = findDay(x.created_at);
+    if(!day) return;
+
+    day.twitchTotal += Number(x.viewers || x.viewer_count || 0);
+    day.twitchSamples++;
+  });
+
+  replay.forEach(x=>{
+    const day = findDay(x.created_at);
+    if(!day) return;
+
+    day.replay++;
+  });
+
+  days.forEach(day=>{
+    day.webAvg = day.webSamples ? Math.round(day.webTotal / day.webSamples) : 0;
+    day.twitchAvg = day.twitchSamples ? Math.round(day.twitchTotal / day.twitchSamples) : 0;
+  });
 
   makeChart("weeklyPerformanceChart","bar",{
-    labels,
+    labels:days.map(d=>d.label),
     datasets:[
       {
         label:"Website Avg",
-        data:labels.map(d=>map[d].webAvg),
+        data:days.map(d=>d.webAvg),
         backgroundColor:colors.site
       },
       {
         label:"Audio Plays",
-        data:labels.map(d=>map[d].audio),
+        data:days.map(d=>d.audio),
         backgroundColor:colors.audio
       },
       {
         label:"Twitch Avg",
-        data:labels.map(d=>map[d].twitchAvg),
+        data:days.map(d=>d.twitchAvg),
         backgroundColor:colors.twitch
       },
       {
         label:"Replay Plays",
-        data:labels.map(d=>map[d].replay),
+        data:days.map(d=>d.replay),
         backgroundColor:colors.replay
       }
     ]
@@ -1092,119 +1157,101 @@ function renderWeeklyPerformanceChart(web,audio,twitch,replay){
 }
 
 function renderYesterdayHourlyChart(web,audio,twitch,replay){
+
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const yDay = yesterday.toLocaleDateString("en-US",{
+  const targetDate = yesterday.toLocaleDateString("en-US",{
     timeZone:"America/New_York"
   });
 
-  const hourly = {};
+  const hours = [];
 
   for(let i=0;i<24;i++){
-    hourly[i] = {
-      web:0,
+    hours.push({
+      label:hourLabel(i),
+      webTotal:0,
       webSamples:0,
+      webAvg:0,
       audio:0,
-      twitch:0,
+      twitchTotal:0,
       twitchSamples:0,
+      twitchAvg:0,
       replay:0
-    };
+    });
   }
 
-  web.forEach(x=>{
-    const date = new Date(x.created_at).toLocaleDateString("en-US",{
+  const matchesYesterday = dateStr => {
+    return new Date(dateStr).toLocaleDateString("en-US",{
       timeZone:"America/New_York"
-    });
+    }) === targetDate;
+  };
 
-    if(date === yDay){
-      const h = hourNum(x.created_at);
-      hourly[h].web += Number(x.web_count || x.count || 0);
-      hourly[h].webSamples++;
-    }
+  web.forEach(x=>{
+    if(!matchesYesterday(x.created_at)) return;
+
+    const h = hourNum(x.created_at);
+
+    hours[h].webTotal += Number(x.web_count || x.count || 0);
+    hours[h].webSamples++;
   });
 
   audio.forEach(x=>{
-    const date = new Date(x.created_at).toLocaleDateString("en-US",{
-      timeZone:"America/New_York"
-    });
+    if(!matchesYesterday(x.created_at)) return;
 
-    if(date === yDay){
-      const h = hourNum(x.created_at);
-      hourly[h].audio++;
-    }
+    const h = hourNum(x.created_at);
+
+    hours[h].audio++;
   });
 
   twitch.forEach(x=>{
-    const date = new Date(x.created_at).toLocaleDateString("en-US",{
-      timeZone:"America/New_York"
-    });
+    if(!matchesYesterday(x.created_at)) return;
 
-    if(date === yDay){
-      const h = hourNum(x.created_at);
-      hourly[h].twitch += Number(x.viewers || x.viewer_count || 0);
-      hourly[h].twitchSamples++;
-    }
+    const h = hourNum(x.created_at);
+
+    hours[h].twitchTotal += Number(x.viewers || x.viewer_count || 0);
+    hours[h].twitchSamples++;
   });
 
   replay.forEach(x=>{
-    const date = new Date(x.created_at).toLocaleDateString("en-US",{
-      timeZone:"America/New_York"
-    });
+    if(!matchesYesterday(x.created_at)) return;
 
-    if(date === yDay){
-      const h = hourNum(x.created_at);
-      hourly[h].replay++;
-    }
+    const h = hourNum(x.created_at);
+
+    hours[h].replay++;
   });
 
-  const labels = [];
-  const webData = [];
-  const audioData = [];
-  const twitchData = [];
-  const replayData = [];
+  hours.forEach(h=>{
+    h.webAvg = h.webSamples
+      ? Math.round(h.webTotal / h.webSamples)
+      : 0;
 
-  for(let i=0;i<24;i++){
-    labels.push(hourLabel(i));
-
-    webData.push(
-      hourly[i].webSamples
-        ? Math.round(hourly[i].web / hourly[i].webSamples)
-        : 0
-    );
-
-    audioData.push(hourly[i].audio);
-
-    twitchData.push(
-      hourly[i].twitchSamples
-        ? Math.round(hourly[i].twitch / hourly[i].twitchSamples)
-        : 0
-    );
-
-    replayData.push(hourly[i].replay);
-  }
+    h.twitchAvg = h.twitchSamples
+      ? Math.round(h.twitchTotal / h.twitchSamples)
+      : 0;
+  });
 
   makeChart("yesterdayHourlyChart","bar",{
-    labels,
+    labels:hours.map(h=>h.label),
     datasets:[
       {
         label:"Website Avg",
-        data:webData,
+        data:hours.map(h=>h.webAvg),
         backgroundColor:colors.site
       },
       {
         label:"Audio Plays",
-        data:audioData,
+        data:hours.map(h=>h.audio),
         backgroundColor:colors.audio
       },
       {
         label:"Twitch Avg",
-        data:twitchData,
+        data:hours.map(h=>h.twitchAvg),
         backgroundColor:colors.twitch
       },
       {
         label:"Replay Plays",
-        data:replayData,
+        data:hours.map(h=>h.replay),
         backgroundColor:colors.replay
       }
     ]
@@ -1223,7 +1270,7 @@ function renderYesterdayHourlyChart(web,audio,twitch,replay){
       }
     }
   });
-}  
+} 
 
 function renderDailyReportTable(web,audio,twitch,replay){
   const map = buildSnapshotDailyMap(web,audio,twitch,replay);
