@@ -491,7 +491,7 @@ select{
     <div class="logo">MA3D<span>TRIBE</span></div>
     <nav class="nav">
       <a class="active" href="#">🏠 Overview</a>
-      <<a href="#">📈 Historical Trends</a>
+      <a href="#">📈 Historical Trends</a>
       <a href="#">👥 Audience</a>
       <a href="#">🌐 Website</a>
       <a href="#">🎧 Audio</a>
@@ -602,7 +602,25 @@ select{
   <div class="up" id="totalTimeOnSite">Total time: 0s</div>
 </div>      
     </section>
-        
+
+<section class="grid-main">
+  <div class="card">
+    <div class="card-head">
+      <h2>Daily Historical Report</h2>
+      <div class="muted">Day-by-day totals for the selected range</div>
+    </div>
+    <div id="dailyReportTable"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Twitch Data Health Check</h2>
+      <button onclick="pullTwitchStats()">🔁 Pull Twitch Stats</button>
+    </div>
+    <div id="twitchHealthBox"></div>
+  </div>
+</section>
+    
     <section class="grid-3">
       <div class="card">
         <h2>Top Performance Insights</h2><br>
