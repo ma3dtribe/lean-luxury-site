@@ -522,10 +522,9 @@ select{
       </div>
 
       <div class="top-actions">
-        <div class="live-pill"><span class="dot"></span> Live Now</div>
-        <div class="live-pill" id="clock">--:--</div>
-        <button class="primary" onclick="pullTwitchStats()">🔁 Pull Twitch Stats</button>
-      </div>
+  <div class="live-pill">📊 Historical View</div>
+  <div class="live-pill">Last 7 Days + Yesterday Breakdown</div>
+</div>
     </section>
 
     <section class="filters">
@@ -546,6 +545,32 @@ select{
       </div>
     </section>
 
+<section class="grid-2" style="margin-bottom:18px; grid-template-columns:1fr;">
+  <div class="card">
+    <div class="card-head">
+      <h2>Past 7 Days Performance</h2>
+      <div class="muted">Historical daily activity across all platforms</div>
+    </div>
+
+    <div class="chart-box" style="height:380px;">
+      <canvas id="weeklyPerformanceChart"></canvas>
+    </div>
+  </div>
+</section>
+
+<section class="grid-2" style="margin-bottom:18px; grid-template-columns:1fr;">
+  <div class="card">
+    <div class="card-head">
+      <h2>Yesterday Hourly Breakdown</h2>
+      <div class="muted">Hourly audience activity from the previous day</div>
+    </div>
+
+    <div class="chart-box" style="height:320px;">
+      <canvas id="yesterdayHourlyChart"></canvas>
+    </div>
+  </div>
+</section>
+    
     <section class="stat-grid">
       <div class="card stat-card orange-border">
         <div class="label">🌐 Website Visits</div>
@@ -661,57 +686,25 @@ select{
 
 </section>    
     <section class="grid-2">
-      <div class="card blue-border">
-        <div class="card-head">
-          <h2>Live Activity <span class="muted">(All Platforms)</span></h2>
-          <div class="live-pill"><span class="dot"></span> LIVE</div>
-        </div>
 
-        <div class="live-grid">
-          <div class="live-box">
-            <div class="label">Website Visitors</div>
-            <div class="live-num" id="liveSite">0</div>
-            <div class="muted">Online Now</div>
-          </div>
-          <div class="live-box">
-            <div class="label">Audio Listeners</div>
-            <div class="live-num" id="liveAudio">0</div>
-            <div class="muted">Listening Now</div>
-          </div>
-          <div class="live-box">
-            <div class="label">Twitch Viewers</div>
-            <div class="live-num" id="liveTwitch">0</div>
-            <div class="muted">Watching Now</div>
-          </div>
-        </div>
-      </div>
+  <div class="card">
+    <h2>Top Replay Shows</h2><br>
+    <div id="topReplays"></div>
+  </div>
 
-      <div class="card">
-        <div class="card-head">
-          <h2>Recent Activity Feed</h2>
-          <button onclick="renderActivityFeed()">View All</button>
-        </div>
-        <div class="feed" id="activityFeed"></div>
-      </div>
-    </section>
+  <div class="card">
+    <h2>Export / Report Tools</h2><br>
+    <button class="primary" onclick="exportCSV()">Export CSV</button>
+    <button onclick="toggleScreenshotMode()">Screenshot Mode</button>
+    <button onclick="alert('Monthly reports layout is ready. Automated report generation can be connected next.')">Monthly Reports</button>
+  </div>
 
-    <section class="grid-2">
-      <div class="card">
-        <h2>Top Replay Shows</h2><br>
-        <div id="topReplays"></div>
-      </div>
-
-      <div class="card">
-        <h2>Export / Report Tools</h2><br>
-        <button class="primary" onclick="exportCSV()">Export CSV</button>
-        <button onclick="toggleScreenshotMode()">Screenshot Mode</button>
-        <button onclick="alert('Monthly reports layout is ready. Automated report generation can be connected next.')">Monthly Reports</button>
-      </div>
-    </section>
-
+</section>
+          
+        
     <div class="footer-actions">
       <div id="lastUpdated">Last Updated: --</div>
-      <button class="primary" onclick="loadDashboardStats()">Refresh Dashboard Totals</button>
+      <button class="primary" onclick="loadDashboardStats()">Refresh Historical Report</button>
     </div>
 
     <p id="status" class="muted"></p>
@@ -747,19 +740,14 @@ const colors = {
   replay:"#0ea5e9"
 };
 
-function setClock(){
-  document.getElementById("clock").innerText =
-    new Date().toLocaleTimeString("en-US",{timeZone:"America/New_York"});
-}
-setInterval(setClock,1000);
-setClock();
 
 function setDashboardLabels(){
   const labels = document.querySelectorAll(".stat-card .label");
-  if(labels[0]) labels[0].innerText = "🌐 Website Viewers";
-  if(labels[1]) labels[1].innerText = "🎧 Audio Plays";
-  if(labels[2]) labels[2].innerText = "💜 Twitch Viewers";
+  if(labels[0]) labels[0].innerText = "🌐 Peak Website Audience";
+  if(labels[1]) labels[1].innerText = "🎧 Audio Sessions";
+  if(labels[2]) labels[2].innerText = "💜 Peak Twitch Audience";
   if(labels[3]) labels[3].innerText = "▶ Replay Plays";
+  if(labels[4]) labels[4].innerText = "📈 Best Historical Marker";
 }
 
 function apiUrl(table){
@@ -1097,6 +1085,185 @@ function renderDailyBar(web,audio,twitch){
   });
 }
 
+function renderWeeklyPerformanceChart(web,audio,twitch,replay){
+  const map = buildSnapshotDailyMap(web,audio,twitch,replay);
+
+  const labels = Object.keys(map);
+
+  makeChart("weeklyPerformanceChart","bar",{
+    labels,
+    datasets:[
+      {
+        label:"Website Avg",
+        data:labels.map(d=>map[d].webAvg),
+        backgroundColor:colors.site
+      },
+      {
+        label:"Audio Plays",
+        data:labels.map(d=>map[d].audio),
+        backgroundColor:colors.audio
+      },
+      {
+        label:"Twitch Avg",
+        data:labels.map(d=>map[d].twitchAvg),
+        backgroundColor:colors.twitch
+      },
+      {
+        label:"Replay Plays",
+        data:labels.map(d=>map[d].replay),
+        backgroundColor:colors.replay
+      }
+    ]
+  },{
+    scales:{
+      x:{
+        stacked:true,
+        ticks:{color:"#9ca3af"},
+        grid:{color:"rgba(255,255,255,.05)"}
+      },
+      y:{
+        stacked:true,
+        beginAtZero:true,
+        ticks:{color:"#9ca3af"},
+        grid:{color:"rgba(255,255,255,.08)"}
+      }
+    }
+  });
+}
+
+function renderYesterdayHourlyChart(web,audio,twitch,replay){
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const yDay = yesterday.toLocaleDateString("en-US",{
+    timeZone:"America/New_York"
+  });
+
+  const hourly = {};
+
+  for(let i=0;i<24;i++){
+    hourly[i] = {
+      web:0,
+      webSamples:0,
+      audio:0,
+      twitch:0,
+      twitchSamples:0,
+      replay:0
+    };
+  }
+
+  web.forEach(x=>{
+    const date = new Date(x.created_at).toLocaleDateString("en-US",{
+      timeZone:"America/New_York"
+    });
+
+    if(date === yDay){
+      const h = hourNum(x.created_at);
+      hourly[h].web += Number(x.web_count || x.count || 0);
+      hourly[h].webSamples++;
+    }
+  });
+
+  audio.forEach(x=>{
+    const date = new Date(x.created_at).toLocaleDateString("en-US",{
+      timeZone:"America/New_York"
+    });
+
+    if(date === yDay){
+      const h = hourNum(x.created_at);
+      hourly[h].audio++;
+    }
+  });
+
+  twitch.forEach(x=>{
+    const date = new Date(x.created_at).toLocaleDateString("en-US",{
+      timeZone:"America/New_York"
+    });
+
+    if(date === yDay){
+      const h = hourNum(x.created_at);
+      hourly[h].twitch += Number(x.viewers || x.viewer_count || 0);
+      hourly[h].twitchSamples++;
+    }
+  });
+
+  replay.forEach(x=>{
+    const date = new Date(x.created_at).toLocaleDateString("en-US",{
+      timeZone:"America/New_York"
+    });
+
+    if(date === yDay){
+      const h = hourNum(x.created_at);
+      hourly[h].replay++;
+    }
+  });
+
+  const labels = [];
+  const webData = [];
+  const audioData = [];
+  const twitchData = [];
+  const replayData = [];
+
+  for(let i=0;i<24;i++){
+    labels.push(hourLabel(i));
+
+    webData.push(
+      hourly[i].webSamples
+        ? Math.round(hourly[i].web / hourly[i].webSamples)
+        : 0
+    );
+
+    audioData.push(hourly[i].audio);
+
+    twitchData.push(
+      hourly[i].twitchSamples
+        ? Math.round(hourly[i].twitch / hourly[i].twitchSamples)
+        : 0
+    );
+
+    replayData.push(hourly[i].replay);
+  }
+
+  makeChart("yesterdayHourlyChart","bar",{
+    labels,
+    datasets:[
+      {
+        label:"Website Avg",
+        data:webData,
+        backgroundColor:colors.site
+      },
+      {
+        label:"Audio Plays",
+        data:audioData,
+        backgroundColor:colors.audio
+      },
+      {
+        label:"Twitch Avg",
+        data:twitchData,
+        backgroundColor:colors.twitch
+      },
+      {
+        label:"Replay Plays",
+        data:replayData,
+        backgroundColor:colors.replay
+      }
+    ]
+  },{
+    scales:{
+      x:{
+        stacked:true,
+        ticks:{color:"#9ca3af"},
+        grid:{color:"rgba(255,255,255,.05)"}
+      },
+      y:{
+        stacked:true,
+        beginAtZero:true,
+        ticks:{color:"#9ca3af"},
+        grid:{color:"rgba(255,255,255,.08)"}
+      }
+    }
+  });
+}  
 function renderReplayTrend(replay){
   const map = {};
   replay.forEach(x=>{
@@ -1379,14 +1546,16 @@ function renderDashboard(){
 
   updateRangeLabel();
 
-  const currentWeb = latestWebCount(web);
-  const currentTwitch = latestTwitchViewers(twitch);
-  const uniqueAudioTotal = uniqueRows(audio, "listener_id").length;
+  const peakWeb = peakWebCount(web);
+const avgWeb = avgWebCount(web);
+const peakTwitch = peakTwitchCount(twitch);
+const avgTwitch = avgTwitchCount(twitch);
+const uniqueAudioTotal = uniqueRows(audio, "listener_id").length;
 
-  document.getElementById("siteTotal").innerText = formatNum(currentWeb);
-  document.getElementById("audioTotal").innerText = formatNum(uniqueAudioTotal);
-  document.getElementById("twitchTotal").innerText = formatNum(currentTwitch);
-  document.getElementById("replayTotal").innerText = formatNum(replay.length);
+document.getElementById("siteTotal").innerText = formatNum(peakWeb);
+document.getElementById("audioTotal").innerText = formatNum(audio.length);
+document.getElementById("twitchTotal").innerText = formatNum(peakTwitch);
+document.getElementById("replayTotal").innerText = formatNum(replay.length);
 
   const prevWeb = previousRangeData(allWebSnapshots);
   const prevAudio = previousRangeData(allAudioData);
@@ -1394,18 +1563,18 @@ function renderDashboard(){
   const prevReplay = previousRangeData(allReplayData);
 
   document.getElementById("siteChange").innerText =
-    `Peak ${formatNum(peakWebCount(web))} · Avg ${formatNum(avgWebCount(web))}`;
+  `Average website audience: ${formatNum(avgWeb)}`;
 
-  document.getElementById("audioChange").innerText =
-    pctChange(uniqueAudioTotal, uniqueRows(prevAudio, "listener_id").length);
+document.getElementById("audioChange").innerText =
+  `Unique listeners: ${formatNum(uniqueAudioTotal)}`;
 
-  document.getElementById("twitchChange").innerText =
-    `Peak ${formatNum(peakTwitchCount(twitch))} · Avg ${formatNum(avgTwitchCount(twitch))}`;
+document.getElementById("twitchChange").innerText =
+  `Average Twitch audience: ${formatNum(avgTwitch)}`;
 
   document.getElementById("replayChange").innerText =
     pctChange(replay.length, prevReplay.length);
 
-  const audienceTotal = currentWeb + uniqueAudioTotal + currentTwitch + replay.length;
+  const audienceTotal = peakWeb + uniqueAudioTotal + peakTwitch + replay.length;
   document.getElementById("audienceTotal").innerText = formatNum(audienceTotal);
 
   document.getElementById("avgTimeOnSite").innerText =
@@ -1414,9 +1583,12 @@ function renderDashboard(){
   document.getElementById("totalTimeOnSite").innerText =
     `Peak web: ${formatNum(peakWebCount(web))}`;
 
-  renderTrafficChart(web,audio,twitch);
-  renderDailyBar(web,audio,twitch);
-  renderReplayTrend(replay);
+  renderWeeklyPerformanceChart(web,audio,twitch,replay);
+renderYesterdayHourlyChart(allWebSnapshots,allAudioData,allTwitchData,allReplayData);
+
+renderTrafficChart(web,audio,twitch);
+renderDailyBar(web,audio,twitch);
+renderReplayTrend(replay);
   renderGrowthChart(web,audio,twitch,replay);
   renderPlatformChart(web,audio,twitch,replay);
   const site = filterRange(allSiteData);
@@ -1429,10 +1601,9 @@ renderLocations(site);
 
   renderTopReplays(replay);
   renderActivityFeed();
-  updateLiveSection(audio,twitch);
-
   document.getElementById("lastUpdated").innerText =
-    "Last Updated: " + new Date().toLocaleString("en-US",{timeZone:"America/New_York"});
+  "Historical analytics updated: " +
+  new Date().toLocaleString("en-US",{timeZone:"America/New_York"});
 }
 
 async function loadDashboardStats(){
@@ -1524,17 +1695,10 @@ window.onload = () => {
   }
 
   loadDashboardStats();
-  startLivePresence();
+  // startLivePresence();();
 
-  setInterval(() => {
-    loadDashboardStats();
-  }, 120000);
-
-  setInterval(() => {
-    if(liveWebCount >= 0){
-      saveWebSnapshot(liveWebCount);
-    }
-  }, 120000);
+  // Historical dashboard: manual refresh only.
+// Auto-refresh disabled to keep the page focused on reports, not live monitoring.
 };
 </script>
 </body>
