@@ -2360,17 +2360,17 @@ setTimeout(() => {
 
 async function refreshTwitchViewerSnapshot(){
   try{
-    const response = await fetch(
-      "https://api.allorigins.win/raw?url=" +
-      encodeURIComponent(`https://decapi.me/twitch/viewercount/${CHANNEL}?redirect=false`),
-      { cache:"no-store" }
-    );
+    const response = await fetch("/.netlify/functions/twitch-stats", {
+      cache:"no-store"
+    });
 
-    const text = await response.text();
-    const count = Number(String(text || "").replace(/[^\d]/g, "") || 0);
+    const data = await response.json();
+    const count = Number(data.viewers || data.viewer_count || 0);
 
     ma3dLatestTwitchCount = count;
-    saveLiveHistoricalSnapshot("twitch-viewers");
+    saveLiveHistoricalSnapshot("twitch-viewers-netlify");
+
+    console.log("Twitch snapshot from Netlify:", count);
   }catch(e){
     console.warn("Twitch viewer snapshot failed", e);
   }
