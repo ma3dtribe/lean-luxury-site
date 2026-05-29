@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>MA3DTribe Replays</title>
+<title>MA3DTribe On Demand</title>
 
 <style>
 :root{
   --bg:#050505;
-  --card:#111;
-  --card2:#171717;
+  --card:#101010;
+  --card2:#151515;
   --line:rgba(255,255,255,.14);
   --text:#fff;
   --muted:rgba(255,255,255,.68);
   --red:#ff2d2d;
-  --red2:#980000;
+  --red2:#990000;
   --gold:#f4c15d;
 }
 
@@ -23,8 +23,8 @@
 body{
   margin:0;
   background:
-    radial-gradient(circle at top, rgba(255,45,45,.18), transparent 34%),
-    radial-gradient(circle at bottom right, rgba(244,193,93,.10), transparent 28%),
+    radial-gradient(circle at top left, rgba(255,45,45,.18), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(244,193,93,.08), transparent 28%),
     var(--bg);
   color:var(--text);
   font-family:Arial, Helvetica, sans-serif;
@@ -38,20 +38,29 @@ body{
 
 .hero{
   border:1px solid var(--line);
-  border-radius:24px;
-  padding:30px 22px;
+  border-radius:26px;
+  min-height:280px;
+  padding:34px 24px;
   background:
-    linear-gradient(135deg, rgba(5,5,5,.94), rgba(60,0,0,.72)),
+    linear-gradient(90deg, rgba(0,0,0,.96), rgba(40,0,0,.72), rgba(0,0,0,.55)),
     url("/images/ma3dtribebanner_cropped.png");
   background-size:cover;
   background-position:center;
 }
 
+.hero-kicker{
+  color:var(--red);
+  font-weight:900;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  font-size:13px;
+}
+
 .hero h1{
-  margin:0 0 10px;
-  font-size:clamp(42px,8vw,82px);
-  line-height:.92;
-  letter-spacing:-.05em;
+  margin:12px 0 12px;
+  font-size:clamp(46px,8vw,92px);
+  line-height:.9;
+  letter-spacing:-.06em;
 }
 
 .hero h1 span{
@@ -59,16 +68,37 @@ body{
 }
 
 .hero p{
-  margin:0;
+  margin:0 0 22px;
+  max-width:640px;
   color:var(--muted);
-  font-size:clamp(17px,3vw,23px);
+  font-size:clamp(18px,3vw,25px);
+}
+
+.hero-actions{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.hero-btn{
+  border:0;
+  border-radius:14px;
+  padding:13px 18px;
+  font-weight:900;
+  color:#fff;
+  background:linear-gradient(135deg,var(--red),var(--red2));
+}
+
+.hero-btn.gold{
+  background:var(--gold);
+  color:#090909;
 }
 
 .toolbar{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
-  margin:20px 0;
+  margin:22px 0 6px;
 }
 
 .search{
@@ -77,7 +107,7 @@ body{
   background:#101010;
   border:1px solid var(--line);
   color:#fff;
-  border-radius:14px;
+  border-radius:16px;
   padding:14px 16px;
   font-size:16px;
 }
@@ -94,20 +124,24 @@ body{
 
 .filter.active{
   background:linear-gradient(135deg,var(--red),var(--red2));
-  border-color:rgba(255,255,255,.24);
 }
 
 .section{
-  margin-top:30px;
+  margin-top:32px;
 }
 
 .section-head{
-  margin-bottom:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  gap:12px;
+  margin-bottom:14px;
 }
 
 .section h2{
   margin:0;
-  font-size:26px;
+  font-size:28px;
+  letter-spacing:-.03em;
 }
 
 .section small{
@@ -122,7 +156,7 @@ body{
 
 .card{
   border:1px solid var(--line);
-  background:linear-gradient(180deg,#151515,#0d0d0d);
+  background:linear-gradient(180deg,#171717,#0d0d0d);
   border-radius:20px;
   padding:14px;
   overflow:hidden;
@@ -148,8 +182,28 @@ body{
   font-size:14px;
 }
 
+.dj-card,
+.podcast-card{
+  min-height:190px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  background:
+    linear-gradient(0deg, rgba(0,0,0,.95), rgba(0,0,0,.20)),
+    radial-gradient(circle at top right, rgba(255,45,45,.24), transparent 46%),
+    #111;
+}
+
+.podcast-card{
+  background:
+    linear-gradient(0deg, rgba(0,0,0,.95), rgba(0,0,0,.20)),
+    radial-gradient(circle at top right, rgba(244,193,93,.22), transparent 46%),
+    #111;
+}
+
 .badge{
   display:inline-block;
+  width:max-content;
   margin-top:12px;
   background:linear-gradient(135deg,var(--red),var(--red2));
   color:white;
@@ -179,24 +233,6 @@ audio,video{
   margin-top:12px;
 }
 
-.featured{
-  display:grid;
-  grid-template-columns:minmax(240px,430px) 1fr;
-  gap:18px;
-  border:1px solid var(--line);
-  border-radius:22px;
-  padding:14px;
-  background:linear-gradient(135deg,rgba(255,45,45,.16),rgba(244,193,93,.08),#101010);
-}
-
-.featured img{
-  width:100%;
-  aspect-ratio:16/9;
-  object-fit:cover;
-  border-radius:15px;
-  background:#050505;
-}
-
 .empty,.loading{
   border:1px solid var(--line);
   background:#101010;
@@ -206,7 +242,7 @@ audio,video{
 }
 
 @media(max-width:800px){
-  .grid,.featured{
+  .grid{
     grid-template-columns:1fr;
   }
 
@@ -216,6 +252,17 @@ audio,video{
 
   .hero{
     border-radius:22px;
+    min-height:250px;
+  }
+
+  .section h2{
+    font-size:25px;
+  }
+}
+
+@media(min-width:801px) and (max-width:1050px){
+  .grid{
+    grid-template-columns:repeat(2,1fr);
   }
 }
 </style>
@@ -225,12 +272,19 @@ audio,video{
 <div class="page">
 
   <section class="hero">
-    <h1>MA3DTribe <span>Replays</span></h1>
-    <p>Replay past shows below.</p>
+    <div class="hero-kicker">MA3DTribe Radio</div>
+    <h1>ON <span>DEMAND</span></h1>
+    <p>Replay DJ shows, exclusive mixes, podcasts and MA3DTribe conversations.</p>
+    <div class="hero-actions">
+      <button class="hero-btn" data-filter="all">All Replays</button>
+      <button class="hero-btn" data-filter="vibes">Vibes District</button>
+      <button class="hero-btn" data-filter="cutting">Cutting Room</button>
+      <button class="hero-btn gold" data-scroll="podcasts">Podcasts</button>
+    </div>
   </section>
 
   <div class="toolbar">
-    <input id="searchInput" class="search" type="search" placeholder="Search replays..." />
+    <input id="searchInput" class="search" type="search" placeholder="Search shows, DJs, podcasts..." />
     <button class="filter active" data-filter="all">All</button>
     <button class="filter" data-filter="vibes">Vibes District</button>
     <button class="filter" data-filter="cutting">Cutting Room</button>
@@ -239,32 +293,88 @@ audio,video{
 
   <section class="section">
     <div class="section-head">
-      <h2>Featured Replay</h2>
-      <small>Latest loaded show</small>
+      <div>
+        <h2>DJ Shows</h2>
+        <small>Browse by show</small>
+      </div>
     </div>
-    <div id="featuredReplay" class="loading">Loading featured replay...</div>
+
+    <div class="grid">
+      <div class="card dj-card">
+        <span class="badge">DJ Show</span>
+        <h3>DW40</h3>
+        <p>Vibes District</p>
+      </div>
+
+      <div class="card dj-card">
+        <span class="badge">DJ Show</span>
+        <h3>DJ Sakir</h3>
+        <p>The Cutting Room</p>
+      </div>
+
+      <div class="card dj-card">
+        <span class="badge">Coming Soon</span>
+        <h3>Guest DJs</h3>
+        <p>More live mixes and sets coming soon.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="podcasts">
+    <div class="section-head">
+      <div>
+        <h2>Podcasts</h2>
+        <small>Coming soon</small>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card podcast-card">
+        <span class="badge gold">Podcast</span>
+        <h3>South Florida Sports</h3>
+        <p>Sports stories, interviews and local legends coming soon.</p>
+      </div>
+
+      <div class="card podcast-card">
+        <span class="badge gold">Podcast</span>
+        <h3>Artist Interviews</h3>
+        <p>Music conversations and behind-the-scenes stories coming soon.</p>
+      </div>
+
+      <div class="card podcast-card">
+        <span class="badge gold">Podcast</span>
+        <h3>Community Voices</h3>
+        <p>MA3DTribe culture and conversations coming soon.</p>
+      </div>
+    </div>
   </section>
 
   <section class="section">
     <div class="section-head">
-      <h2>DW40 — Vibes District</h2>
-      <small>Replay archive</small>
+      <div>
+        <h2>DW40 — Vibes District</h2>
+        <small>Replay archive</small>
+      </div>
     </div>
     <div id="vibesList" class="grid"></div>
   </section>
 
   <section class="section">
     <div class="section-head">
-      <h2>DJ Sakir — The Cutting Room</h2>
-      <small>Replay archive</small>
+      <div>
+        <h2>DJ Sakir — The Cutting Room</h2>
+        <small>Replay archive</small>
+      </div>
     </div>
     <div id="cuttingList" class="grid"></div>
   </section>
 
   <section class="section">
     <div class="section-head">
-      <h2>All Replays</h2>
-      <small>Everything currently loaded</small>
+      <div>
+        <h2>Latest Uploads</h2>
+        <small>Everything currently loaded</small>
+      </div>
     </div>
     <div id="replayList" class="grid">
       <div class="loading">Loading replays...</div>
@@ -282,7 +392,6 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const replayList = document.getElementById("replayList");
 const vibesList = document.getElementById("vibesList");
 const cuttingList = document.getElementById("cuttingList");
-const featuredReplay = document.getElementById("featuredReplay");
 const searchInput = document.getElementById("searchInput");
 
 let allShows = [];
@@ -381,32 +490,6 @@ function card(show){
   `;
 }
 
-function featured(show){
-  if(!show){
-    return `<div class="empty">No replays available yet.</div>`;
-  }
-
-  const title = clean(show.title || "MA3DTribe Replay");
-  const date = clean(show.show_date || "");
-  const thumb = show.thumbnail_url ? clean(show.thumbnail_url) : "/images/ma3dtribebanner_cropped.png";
-  const plays = Number(show.replay_count || 0);
-
-  return `
-    <div class="featured">
-      <img src="${thumb}" alt="${title}">
-      <div>
-        <span class="badge">Featured Replay</span>
-        <h2>${title}</h2>
-        <p style="color:var(--muted);">${date}</p>
-        <div class="meta">
-          <span>▶️ ${plays} replays</span>
-        </div>
-        ${media(show)}
-      </div>
-    </div>
-  `;
-}
-
 function attachTracking(){
   document.querySelectorAll("[data-replay-id]").forEach(player => {
     player.addEventListener("play", () => {
@@ -436,8 +519,6 @@ function render(){
   const vibes = allShows.filter(show => showKey(show) === "vibes");
   const cutting = allShows.filter(show => showKey(show) === "cutting");
 
-  featuredReplay.innerHTML = featured(allShows[0]);
-
   replayList.innerHTML = filtered.length
     ? filtered.map(card).join("")
     : `<div class="empty">No replays match this search.</div>`;
@@ -462,13 +543,11 @@ async function loadReplays(){
   if(error){
     console.log(error);
     replayList.innerHTML = `<div class="empty">${clean(error.message || JSON.stringify(error))}</div>`;
-    featuredReplay.innerHTML = `<div class="empty">Could not load featured replay.</div>`;
     return;
   }
 
   if(!data || data.length === 0){
     replayList.innerHTML = `<div class="empty">No replays available yet.</div>`;
-    featuredReplay.innerHTML = `<div class="empty">No featured replay available yet.</div>`;
     return;
   }
 
@@ -489,6 +568,20 @@ document.querySelectorAll("[data-filter]").forEach(btn => {
     });
 
     render();
+
+    document.getElementById("replayList")?.scrollIntoView({
+      behavior:"smooth",
+      block:"start"
+    });
+  });
+});
+
+document.querySelectorAll("[data-scroll]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const target = document.getElementById(btn.dataset.scroll);
+    if(target){
+      target.scrollIntoView({ behavior:"smooth", block:"start" });
+    }
   });
 });
 
@@ -497,7 +590,6 @@ searchInput.addEventListener("input", render);
 loadReplays().catch(error => {
   console.log(error);
   replayList.innerHTML = `<div class="empty">${clean(error.message || JSON.stringify(error))}</div>`;
-  featuredReplay.innerHTML = `<div class="empty">${clean(error.message || JSON.stringify(error))}</div>`;
 });
 </script>
 </body>
