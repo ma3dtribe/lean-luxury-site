@@ -1063,8 +1063,10 @@ transform: translateX(-50%);
 .msg.stickerMsg video,
 .msg img,
 .msg video{
-  max-width:150px !important;
-  width:auto !important;
+  max-width:105px !important;
+  width:105px !important;
+  height:105px !important;
+  object-fit:contain !important;
   border-radius:10px !important;
 }
 
@@ -1238,7 +1240,7 @@ let latestViewerRows = [];
     let loadingOlderMessages = false; 
 const MOBILE_CHAT_LIMIT = 35;
 const DESKTOP_CHAT_LIMIT = 60;
-const INLINE_STICKER_SIZE = window.innerWidth <= 520 ? 150 : 145;
+const INLINE_STICKER_SIZE = window.innerWidth <= 520 ? 105 : 145;
 const INLINE_GIF_SIZE = window.innerWidth <= 520 ? 150 : 240;      
     /* =========================
        ELEMENTS
