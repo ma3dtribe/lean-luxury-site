@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>MA3DTribe On Demand</title>
+<title>MA3DTribe Replays</title>
 
 <style>
 :root{
   --bg:#050505;
-  --card:#101010;
-  --card2:#151515;
-  --line:rgba(255,255,255,.12);
-  --text:#ffffff;
+  --card:#111;
+  --card2:#171717;
+  --line:rgba(255,255,255,.14);
+  --text:#fff;
   --muted:rgba(255,255,255,.68);
-  --teal:#18e4df;
-  --orange:#ff8a1d;
-  --red:#ff3131;
+  --red:#ff2d2d;
+  --red2:#b90000;
+  --gold:#f4c15d;
 }
 
 *{box-sizing:border-box;}
@@ -23,8 +23,7 @@
 body{
   margin:0;
   background:
-    radial-gradient(circle at top right, rgba(24,228,223,.12), transparent 34%),
-    radial-gradient(circle at 20% 30%, rgba(255,138,29,.10), transparent 28%),
+    radial-gradient(circle at top, rgba(255,45,45,.18), transparent 32%),
     var(--bg);
   color:var(--text);
   font-family:Arial, Helvetica, sans-serif;
@@ -32,9 +31,443 @@ body{
 
 .page{
   max-width:1180px;
-  margin:0 auto;
-  padding:22px 16px 90px;
+  margin:auto;
+  padding:22px 14px 90px;
 }
+
+.hero{
+  border:1px solid var(--line);
+  border-radius:24px;
+  padding:30px 22px;
+  background:
+    linear-gradient(135deg, rgba(5,5,5,.95), rgba(40,0,0,.68)),
+    url("/images/ma3dtribebanner_cropped.png");
+  background-size:cover;
+  background-position:center;
+}
+
+.hero h1{
+  margin:0 0 10px;
+  font-size:clamp(42px,8vw,82px);
+  line-height:.92;
+  letter-spacing:-.05em;
+}
+
+.hero h1 span{color:var(--red);}
+
+.hero p{
+  margin:0;
+  color:var(--muted);
+  font-size:clamp(17px,3vw,23px);
+}
+
+.toolbar{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:20px 0;
+}
+
+.search{
+  flex:1;
+  min-width:230px;
+  background:#101010;
+  border:1px solid var(--line);
+  color:#fff;
+  border-radius:14px;
+  padding:14px 16px;
+  font-size:16px;
+}
+
+.filter{
+  border:1px solid var(--line);
+  background:#121212;
+  color:white;
+  border-radius:999px;
+  padding:11px 14px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.filter.active{
+  background:linear-gradient(135deg,var(--red),var(--red2));
+  border-color:rgba(255,255,255,.22);
+}
+
+.section{margin-top:30px;}
+
+.section-head{
+  margin-bottom:12px;
+}
+
+.section h2{
+  margin:0;
+  font-size:26px;
+}
+
+.section small{
+  color:var(--muted);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+}
+
+.card{
+  border:1px solid var(--line);
+  background:linear-gradient(180deg,#151515,#0d0d0d);
+  border-radius:20px;
+  padding:14px;
+  overflow:hidden;
+}
+
+.card img{
+  width:100%;
+  aspect-ratio:16/9;
+  object-fit:cover;
+  border-radius:15px;
+  background:#050505;
+}
+
+.card h3{
+  margin:12px 0 6px;
+  font-size:22px;
+  line-height:1.08;
+}
+
+.card p{
+  margin:0;
+  color:var(--muted);
+  font-size:14px;
+}
+
+.badge{
+  display:inline-block;
+  margin-top:12px;
+  background:var(--red);
+  color:white;
+  font-size:11px;
+  font-weight:900;
+  padding:6px 9px;
+  border-radius:999px;
+  text-transform:uppercase;
+}
+
+.meta{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  color:var(--muted);
+  font-size:14px;
+  margin-top:10px;
+}
+
+audio,video{
+  width:100%;
+  margin-top:12px;
+}
+
+.featured{
+  display:grid;
+  grid-template-columns:minmax(240px,430px) 1fr;
+  gap:18px;
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:14px;
+  background:linear-gradient(135deg,rgba(255,45,45,.16),#101010);
+}
+
+.empty,.loading{
+  border:1px solid var(--line);
+  background:#101010;
+  color:var(--muted);
+  border-radius:16px;
+  padding:18px;
+}
+
+@media(max-width:800px){
+  .grid,.featured{
+    grid-template-columns:1fr;
+  }
+
+  .page{
+    padding:16px 12px 90px;
+  }
+
+  .hero{
+    border-radius:22px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="page">
+
+  <section class="hero">
+    <h1>MA3DTribe <span>Replays</span></h1>
+    <p>Replay past shows below.</p>
+  </section>
+
+  <div class="toolbar">
+    <input id="searchInput" class="search" type="search" placeholder="Search replays..." />
+    <button class="filter active" data-filter="all">All</button>
+    <button class="filter" data-filter="vibes">Vibes District</button>
+    <button class="filter" data-filter="cutting">Cutting Room</button>
+  </div>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>Featured Replay</h2>
+      <small>Latest loaded show</small>
+    </div>
+    <div id="featuredReplay" class="loading">Loading featured replay...</div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>DW40 — Vibes District</h2>
+      <small>Replay archive</small>
+    </div>
+    <div id="vibesList" class="grid"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>DJ Sakir — The Cutting Room</h2>
+      <small>Replay archive</small>
+    </div>
+    <div id="cuttingList" class="grid"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>All Replays</h2>
+      <small>Everything currently loaded</small>
+    </div>
+    <div id="replayList" class="grid">
+      <div class="loading">Loading replays...</div>
+    </div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+
+<script>
+const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
+</script>
+
+<script>
+const replayList = document.getElementById("replayList");
+const vibesList = document.getElementById("vibesList");
+const cuttingList = document.getElementById("cuttingList");
+const featuredReplay = document.getElementById("featuredReplay");
+const searchInput = document.getElementById("searchInput");
+
+let allShows = [];
+let activeFilter = "all";
+
+if (!window.supabase) {
+  replayList.innerHTML = `<div class="empty">Supabase library did not load.</div>`;
+  throw new Error("Supabase library did not load");
+}
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function clean(v){
+  return String(v ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function showKey(show){
+  const title = String(show.title || "").toLowerCase();
+
+  if(title.includes("cutting") || title.includes("sakir")) return "cutting";
+  if(title.includes("vibes") || title.includes("dw40")) return "vibes";
+
+  return "other";
+}
+
+async function trackReplayView(show){
+  try{
+    await supabase.from("replay_views").insert({
+      replay_id:String(show.id),
+      replay_title:show.title || "",
+      user_agent:navigator.userAgent
+    });
+  }catch(e){
+    console.log(e);
+  }
+}
+
+async function getReplayCount(show){
+  const { count } = await supabase
+    .from("replay_views")
+    .select("*", { count:"exact", head:true })
+    .eq("replay_id", String(show.id));
+
+  return count || 0;
+}
+
+function media(show){
+  const src = clean(show.file_path || "");
+  if(!src) return `<p class="empty">Media file missing.</p>`;
+
+  if(String(show.type || "").toLowerCase() === "video"){
+    return `<video controls data-replay-id="${clean(show.id)}" src="${src}"></video>`;
+  }
+
+  return `<audio controls data-replay-id="${clean(show.id)}" src="${src}"></audio>`;
+}
+
+function card(show){
+  const title = clean(show.title || "MA3DTribe Replay");
+  const date = clean(show.show_date || "");
+  const thumb = show.thumbnail_url ? clean(show.thumbnail_url) : "/images/ma3dtribebanner_cropped.png";
+  const plays = Number(show.replay_count || 0);
+  const key = showKey(show);
+
+  return `
+    <article class="card" data-key="${key}" data-search="${clean((title + " " + date).toLowerCase())}">
+      <img src="${thumb}" alt="${title}" loading="lazy">
+      <span class="badge">${key === "cutting" ? "Cutting Room" : key === "vibes" ? "Vibes District" : "Replay"}</span>
+      <h3>${title}</h3>
+      <p>${date}</p>
+      <div class="meta">
+        <span>▶️ ${plays} replays</span>
+      </div>
+      ${media(show)}
+    </article>
+  `;
+}
+
+function featured(show){
+  if(!show){
+    return `<div class="empty">No replays available yet.</div>`;
+  }
+
+  const title = clean(show.title || "MA3DTribe Replay");
+  const date = clean(show.show_date || "");
+  const thumb = show.thumbnail_url ? clean(show.thumbnail_url) : "/images/ma3dtribebanner_cropped.png";
+  const plays = Number(show.replay_count || 0);
+
+  return `
+    <div class="featured">
+      <img src="${thumb}" alt="${title}">
+      <div>
+        <span class="badge">Featured Replay</span>
+        <h2>${title}</h2>
+        <p style="color:var(--muted);">${date}</p>
+        <div class="meta">
+          <span>▶️ ${plays} replays</span>
+        </div>
+        ${media(show)}
+      </div>
+    </div>
+  `;
+}
+
+function attachTracking(){
+  document.querySelectorAll("[data-replay-id]").forEach(player => {
+    player.addEventListener("play", () => {
+      const show = allShows.find(s => String(s.id) === String(player.dataset.replayId));
+
+      if(show && !player.dataset.tracked){
+        player.dataset.tracked = "true";
+        trackReplayView(show);
+      }
+    });
+  });
+}
+
+function render(){
+  const term = searchInput.value.trim().toLowerCase();
+
+  const filtered = allShows.filter(show => {
+    const key = showKey(show);
+    const text = `${show.title || ""} ${show.show_date || ""}`.toLowerCase();
+
+    const filterMatch = activeFilter === "all" || key === activeFilter;
+    const searchMatch = !term || text.includes(term);
+
+    return filterMatch && searchMatch;
+  });
+
+  const vibes = allShows.filter(show => showKey(show) === "vibes");
+  const cutting = allShows.filter(show => showKey(show) === "cutting");
+
+  featuredReplay.innerHTML = featured(allShows[0]);
+
+  replayList.innerHTML = filtered.length
+    ? filtered.map(card).join("")
+    : `<div class="empty">No replays match this search.</div>`;
+
+  vibesList.innerHTML = vibes.length
+    ? vibes.map(card).join("")
+    : `<div class="empty">No Vibes District replays found.</div>`;
+
+  cuttingList.innerHTML = cutting.length
+    ? cutting.map(card).join("")
+    : `<div class="empty">No Cutting Room replays found.</div>`;
+
+  attachTracking();
+}
+
+async function loadReplays(){
+  const { data, error } = await supabase
+    .from("shows")
+    .select("*")
+    .order("id", { ascending:false });
+
+  if(error){
+    console.log(error);
+    replayList.innerHTML = `<div class="empty">${clean(error.message || JSON.stringify(error))}</div>`;
+    return;
+  }
+
+  if(!data || data.length === 0){
+    replayList.innerHTML = `<div class="empty">No replays available yet.</div>`;
+    featuredReplay.innerHTML = `<div class="empty">No featured replay available yet.</div>`;
+    return;
+  }
+
+  allShows = await Promise.all(data.map(async show => {
+    const replay_count = await getReplayCount(show);
+    return { ...show, replay_count };
+  }));
+
+  render();
+}
+
+document.querySelectorAll("[data-filter]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    activeFilter = btn.dataset.filter;
+
+    document.querySelectorAll(".filter").forEach(b => {
+      b.classList.toggle("active", b.dataset.filter === activeFilter);
+    });
+
+    render();
+  });
+});
+
+searchInput.addEventListener("input", render);
+
+loadReplays().catch(error => {
+  console.log(error);
+  replayList.innerHTML = `<div class="empty">${clean(error.message || JSON.stringify(error))}</div>`;
+});
+</script>
+</body>
+</html>}
 
 .hero{
   border:1px solid var(--line);
