@@ -352,26 +352,6 @@ audio,video{
   <section class="section">
     <div class="section-head">
       <div>
-        <h2>DW40 — Vibes District</h2>
-        <small>Replay archive</small>
-      </div>
-    </div>
-    <div id="vibesList" class="grid"></div>
-  </section>
-
-  <section class="section">
-    <div class="section-head">
-      <div>
-        <h2>DJ Sakir — The Cutting Room</h2>
-        <small>Replay archive</small>
-      </div>
-    </div>
-    <div id="cuttingList" class="grid"></div>
-  </section>
-
-  <section class="section">
-    <div class="section-head">
-      <div>
         <h2>Latest Uploads</h2>
         <small>Everything currently loaded</small>
       </div>
@@ -390,8 +370,6 @@ const SUPABASE_URL = "https://tgqfplueqjhsywkcjaal.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncWZwbHVlcWpoc3l3a2NqYWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5ODQ2NTAsImV4cCI6MjA4NTU2MDY1MH0.hBGfeviPVBmhtFBsn3B0GRSC_JXU6qxC3qmW-mbb9-o";
 
 const replayList = document.getElementById("replayList");
-const vibesList = document.getElementById("vibesList");
-const cuttingList = document.getElementById("cuttingList");
 const searchInput = document.getElementById("searchInput");
 
 let allShows = [];
@@ -472,13 +450,13 @@ function media(show){
 function card(show){
   const title = clean(show.title || "MA3DTribe Replay");
   const date = clean(show.show_date || "");
-  const thumb = show.thumbnail_url ? clean(show.thumbnail_url) : "/images/ma3dtribebanner_cropped.png";
+  const thumb = show.thumbnail_url || show.thumbnail || show.image_url || show.cover_url || "/images/ma3dtribebanner_cropped.png";
   const plays = Number(show.replay_count || 0);
   const key = showKey(show);
 
   return `
     <article class="card" data-key="${key}">
-      <img src="${thumb}" alt="${title}" loading="lazy">
+      <img src="${clean(thumb)}" alt="${title}" loading="lazy">
       <span class="badge ${key === "other" ? "gold" : ""}">${badgeText(show)}</span>
       <h3>${title}</h3>
       <p>${date}</p>
@@ -516,20 +494,9 @@ function render(){
     return filterMatch && searchMatch;
   });
 
-  const vibes = allShows.filter(show => showKey(show) === "vibes");
-  const cutting = allShows.filter(show => showKey(show) === "cutting");
-
   replayList.innerHTML = filtered.length
     ? filtered.map(card).join("")
     : `<div class="empty">No replays match this search.</div>`;
-
-  vibesList.innerHTML = vibes.length
-    ? vibes.map(card).join("")
-    : `<div class="empty">No Vibes District replays found.</div>`;
-
-  cuttingList.innerHTML = cutting.length
-    ? cutting.map(card).join("")
-    : `<div class="empty">No Cutting Room replays found.</div>`;
 
   attachTracking();
 }
