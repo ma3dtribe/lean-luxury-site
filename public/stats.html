@@ -729,7 +729,9 @@ function setDashboardLabels(){
 }
 
 function apiUrl(table){
-  return `${SUPABASE_URL}/rest/v1/${table}?select=*&order=created_at.desc&limit=10000`;
+  const {start,end} = getRangeDates();
+
+  return `${SUPABASE_URL}/rest/v1/${table}?select=*&created_at=gte.${start.toISOString()}&created_at=lte.${end.toISOString()}&order=created_at.asc&limit=50000`;
 }
 
 async function fetchTable(table){
