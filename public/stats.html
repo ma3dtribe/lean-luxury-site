@@ -1551,7 +1551,8 @@ function renderHourly(web,audio,twitch,replay){
     `;
   });
 
-  document.getElementById("hourlyBox").innerHTML = html;
+  const hourlyBox = document.getElementById("hourlyBox");
+if(hourlyBox) hourlyBox.innerHTML = html;
   return {bestHour,bestTotal};
 }
 
@@ -1584,7 +1585,7 @@ function getTopReplayName(replay){
 
   const map = {};
   replay.forEach(x=>{
-    const name = x.show_title || x.title || x.replay_title || x.show || "Replay";
+    const name = x.show_title || x.title || x.replay_title || x.show_name || x.show || x.file_name || x.replay_id || "Replay";
     map[name] = (map[name] || 0) + 1;
   });
 
@@ -1599,7 +1600,7 @@ function renderTopReplays(replay){
 
   const map = {};
   replay.forEach(x=>{
-    const name = x.show_title || x.title || x.replay_title || x.show || "Replay";
+    const name = x.show_title || x.title || x.replay_title || x.show_name || x.show || x.file_name || x.replay_id || "Replay";
     map[name] = (map[name] || 0) + 1;
   });
 
@@ -1695,8 +1696,9 @@ allSiteData = await fetchTable("site_stats");
 allAudioData = await fetchTable("audio_stats");
   allTwitchData = await fetchTable("twitch_stats");
 
-  allReplayData = await fetchTable("replay_stats");
-  if(!allReplayData.length) allReplayData = await fetchTable("replay_plays");
+  allReplayData = await fetchTable("replay_views");
+if(!allReplayData.length) allReplayData = await fetchTable("replay_stats");
+if(!allReplayData.length) allReplayData = await fetchTable("replay_plays");
 
   allActivityData = await fetchTable("activity_feed");
   if(!allActivityData.length) allActivityData = await fetchTable("activity_events");
