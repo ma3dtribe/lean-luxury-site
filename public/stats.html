@@ -1611,8 +1611,8 @@ function renderTopReplays(replay){
   const max = Math.max(...rows.map(r=>r[1]));
 
   document.getElementById("topReplays").innerHTML = rows.map(([name,count])=>`
-    <div class="hour-row">
-      <div style="width:160px">${name}</div>
+    <div class="hour-row" style="grid-template-columns:220px 1fr 35px;">
+      <div style="width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div>
       <div class="track"><div class="fill" style="width:${(count/max)*100}%"></div></div>
       <div>${count}</div>
     </div>
