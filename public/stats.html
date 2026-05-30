@@ -1676,7 +1676,9 @@ renderTwitchHealthCheck(twitch);
 
   renderGrowthChart(web,audio,twitch,replay);
   renderPlatformChart(web,audio,twitch,replay);
-  const site = filterRange(allSiteData);
+  const site = allSiteData.filter(x =>
+  x.device_type || x.city || x.region || x.country
+);
 
 renderDeviceChart(site);
 renderLocations(site);
@@ -1693,16 +1695,12 @@ renderLocations(site);
 async function loadDashboardStats(){
   allWebSnapshots = await fetchTable("web_count_snapshots");
 allSiteData = await fetchTable("site_stats");
-  console.log("SITE DATA", allSiteData[0]);
-  allAudioData = await fetchTable("audio_stats");
+    allAudioData = await fetchTable("audio_stats");
   allTwitchData = await fetchTable("twitch_stats");
 
   allReplayData = await fetchTable("replay_views");
 if(!allReplayData.length) allReplayData = await fetchTable("replay_stats");
 if(!allReplayData.length) allReplayData = await fetchTable("replay_plays");
-
-  allActivityData = await fetchTable("activity_feed");
-  if(!allActivityData.length) allActivityData = await fetchTable("activity_events");
 
   renderDashboard();
 }
