@@ -1464,8 +1464,8 @@ function renderLocations(site){
   const map = {};
 
   site.forEach(x=>{
-    const city = x.gps_city || x.city || "Unknown";
-    const region = x.gps_region || x.region || "";
+    const city = x.city || x.city || "Unknown";
+    const region = x.region || x.region || "";
     const label = `${city}${region ? ", " + region : ""}`;
 
     map[label] = (map[label] || 0) + 1;
@@ -1693,7 +1693,8 @@ renderLocations(site);
 async function loadDashboardStats(){
   allWebSnapshots = await fetchTable("web_count_snapshots");
 allSiteData = await fetchTable("site_stats");
-allAudioData = await fetchTable("audio_stats");
+  console.log("SITE DATA", allSiteData[0]);
+  allAudioData = await fetchTable("audio_stats");
   allTwitchData = await fetchTable("twitch_stats");
 
   allReplayData = await fetchTable("replay_views");
