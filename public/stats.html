@@ -809,16 +809,19 @@ function setRange(range, btn){
 }
 
 function getRangeDates(){
-  const end = new Date();
+  let end = new Date();
   let start = new Date();
 
   if(activeRange === "today"){
     start.setHours(0,0,0,0);
+    end.setHours(23,59,59,999);
   }else if(activeRange === "custom" && customStart && customEnd){
     start = new Date(customStart + "T00:00:00");
-    end.setTime(new Date(customEnd + "T23:59:59").getTime());
+    end = new Date(customEnd + "T23:59:59");
   }else{
     start.setDate(start.getDate() - Number(activeRange || 7));
+    start.setHours(0,0,0,0);
+    end.setHours(23,59,59,999);
   }
 
   return {start,end};
