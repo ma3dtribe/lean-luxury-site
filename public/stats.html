@@ -729,26 +729,27 @@ function setDashboardLabels(){
 }
 
 function apiUrl(table){
-  return `${SUPABASE_URL}/rest/v1/${table}?select=*&order=created_at.desc&limit=100000`;
+  return `${SUPABASE_URL}/rest/v1/${table}?select=*&order=created_at.asc`;
 }
 
 async function fetchTable(table){
-  const pageSize = 10000;
-  let offset = 0;
+  const pageSize = 1000;
+  let from = 0;
   let rows = [];
 
   try{
+
     while(true){
 
-      const response = await fetch(
-        `${apiUrl(table)}&offset=${offset}`,
-        {
-          headers:{
-            apikey:SUPABASE_KEY,
-            Authorization:`Bearer ${SUPABASE_KEY}`
-          }
+      const to = from + pageSize - 1;
+
+      const response = await fetch(apiUrl(table), {
+        headers:{
+          apikey:SUPABASE_KEY,
+          Authorization:`Bearer ${SUPABASE_KEY}`,
+          Range:`${from}-${to}`
         }
-      );
+      });
 
       if(!response.ok) break;
 
@@ -760,7 +761,7 @@ async function fetchTable(table){
 
       if(data.length < pageSize) break;
 
-      offset += pageSize;
+      from += pageSize;
     }
 
     return rows;
