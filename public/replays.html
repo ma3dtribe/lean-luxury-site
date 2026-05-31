@@ -184,7 +184,7 @@ body{
 
 .dj-card,
 .podcast-card{
-  min-height:190px;
+  min-height:120px;
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
@@ -286,9 +286,10 @@ audio,video{
   <div class="toolbar">
     <input id="searchInput" class="search" type="search" placeholder="Search shows, DJs, podcasts..." />
     <button class="filter active" data-filter="all">All</button>
-    <button class="filter" data-filter="vibes">Vibes District</button>
-    <button class="filter" data-filter="cutting">Cutting Room</button>
-    <button class="filter" data-filter="other">Other</button>
+<button class="filter" data-filter="cutting">Cutting Room</button>    
+<button class="filter" data-filter="vibes">Vibes District</button>
+<button class="filter" data-filter="afterdark">After Dark</button>
+<button class="filter" data-filter="other">Other</button>
   </div>
 
   <section class="section">
@@ -299,19 +300,24 @@ audio,video{
       </div>
     </div>
 
-    <div class="grid">
-      <div class="card dj-card">
+<div class="grid">
+  <div class="card dj-card show-filter" data-show="cutting">
+    <span class="badge">DJ Show</span>
+    <h3>DJ Sakir</h3>
+    <p>The Cutting Room</p>
+  </div>
+     <div class="card dj-card show-filter" data-show="vibes">
         <span class="badge">DJ Show</span>
         <h3>DW40</h3>
         <p>Vibes District</p>
       </div>
 
-      <div class="card dj-card">
-        <span class="badge">DJ Show</span>
-        <h3>DJ Sakir</h3>
-        <p>The Cutting Room</p>
-      </div>
-
+<div class="card dj-card show-filter" data-show="afterdark">
+  <span class="badge">DJ SHOW</span>
+  <h3>After Dark</h3>
+  <p>Late Night Sessions</p>
+</div>
+      
       <div class="card dj-card">
         <span class="badge">Coming Soon</span>
         <h3>Guest DJs</h3>
@@ -391,6 +397,7 @@ function clean(v){
     .replaceAll("'","&#039;");
 }
 
+  
 function showKey(show){
   const title = String(show.title || "").toLowerCase();
   const showName = String(show.show_name || "").toLowerCase();
@@ -398,9 +405,17 @@ function showKey(show){
   const combined = `${title} ${showName} ${host}`;
 
   if(combined.includes("cutting") || combined.includes("sakir")) return "cutting";
-  if(combined.includes("vibes") || combined.includes("dw40")) return "vibes";
 
-  return "other";
+if(
+  combined.includes("after dark") ||
+  combined.includes("afterdark")
+){
+  return "afterdark";
+}
+
+if(combined.includes("vibes") || combined.includes("dw40")) return "vibes";
+
+return "other";
 }
 
 function badgeText(show){
@@ -558,6 +573,28 @@ loadReplays().catch(error => {
   console.log(error);
   replayList.innerHTML = `<div class="empty">${clean(error.message || JSON.stringify(error))}</div>`;
 });
+
+document.querySelectorAll(".show-filter").forEach(card => {
+  card.addEventListener("click", () => {
+
+    activeFilter = card.dataset.show;
+
+    document.querySelectorAll(".filter").forEach(btn => {
+      btn.classList.toggle(
+        "active",
+        btn.dataset.filter === activeFilter
+      );
+    });
+
+    render();
+
+    document.getElementById("replayList")
+      ?.scrollIntoView({
+        behavior:"smooth",
+        block:"start"
+      });
+  });
+});  
 </script>
 </body>
 </html>
