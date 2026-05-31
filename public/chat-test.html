@@ -746,10 +746,32 @@ transform: translateX(-50%);
   bottom:84px;
   width:auto;
   max-width:none;
-  transform: none;
+  transform:none;
 }
 
-  .emojiGrid{ grid-template-columns:repeat(3,1fr); }
+/* Mobile sticker picker only */
+#stickerModal.emojiPopup{
+  max-height:none !important;
+  overflow:visible !important;
+}
+
+#stickerModal .emojiGrid{
+  grid-template-columns:repeat(3,1fr) !important;
+  gap:6px !important;
+  padding:8px !important;
+  max-height:34vh !important;
+  overflow-y:auto !important;
+  align-content:start !important;
+}
+
+#stickerModal .emojiGrid img,
+#stickerModal .emojiGrid video{
+  width:100% !important;
+  height:86px !important;
+  object-fit:contain !important;
+}
+
+.emojiGrid{ grid-template-columns:repeat(3,1fr); }
   .emojiBtn{ height:42px; font-size:22px; }
 
     .msg img{ max-width:300px; }
