@@ -2339,11 +2339,15 @@ closeStickers();
     }
 
     messageInput.addEventListener("input", () => {
-  const currentNames = pendingStickers
-    .map(url => getStickerNameFromUrl(url))
-    .join(", ");
+  if (!pendingStickers.length) return;
 
-  if (pendingStickers.length && messageInput.value.trim() !== currentNames.trim()) {
+  const typed = messageInput.value.trim();
+
+  const stillHasStickerName = pendingStickers.some(url =>
+    typed.includes(getStickerNameFromUrl(url))
+  );
+
+  if (!stillHasStickerName) {
     pendingStickers = [];
   }
 });
