@@ -2342,6 +2342,12 @@ closeStickers();
 }
     }
 
+sendBtn.addEventListener("click", sendText);
+
+messageInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") sendText();
+});
+    
     messageInput.addEventListener("input", () => {
   if (!pendingStickers.length) return;
 
