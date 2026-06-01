@@ -2338,10 +2338,15 @@ closeStickers();
 }
     }
 
-    sendBtn.addEventListener("click", sendText);
-    messageInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") sendText();
-    });
+    messageInput.addEventListener("input", () => {
+  const currentNames = pendingStickers
+    .map(url => getStickerNameFromUrl(url))
+    .join(", ");
+
+  if (pendingStickers.length && messageInput.value.trim() !== currentNames.trim()) {
+    pendingStickers = [];
+  }
+});
 
     /* =========================
        GIFS
