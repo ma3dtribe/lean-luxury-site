@@ -2297,9 +2297,13 @@ function subscribeRealtime(){
       let contentToSend = rawText;
 
       if (pendingStickers.length){
-  contentToSend = pendingStickers
+  const stickerText = pendingStickers
     .map(url => `[sticker:${url}]`)
     .join(" ");
+
+  contentToSend = rawText
+    ? `${rawText} ${stickerText}`
+    : stickerText;
 }
 
       if (replyState){
@@ -2341,13 +2345,7 @@ closeStickers();
     messageInput.addEventListener("input", () => {
   if (!pendingStickers.length) return;
 
-  const typed = messageInput.value.trim();
-
-  const stillHasStickerName = pendingStickers.some(url =>
-    typed.includes(getStickerNameFromUrl(url))
-  );
-
-  if (!stillHasStickerName) {
+  if (!messageInput.value.trim()) {
     pendingStickers = [];
   }
 });
@@ -2527,12 +2525,14 @@ img.onerror = () => {
   if (document.hidden || !isTabActive) return;
 
   pendingStickers.push(src);
-      messageInput.value = pendingStickers
-  .map(url => getStickerNameFromUrl(url))
-  .join(", ");
-      
-  const endPos = messageInput.value.length;
+      const endPos = messageInput.value.length;
 messageInput.setSelectionRange(endPos, endPos);
+
+insertAtCursor(
+  messageInput,
+  getStickerNameFromUrl(src) + " ",
+  true
+);
   });
 
 stickerGrid.appendChild(img);
