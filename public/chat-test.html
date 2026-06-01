@@ -751,15 +751,25 @@ transform: translateX(-50%);
 
 /* Mobile sticker picker only */
 #stickerModal.emojiPopup{
+  position:absolute !important;
+  left:8px !important;
+  right:8px !important;
+  top:auto !important;
+  bottom:112px !important;
+  width:auto !important;
+  max-width:none !important;
+  transform:none !important;
   max-height:none !important;
-  overflow:visible !important;
+  overflow:hidden !important;
+  z-index:99998 !important;
 }
 
 #stickerModal .emojiGrid{
   grid-template-columns:repeat(3,1fr) !important;
   gap:6px !important;
   padding:8px !important;
-  max-height:54vh !important;
+  height:44vh !important;
+  max-height:none !important;
   overflow-y:auto !important;
   align-content:start !important;
 }
@@ -2316,9 +2326,10 @@ if (error){
   }
 
   messageInput.value = "";
-  pendingStickers = [];
-  clearReplyState();
-  markChatted();
+pendingStickers = [];
+clearReplyState();
+markChatted();
+closeStickers();
 
   if (window.innerWidth > 520) {
     messageInput.focus();
@@ -2536,11 +2547,16 @@ updateStickerHint();
     stickerGrid.scrollTop = 0;
 
     if (!stickers.length){
-      stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
-      stickerModal.classList.add("show");
-      stickerModal.setAttribute("aria-hidden", "false");
-      return;
-    }
+  stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
+  stickerModal.classList.add("show");
+  stickerModal.setAttribute("aria-hidden", "false");
+
+  if (window.innerWidth <= 980) {
+    chatMessages.style.display = "none";
+  }
+
+  return;
+}
 
     if (!stickersRendered || !stickerGrid.querySelector("img, video")) {
       renderStickerBatch(true);
@@ -2548,8 +2564,12 @@ updateStickerHint();
     }
 
     updateStickerHint();
-    stickerModal.classList.add("show");
-    stickerModal.setAttribute("aria-hidden", "false");
+stickerModal.classList.add("show");
+stickerModal.setAttribute("aria-hidden", "false");
+
+if (window.innerWidth <= 980) {
+  chatMessages.style.display = "none";
+}
 
   } finally {
     setTimeout(() => { stickersOpening = false; }, 100);
@@ -2560,6 +2580,10 @@ function closeStickers(){
 
   stickerModal.classList.remove("show");
   stickerModal.setAttribute("aria-hidden", "true");
+
+  if (window.innerWidth <= 980) {
+    chatMessages.style.display = "";
+  }
 
   if (document.hidden) {
     stickerNeedsRefresh = true;
@@ -2697,8 +2721,14 @@ stickerGrid?.addEventListener("scroll", () => {
       }
 
       if (stickerModal.classList.contains("show")) {
-        if (!stickerModal.contains(e.target) && !stickerBtn.contains(e.target)) closeStickers();
-      }
+  if (
+    !stickerModal.contains(e.target) &&
+    !stickerBtn.contains(e.target) &&
+    !e.target.closest(".composer")
+  ) {
+    closeStickers();
+  }
+}
     });
 
 document.addEventListener("click", (e) => {
