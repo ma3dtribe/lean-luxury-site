@@ -2518,13 +2518,13 @@ img.onerror = () => {
   if (document.hidden || !isTabActive) return;
 
   pendingStickers.push(src);
-
+      messageInput.value = pendingStickers
+  .map(url => getStickerNameFromUrl(url))
+  .join(", ");
+      
   const endPos = messageInput.value.length;
-  messageInput.setSelectionRange(endPos, endPos);
-
-  insertAtCursor(messageInput, "🖼️ Sticker selected ", true);
-  updateStickerHint();
-});
+messageInput.setSelectionRange(endPos, endPos);
+  });
 
 stickerGrid.appendChild(img);
   }
@@ -2606,6 +2606,21 @@ function closeStickers(){
   stickersOpening = false;
 }
 const MA3D_TOKEN = ":ma3d:";
+
+function getStickerNameFromUrl(url){
+  try {
+    const clean = decodeURIComponent(String(url || "").split("?")[0]);
+    const file = clean.split("/").pop() || "Sticker";
+
+    return file
+      .replace(/\.(webp|png|jpg|jpeg|gif|mp4|webm)$/i, "")
+      .replace(/[-_]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  } catch(e) {
+    return "Sticker";
+  }
+}    
 
 function insertAtCursor(input, text, shouldFocus = true){
   const start = input.selectionStart ?? input.value.length;
