@@ -2285,7 +2285,7 @@ function subscribeRealtime(){
       if (!sb) return;
 
       const rawText = (messageInput.value || "").trim();
-      const stickerMatches = (messageInput.value.match(/\[sticker\]/g) || []).length;
+      const stickerMatches = pendingStickers.length;
 
       if (!rawText && !stickerMatches) return;
 
@@ -2296,13 +2296,11 @@ function subscribeRealtime(){
 
       let contentToSend = rawText;
 
-      if (stickerMatches && pendingStickers.length){
-        let i = 0;
-        contentToSend = rawText.replace(/\[sticker\]/g, () => {
-          const url = pendingStickers[i++] || "";
-          return `[sticker:${url}]`;
-        });
-      }
+      if (pendingStickers.length){
+  contentToSend = pendingStickers
+    .map(url => `[sticker:${url}]`)
+    .join(" ");
+}
 
       if (replyState){
         contentToSend = encodeReplyPayload(replyState.username, replyState.text, contentToSend);
@@ -2524,7 +2522,7 @@ img.onerror = () => {
   const endPos = messageInput.value.length;
   messageInput.setSelectionRange(endPos, endPos);
 
-  insertAtCursor(messageInput, "[sticker] ", true);
+  insertAtCursor(messageInput, "🖼️ Sticker selected ", true);
   updateStickerHint();
 });
 
