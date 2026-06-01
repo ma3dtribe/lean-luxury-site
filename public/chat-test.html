@@ -2529,11 +2529,12 @@ img.onerror = () => {
 });
 
 stickerGrid.appendChild(img);
+  }
 
   stickerRenderIndex = end;
 }
     
-    async function openStickers(){
+async function openStickers(){
 
   if (!stickerModal || !stickerGrid) return;
   if (stickersOpening) return;
