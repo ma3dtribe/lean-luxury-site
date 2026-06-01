@@ -751,24 +751,25 @@ transform: translateX(-50%);
 
 /* Mobile sticker picker only */
 #stickerModal.emojiPopup{
-  position:absolute !important;
-  left:8px !important;
-  right:8px !important;
+  position:relative !important;
+  left:auto !important;
+  right:auto !important;
   top:auto !important;
-  bottom:112px !important;
+  bottom:auto !important;
   width:auto !important;
   max-width:none !important;
   transform:none !important;
   max-height:none !important;
   overflow:hidden !important;
-  z-index:99998 !important;
+  z-index:5 !important;
+  margin:0 8px 8px !important;
 }
 
 #stickerModal .emojiGrid{
   grid-template-columns:repeat(3,1fr) !important;
   gap:6px !important;
   padding:8px !important;
-  height:44vh !important;
+  height:36vh !important;
   max-height:none !important;
   overflow-y:auto !important;
   align-content:start !important;
@@ -1182,6 +1183,16 @@ transform: translateX(-50%);
   <div id="pinnedMessageText" style="font-size:14px;line-height:1.35;word-break:break-word;margin-top:4px;"></div>
 </div>
 
+  <!-- STICKERS MODAL -->
+  <div id="stickerModal" class="emojiPopup" aria-hidden="true">
+    <div class="emojiHead">
+      <div class="emojiTitle">Stickers</div>
+      <button id="stickerClose" class="emojiClose" type="button">✕</button>
+    </div>
+    <div class="emojiGrid" id="stickerGrid"></div>
+    <div class="emojiHint">Click a sticker to send.</div>
+  </div>
+      
 <div id="chatMessages">
   <div class="msg them">
     <div class="meta">System</div>
@@ -1203,15 +1214,7 @@ transform: translateX(-50%);
     </div>
   </div>
 
-  <!-- STICKERS MODAL -->
-  <div id="stickerModal" class="emojiPopup" aria-hidden="true">
-    <div class="emojiHead">
-      <div class="emojiTitle">Stickers</div>
-      <button id="stickerClose" class="emojiClose" type="button">✕</button>
-    </div>
-    <div class="emojiGrid" id="stickerGrid"></div>
-    <div class="emojiHint">Click a sticker to send.</div>
-  </div>
+
 
   <!-- EMOJI PICKER -->
   <div id="emojiPopup" class="emojiPopup" aria-hidden="true">
@@ -2517,10 +2520,12 @@ img.onerror = () => {
   if (document.hidden || !isTabActive) return;
 
   pendingStickers.push(src);
-messageInput?.blur();
-insertAtCursor(messageInput, "[sticker] ", false);
+
+const endPos = messageInput.value.length;
+messageInput.setSelectionRange(endPos, endPos);
+
+insertAtCursor(messageInput, "[sticker] ", true);
 updateStickerHint();
-});
 
     stickerGrid.appendChild(img);
   }
@@ -2529,7 +2534,6 @@ updateStickerHint();
 }
     
     async function openStickers(){
-  messageInput?.blur();
 
   if (!stickerModal || !stickerGrid) return;
   if (stickersOpening) return;
@@ -2550,10 +2554,14 @@ updateStickerHint();
   stickerGrid.innerHTML = "<div style='grid-column:1/-1;opacity:.8;'>No stickers available.</div>";
   stickerModal.classList.add("show");
   stickerModal.setAttribute("aria-hidden", "false");
+if (window.innerWidth <= 980) {
+  stickerModal.style.display = "block";
+}      
 
   if (window.innerWidth <= 980) {
-    chatMessages.style.display = "none";
-  }
+  chatMessages.style.display = "none";
+  stickerModal.style.display = "block";
+}
 
   return;
 }
@@ -2566,7 +2574,10 @@ updateStickerHint();
     updateStickerHint();
 stickerModal.classList.add("show");
 stickerModal.setAttribute("aria-hidden", "false");
-
+if (window.innerWidth <= 980) {
+  stickerModal.style.display = "block";
+}
+    
 if (window.innerWidth <= 980) {
   chatMessages.style.display = "none";
 }
@@ -2582,8 +2593,9 @@ function closeStickers(){
   stickerModal.setAttribute("aria-hidden", "true");
 
   if (window.innerWidth <= 980) {
-    chatMessages.style.display = "";
-  }
+  chatMessages.style.display = "";
+  stickerModal.style.display = "none";
+}
 
   if (document.hidden) {
     stickerNeedsRefresh = true;
