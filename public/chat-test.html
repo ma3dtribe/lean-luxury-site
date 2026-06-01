@@ -2297,13 +2297,32 @@ function subscribeRealtime(){
       let contentToSend = rawText;
 
       if (pendingStickers.length){
-  const stickerText = pendingStickers
+  let textWithStickers = rawText;
+  const usedIndexes = new Set();
+
+  pendingStickers.forEach((url, index) => {
+    const name = getStickerNameFromUrl(url);
+    const nameIndex = textWithStickers.indexOf(name);
+
+    if (nameIndex !== -1) {
+      textWithStickers =
+        textWithStickers.slice(0, nameIndex) +
+        `[sticker:${url}]` +
+        textWithStickers.slice(nameIndex + name.length);
+
+      usedIndexes.add(index);
+    }
+  });
+
+  const unusedStickers = pendingStickers
+    .filter((url, index) => !usedIndexes.has(index))
     .map(url => `[sticker:${url}]`)
     .join(" ");
 
-  contentToSend = rawText
-    ? `${rawText} ${stickerText}`
-    : stickerText;
+  contentToSend = [textWithStickers, unusedStickers]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 }
 
       if (replyState){
@@ -2531,10 +2550,7 @@ img.onerror = () => {
   if (document.hidden || !isTabActive) return;
 
   pendingStickers.push(src);
-      const endPos = messageInput.value.length;
-messageInput.setSelectionRange(endPos, endPos);
-
-insertAtCursor(
+      insertAtCursor(
   messageInput,
   getStickerNameFromUrl(src) + " ",
   true
