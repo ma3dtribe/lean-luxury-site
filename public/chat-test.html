@@ -2521,14 +2521,14 @@ img.onerror = () => {
 
   pendingStickers.push(src);
 
-const endPos = messageInput.value.length;
-messageInput.setSelectionRange(endPos, endPos);
+  const endPos = messageInput.value.length;
+  messageInput.setSelectionRange(endPos, endPos);
 
-insertAtCursor(messageInput, "[sticker] ", true);
-updateStickerHint();
+  insertAtCursor(messageInput, "[sticker] ", true);
+  updateStickerHint();
+});
 
-    stickerGrid.appendChild(img);
-  }
+stickerGrid.appendChild(img);
 
   stickerRenderIndex = end;
 }
