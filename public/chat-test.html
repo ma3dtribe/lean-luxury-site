@@ -2089,7 +2089,7 @@ safe = safe.replace(/\[gif:(.*?)\]/g, (match, url) => {
     bubble.classList.toggle("showActions");
   });
 
-  if ((row.kind || "").toLowerCase() === "text") {
+  if (["text", "gif", "sticker"].includes((row.kind || "").toLowerCase())) {
     const actions = document.createElement("div");
     actions.className = "msgActions";
 
