@@ -485,33 +485,35 @@ transform: translateX(-50%);
 @media (min-width: 521px){
 
   #stickerModal.emojiPopup{
-    position:fixed !important;
-    inset:0 !important;
-    width:auto !important;
-    max-width:none !important;
-    transform:none !important;
-    background:rgba(0,0,0,.75) !important;
-    border:0 !important;
-    border-radius:0 !important;
-    box-shadow:none !important;
-    max-height:none !important;
-    padding:2vh 12px !important;
-  }
+  position:relative !important;
+  inset:auto !important;
+  left:auto !important;
+  right:auto !important;
+  top:auto !important;
+  bottom:auto !important;
+  width:auto !important;
+  max-width:none !important;
+  transform:none !important;
+  background:#0f1623 !important;
+  border:1px solid rgba(255,255,255,.14) !important;
+  border-radius:14px !important;
+  box-shadow:none !important;
+  max-height:none !important;
+  padding:0 !important;
+  margin:0 8px 8px !important;
+}
 
   #stickerModal.emojiPopup.show{
-  display:flex !important;
-  flex-direction:column !important;
-  align-items:center !important;
-  justify-content:flex-start !important;
+  display:block !important;
 }
 
   #stickerModal .emojiHead,
 #stickerModal .emojiGrid,
 #stickerModal .emojiHint{
-  width:min(700px, 94vw) !important;
-max-width:min(700px, 94vw) !important;
-  margin-left:auto !important;
-  margin-right:auto !important;
+  width:100% !important;
+  max-width:100% !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
   background:#0f1623 !important;
 }
 
@@ -524,8 +526,8 @@ max-width:min(700px, 94vw) !important;
   #stickerModal .emojiGrid{
   border-left:1px solid rgba(255,255,255,.12) !important;
   border-right:1px solid rgba(255,255,255,.12) !important;
-  height:42vh !important;
-  max-height:42vh !important;
+  height:36vh !important;
+max-height:36vh !important;
   overflow-y:auto !important;
 
   display:grid !important;
