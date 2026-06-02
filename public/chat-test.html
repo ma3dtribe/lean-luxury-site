@@ -2114,13 +2114,22 @@ if (row.username === USERNAME) {
   deleteBtn.addEventListener("click", async () => {
     if (!confirm("Delete this message?")) return;
 
-    const { error } = await sb
-      .from("messages")
-      .delete()
-      .eq("id", row.id)
-      .eq("username", USERNAME);
+    const { data, error } = await sb
+  .from("messages")
+  .delete()
+  .eq("id", row.id)
+  .eq("username", USERNAME)
+  .select("id");
+    
+if (error) {
+  alert("Delete failed: " + error.message);
+  return;
+}
 
-    if (error) {
+if (!data || !data.length) {
+  alert("Delete did not save. Supabase blocked it or the username did not match.");
+  return;
+}    if (error) {
       alert("Delete failed: " + error.message);
       return;
     }
