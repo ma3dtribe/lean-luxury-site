@@ -2118,7 +2118,6 @@ if (row.username === USERNAME) {
   .from("messages")
   .delete()
   .eq("id", row.id)
-  .eq("username", USERNAME)
   .select("id");
     
 if (error) {
