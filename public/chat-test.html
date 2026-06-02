@@ -2105,6 +2105,33 @@ replyBtn.addEventListener("click", () => {
 
 actions.appendChild(replyBtn);
 
+if (row.username === USERNAME) {
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "msgActionBtn";
+  deleteBtn.type = "button";
+  deleteBtn.textContent = "🗑️ Delete";
+
+  deleteBtn.addEventListener("click", async () => {
+    if (!confirm("Delete this message?")) return;
+
+    const { error } = await sb
+      .from("messages")
+      .delete()
+      .eq("id", row.id)
+      .eq("username", USERNAME);
+
+    if (error) {
+      alert("Delete failed: " + error.message);
+      return;
+    }
+
+    bubble.remove();
+    renderedIds.delete(row.id);
+  });
+
+  actions.appendChild(deleteBtn);
+}
+    
 if (USERNAME === "CVO") {
   const pinBtn = document.createElement("button");
   pinBtn.className = "msgActionBtn";
