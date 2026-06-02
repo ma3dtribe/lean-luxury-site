@@ -495,7 +495,7 @@ transform: translateX(-50%);
     border-radius:0 !important;
     box-shadow:none !important;
     max-height:none !important;
-    padding:6vh 12px !important;
+    padding:2vh 12px !important;
   }
 
   #stickerModal.emojiPopup.show{
@@ -508,8 +508,8 @@ transform: translateX(-50%);
   #stickerModal .emojiHead,
 #stickerModal .emojiGrid,
 #stickerModal .emojiHint{
-  width:min(920px, 94vw) !important;
-  max-width:min(920px, 94vw) !important;
+  width:min(700px, 94vw) !important;
+max-width:min(700px, 94vw) !important;
   margin-left:auto !important;
   margin-right:auto !important;
   background:#0f1623 !important;
@@ -524,21 +524,23 @@ transform: translateX(-50%);
   #stickerModal .emojiGrid{
   border-left:1px solid rgba(255,255,255,.12) !important;
   border-right:1px solid rgba(255,255,255,.12) !important;
-  max-height:62vh !important;
+  height:42vh !important;
+  max-height:42vh !important;
+  overflow-y:auto !important;
 
   display:grid !important;
   grid-template-columns:repeat(3, 1fr) !important;
 
-  gap:18px !important;
-  padding:20px !important;
+  gap:8px !important;
+  padding:10px !important;
   align-items:start !important;
   justify-items:center !important;
 }
 
 #stickerModal .emojiGrid img{
   width:100% !important;
-  max-width:220px !important;
-  height:220px !important;
+  max-width:110px !important;
+  height:110px !important;
   object-fit:contain !important;
   margin:auto !important;
   display:block !important;
