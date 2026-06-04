@@ -2386,9 +2386,8 @@ if (error){
   alert("Save failed: " + error.message);
 } else {
   if (data && !renderedIds.has(data.id)) {
-    renderRow(data, "prepend");
-    chatMessages.scrollTop = 0;
-  }
+  renderRow(data, "append");
+}
 
   messageInput.value = "";
 pendingStickers = [];
@@ -2461,7 +2460,8 @@ messageInput.addEventListener("keydown", (e) => {
     alert("GIF send failed: " + error.message);
   } else {
     if (data && !renderedIds.has(data.id)) {
-      renderRow(data, "prepend");
+  renderRow(data, "append");
+}
       chatMessages.scrollTop = 0;
     }
 
