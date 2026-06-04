@@ -2591,12 +2591,21 @@ img.onerror = () => {
   if (document.hidden || !isTabActive) return;
 
   pendingStickers.push(src);
-      insertAtCursor(
+
+insertAtCursor(
   messageInput,
   getStickerNameFromUrl(src) + " ",
-  true
+  false
 );
+
+try {
+  messageInput.blur();
+} catch(e) {}
   });
+
+try {
+  messageInput.blur();
+} catch(e) {}
 
 stickerGrid.appendChild(img);
   }
