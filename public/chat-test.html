@@ -2397,21 +2397,25 @@ closeStickers();
 }
     }
 
+let touchSendHandled = false;
+
 sendBtn.addEventListener("touchstart", (e) => {
   e.preventDefault();
+  touchSendHandled = true;
   sendText();
 
   setTimeout(() => {
+    touchSendHandled = false;
     messageInput.focus({ preventScroll: true });
-  }, 50);
+  }, 300);
 }, { passive: false });
 
 sendBtn.addEventListener("click", (e) => {
   e.preventDefault();
 
-  if (window.innerWidth > 980) {
-    sendText();
-  }
+  if (touchSendHandled) return;
+
+  sendText();
 });
 
 messageInput.addEventListener("keydown", (e) => {
