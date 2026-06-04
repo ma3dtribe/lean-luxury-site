@@ -2546,9 +2546,8 @@ messageInput.addEventListener("keydown", (e) => {
     alert("Sticker send failed: " + error.message);
   } else {
     if (data && !renderedIds.has(data.id)) {
-      renderRow(data, "prepend");
-      chatMessages.scrollTop = 0;
-    }
+  renderRow(data, "prepend");
+}
 
     markChatted();
     closeStickers();
