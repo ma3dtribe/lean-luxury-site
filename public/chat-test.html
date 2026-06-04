@@ -2385,9 +2385,7 @@ function subscribeRealtime(){
 if (error){
   alert("Save failed: " + error.message);
 } else {
-  if (data && !renderedIds.has(data.id)) {
-    renderRow(data, "prepend");
-  }
+  // Let realtime insert the message
 
   messageInput.value = "";
 pendingStickers = [];
@@ -2457,17 +2455,15 @@ messageInput.addEventListener("keydown", (e) => {
     .single();
 
   if (error){
-    alert("GIF send failed: " + error.message);
-  } else {
-    if (data && !renderedIds.has(data.id)) {
-  renderRow(data, "append");
-}
-      chatMessages.scrollTop = 0;
-    }
-
-        markChatted();
-    closeGifModal();
+  alert("GIF send failed: " + error.message);
+} else {
+  if (data && !renderedIds.has(data.id)) {
+    renderRow(data, "prepend");
   }
+
+  markChatted();
+  closeGifModal();
+}
 
     async function loadTrending() {
       gifResults.textContent = "Loading trending GIFs...";
@@ -2928,7 +2924,14 @@ await loadPinnedMessage();
   try { messageInput?.blur(); } catch(e) {}
 
   try { await loadInitial(); } catch(e) { console.error("loadInitial failed", e); }
-  try { subscribeRealtime(); } catch(e) { console.error("subscribeRealtime failed", e); }
+  try {
+  subscribeRealtime();
+  setTimeout(() => {
+    subscribeRealtime();
+  }, 1200);
+} catch(e) {
+  console.error("subscribeRealtime failed", e);
+}
   try { startPresence(); } catch(e) { console.error("startPresence failed", e); }
 
   try { refreshTwitchViewers(); } catch(e) { console.error("refreshTwitchViewers failed", e); }
