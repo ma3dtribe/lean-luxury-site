@@ -2461,11 +2461,12 @@ messageInput.addEventListener("keydown", (e) => {
     renderRow(data, "prepend");
   }
 
-  markChatted();
+    markChatted();
   closeGifModal();
 }
+}
 
-    async function loadTrending() {
+async function loadTrending() {
       gifResults.textContent = "Loading trending GIFs...";
       try {
         const url = `https://api.giphy.com/v1/gifs/trending?api_key=${encodeURIComponent(GIPHY_API_KEY)}&limit=18&rating=pg-13`;
