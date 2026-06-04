@@ -2584,7 +2584,12 @@ img.onerror = () => {
   stickerRenderIndex = 0;
 };
 
-    img.addEventListener("click", (e) => {
+    img.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+img.addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
 
@@ -2592,23 +2597,22 @@ img.onerror = () => {
 
   pendingStickers.push(src);
 
-insertAtCursor(
-  messageInput,
-  getStickerNameFromUrl(src) + " ",
-  false
-);
+  insertAtCursor(
+    messageInput,
+    getStickerNameFromUrl(src) + " ",
+    false
+  );
 
-try {
-  messageInput.blur();
-} catch(e) {}
-  });
+  updateStickerHint();
 
-try {
-  messageInput.blur();
-} catch(e) {}
+  setTimeout(() => {
+    try {
+      messageInput.blur();
+    } catch(e) {}
+  }, 50);
+});
 
 stickerGrid.appendChild(img);
-  }
 
   stickerRenderIndex = end;
 }
