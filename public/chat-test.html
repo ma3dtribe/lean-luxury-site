@@ -2396,9 +2396,9 @@ clearReplyState();
 markChatted();
 closeStickers();
 
-  if (window.innerWidth > 520) {
-    messageInput.focus();
-  }
+  try {
+  messageInput.blur();
+} catch(e) {}
 }
     }
 
