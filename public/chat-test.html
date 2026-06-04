@@ -2021,7 +2021,7 @@ safe = safe.replace(
 );
 
     safe = safe.replace(/\[sticker:(.*?)\]/g, (_, url) => {
-  const rawUrl = url.replace(/"/g, "&quot;");
+  const rawUrl = decodeURIComponent(url).replace(/"/g, "&quot;");
   const cleanUrl = rawUrl + (rawUrl.includes("?") ? `&v=${STICKER_CACHE_VERSION}` : `?v=${STICKER_CACHE_VERSION}`);
   const size = INLINE_STICKER_SIZE;
 
@@ -2342,7 +2342,7 @@ function subscribeRealtime(){
     if (nameIndex !== -1) {
       textWithStickers =
         textWithStickers.slice(0, nameIndex) +
-        `[sticker:${url}]` +
+        `[sticker:${encodeURIComponent(url)}]`+
         textWithStickers.slice(nameIndex + name.length);
 
       usedIndexes.add(index);
@@ -2351,7 +2351,7 @@ function subscribeRealtime(){
 
   const unusedStickers = pendingStickers
     .filter((url, index) => !usedIndexes.has(index))
-    .map(url => `[sticker:${url}]`)
+    .map(url => `[sticker:${encodeURIComponent(url)}]`)
     .join(" ");
 
   contentToSend = [textWithStickers, unusedStickers]
