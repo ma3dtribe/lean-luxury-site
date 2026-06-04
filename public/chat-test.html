@@ -2396,7 +2396,10 @@ closeStickers();
 }
     }
 
-sendBtn.addEventListener("click", sendText);
+sendBtn.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  sendText();
+});
 
 messageInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") sendText();
