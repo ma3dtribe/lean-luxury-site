@@ -2111,7 +2111,14 @@ if (row.username === USERNAME) {
   deleteBtn.type = "button";
   deleteBtn.textContent = "🗑️ Delete";
 
-  deleteBtn.addEventListener("click", async () => {
+  deleteBtn.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+deleteBtn.addEventListener("click", async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
     if (!confirm("Delete this message?")) return;
 
     const { error } = await sb
@@ -2123,11 +2130,6 @@ if (error) {
   alert("Delete failed: " + error.message);
   return;
 }
-
-   if (error) {
-      alert("Delete failed: " + error.message);
-      return;
-    }
 
     bubble.remove();
     renderedIds.delete(row.id);
