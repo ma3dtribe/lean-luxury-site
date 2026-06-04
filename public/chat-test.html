@@ -2408,6 +2408,10 @@ sendBtn.addEventListener("touchstart", (e) => {
 
 sendBtn.addEventListener("click", (e) => {
   e.preventDefault();
+
+  if (window.innerWidth > 980) {
+    sendText();
+  }
 });
 
 messageInput.addEventListener("keydown", (e) => {
