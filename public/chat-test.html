@@ -2116,24 +2116,25 @@ if (row.username === USERNAME) {
   e.stopPropagation();
 });
 
-deleteBtn.addEventListener("click", async (e) => {
+deleteBtn.addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
-    // confirm removed because browser popup stops music
 
+  setTimeout(async () => {
     const { error } = await sb
-  .from("messages")
-  .delete()
-  .eq("id", row.id);
-    
-if (error) {
-  alert("Delete failed: " + error.message);
-  return;
-}
+      .from("messages")
+      .delete()
+      .eq("id", row.id);
+
+    if (error) {
+      alert("Delete failed: " + error.message);
+      return;
+    }
 
     bubble.remove();
     renderedIds.delete(row.id);
-  });
+  }, 250);
+});
 
   actions.appendChild(deleteBtn);
 }
