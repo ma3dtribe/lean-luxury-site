@@ -2334,17 +2334,20 @@ function subscribeRealtime(){
       if (pendingStickers.length){
   let textWithStickers = rawText;
   const usedIndexes = new Set();
+  let searchFrom = 0;
 
   pendingStickers.forEach((url, index) => {
     const name = getStickerNameFromUrl(url);
-    const nameIndex = textWithStickers.indexOf(name);
+    const token = `[sticker:${encodeURIComponent(url)}]`;
+    const nameIndex = textWithStickers.indexOf(name, searchFrom);
 
     if (nameIndex !== -1) {
       textWithStickers =
         textWithStickers.slice(0, nameIndex) +
-        `[sticker:${encodeURIComponent(url)}]`+
+        token +
         textWithStickers.slice(nameIndex + name.length);
 
+      searchFrom = nameIndex + token.length;
       usedIndexes.add(index);
     }
   });
