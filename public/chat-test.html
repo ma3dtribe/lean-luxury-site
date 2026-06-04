@@ -2396,9 +2396,17 @@ closeStickers();
 }
     }
 
-sendBtn.addEventListener("pointerdown", (e) => {
+sendBtn.addEventListener("touchstart", (e) => {
   e.preventDefault();
   sendText();
+
+  setTimeout(() => {
+    messageInput.focus({ preventScroll: true });
+  }, 50);
+}, { passive: false });
+
+sendBtn.addEventListener("click", (e) => {
+  e.preventDefault();
 });
 
 messageInput.addEventListener("keydown", (e) => {
