@@ -2119,7 +2119,7 @@ if (row.username === USERNAME) {
 deleteBtn.addEventListener("click", async (e) => {
   e.preventDefault();
   e.stopPropagation();
-    if (!confirm("Delete this message?")) return;
+    // confirm removed because browser popup stops music
 
     const { error } = await sb
   .from("messages")
