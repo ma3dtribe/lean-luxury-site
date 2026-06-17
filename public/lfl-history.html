@@ -1,447 +1,550 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LFL History Book | MA3DTribe</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LFL History Book | MA3DTribe</title>
 
-  <style>
-    :root {
-      --bg: #080b12;
-      --panel: #111827;
-      --panel2: #172033;
-      --gold: #f5c542;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --line: rgba(255,255,255,.12);
-      --green: #22c55e;
-    }
+<style>
+:root{
+  --bg:#061018;
+  --panel:#0b1b26;
+  --panel2:#0e2230;
+  --gold:#f6bf2f;
+  --gold2:#ffd766;
+  --blue:#4fb3ff;
+  --text:#f4f7fb;
+  --muted:#a7b4c2;
+  --line:rgba(255,255,255,.13);
+}
 
-    * { box-sizing: border-box; }
+*{box-sizing:border-box}
 
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: radial-gradient(circle at top, #1e293b 0, #080b12 45%);
-      color: var(--text);
-    }
+body{
+  margin:0;
+  font-family:Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(30,80,110,.35), transparent 35%),
+    linear-gradient(135deg,#031018,#071b25 55%,#03070b);
+  color:var(--text);
+}
 
-    header {
-      padding: 34px 20px 26px;
-      text-align: center;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(135deg, #111827, #020617);
-    }
+.app{
+  display:grid;
+  grid-template-columns:290px 1fr;
+  min-height:100vh;
+}
 
-    header h1 {
-      margin: 0;
-      font-size: clamp(32px, 6vw, 64px);
-      letter-spacing: 1px;
-      color: var(--gold);
-    }
+.sidebar{
+  background:rgba(2,10,15,.72);
+  border-right:1px solid var(--line);
+  padding:18px 18px 70px;
+}
 
-    header p {
-      color: var(--muted);
-      margin: 10px 0 0;
-      font-size: 16px;
-    }
+.logo{
+  font-size:27px;
+  font-weight:900;
+  letter-spacing:1px;
+  font-style:italic;
+}
 
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 99;
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding: 12px;
-      background: rgba(8,11,18,.95);
-      border-bottom: 1px solid var(--line);
-    }
+.logo span{color:var(--gold)}
 
-    nav a {
-      color: var(--text);
-      text-decoration: none;
-      padding: 10px 14px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      white-space: nowrap;
-      font-size: 14px;
-    }
+.logo-sub{
+  color:var(--gold);
+  letter-spacing:8px;
+  font-size:11px;
+  margin-left:38px;
+}
 
-    nav a:hover {
-      background: var(--gold);
-      color: #111;
-    }
+.badge{
+  margin:26px auto 12px;
+  width:190px;
+  height:190px;
+  border-radius:50%;
+  border:5px solid var(--gold);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:radial-gradient(circle,#f7f7f7 0,#222 48%,#000 72%);
+  box-shadow:0 0 25px rgba(246,191,47,.28);
+  color:#111;
+  font-size:72px;
+  font-weight:900;
+  text-shadow:0 2px #fff;
+}
 
-    main {
-      max-width: 1250px;
-      margin: 0 auto;
-      padding: 22px;
-    }
+.side-title{
+  text-align:center;
+  font-size:24px;
+  font-weight:900;
+  margin-top:10px;
+}
 
-    section {
-      margin: 28px 0;
-      padding: 22px;
-      background: rgba(17,24,39,.88);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    }
+.side-years{
+  color:var(--gold);
+  text-align:center;
+  font-size:22px;
+  font-weight:900;
+}
 
-    h2 {
-      margin-top: 0;
-      color: var(--gold);
-      font-size: 26px;
-    }
+.side-small{
+  text-align:center;
+  color:white;
+  font-size:13px;
+  line-height:1.6;
+  margin:22px 0;
+}
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 14px;
-    }
+.side-menu{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
 
-    .card {
-      background: linear-gradient(180deg, var(--panel2), var(--panel));
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 18px;
-    }
+.side-menu a{
+  color:white;
+  text-decoration:none;
+  padding:13px 14px;
+  border-radius:7px;
+  font-size:14px;
+}
 
-    .card .label {
-      color: var(--muted);
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-    }
+.side-menu a.active,
+.side-menu a:hover{
+  background:linear-gradient(90deg,var(--gold2),#d79b18);
+  color:#111;
+  font-weight:800;
+}
 
-    .card .value {
-      margin-top: 8px;
-      font-size: 28px;
-      font-weight: 800;
-    }
+.current-champ{
+  margin-top:34px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:18px;
+  text-align:center;
+  background:rgba(8,24,35,.9);
+}
 
-    .gold { color: var(--gold); }
-    .green { color: var(--green); }
+.current-champ h3{
+  color:var(--gold);
+  margin:0 0 12px;
+  font-size:16px;
+}
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      overflow: hidden;
-      border-radius: 14px;
-      margin-top: 12px;
-      background: #0f172a;
-    }
+.current-champ .name{
+  color:var(--blue);
+  font-size:28px;
+  font-weight:900;
+}
 
-    th, td {
-      padding: 12px 10px;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      font-size: 14px;
-    }
+.topbar{
+  height:62px;
+  display:flex;
+  align-items:center;
+  gap:32px;
+  border-bottom:1px solid var(--line);
+  padding:0 35px;
+  background:rgba(0,0,0,.45);
+  position:sticky;
+  top:0;
+  z-index:20;
+}
 
-    th {
-      color: var(--gold);
-      background: #020617;
-      position: sticky;
-      top: 54px;
-    }
+.topbar a{
+  color:white;
+  text-decoration:none;
+  font-size:14px;
+  font-weight:800;
+}
 
-    tr:hover td {
-      background: rgba(245,197,66,.07);
-    }
+.topbar a.active{
+  color:var(--gold);
+  border-bottom:3px solid var(--gold);
+  padding-bottom:20px;
+}
 
-    .timeline {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 12px;
-    }
+.main{
+  padding:22px 22px 56px;
+}
 
-    .year-card {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px;
-      background: #0f172a;
-    }
+.hero h1{
+  font-size:50px;
+  line-height:1;
+  margin:0;
+  letter-spacing:1px;
+}
 
-    .year-card strong {
-      color: var(--gold);
-      font-size: 20px;
-    }
+.hero h2{
+  margin:8px 0 10px;
+  color:var(--gold);
+  font-size:20px;
+}
 
-    .small {
-      color: var(--muted);
-      font-size: 13px;
-    }
+.hero p{
+  margin:5px 0;
+  color:white;
+}
 
-    footer {
-      text-align: center;
-      color: var(--muted);
-      padding: 30px 20px;
-    }
+.stats{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:18px;
+  margin:18px 0 30px;
+  max-width:1050px;
+}
 
-    .status {
-      color: var(--muted);
-      font-size: 13px;
-      margin-top: 8px;
-    }
+.stat{
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:rgba(11,27,38,.86);
+  padding:22px;
+  text-align:center;
+}
 
-    @media (max-width: 700px) {
-      main { padding: 14px; }
-      section { padding: 16px; }
-      th, td { font-size: 12px; padding: 9px 7px; }
-    }
-  </style>
+.stat .icon{
+  font-size:34px;
+}
+
+.stat .num{
+  font-size:28px;
+  font-weight:900;
+}
+
+.stat .label{
+  font-size:13px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1.45fr .9fr .72fr;
+  gap:16px;
+}
+
+.card{
+  background:rgba(8,24,35,.88);
+  border:1px solid var(--line);
+  border-radius:7px;
+  padding:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
+}
+
+.card h3{
+  margin:0 0 14px;
+  color:var(--gold);
+  letter-spacing:1px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+}
+
+th{
+  color:var(--gold);
+  font-size:11px;
+  text-transform:uppercase;
+}
+
+td,th{
+  padding:8px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  text-align:left;
+}
+
+tr.highlight td{
+  background:rgba(246,191,47,.12);
+  color:var(--gold2);
+  font-weight:800;
+}
+
+.blue{color:var(--blue);font-weight:800}
+.gold{color:var(--gold);font-weight:800}
+.center{text-align:center}
+
+.leader-row{
+  display:grid;
+  grid-template-columns:28px 1fr 35px 90px;
+  gap:8px;
+  padding:7px 0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  align-items:center;
+}
+
+.timeline-row{
+  display:grid;
+  grid-template-columns:45px 1fr;
+  gap:10px;
+  padding:7px 0;
+  align-items:center;
+}
+
+.timeline-row:before{
+  content:"";
+  width:11px;
+  height:11px;
+  background:var(--gold);
+  border-radius:50%;
+  box-shadow:0 0 8px var(--gold);
+  margin-left:10px;
+}
+
+.small-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.donut{
+  width:105px;
+  height:105px;
+  border-radius:50%;
+  margin:8px auto;
+  background:conic-gradient(#7dd3fc 0 20%, #fb923c 20% 45%, #a78bfa 45% 70%, #86efac 70% 100%);
+  position:relative;
+}
+
+.donut:after{
+  content:"";
+  position:absolute;
+  inset:28px;
+  background:#061018;
+  border-radius:50%;
+}
+
+.records div,
+.review div,
+.links a{
+  display:flex;
+  justify-content:space-between;
+  padding:8px 0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  color:white;
+  text-decoration:none;
+}
+
+.bottom{
+  margin-top:16px;
+  display:grid;
+  grid-template-columns:1fr 1.1fr 1fr 1fr;
+  gap:16px;
+}
+
+.footer{
+  position:fixed;
+  bottom:0;
+  left:290px;
+  right:0;
+  background:rgba(0,0,0,.75);
+  border-top:1px solid var(--line);
+  padding:12px 22px;
+  color:var(--gold);
+  font-size:13px;
+  letter-spacing:2px;
+  display:flex;
+  justify-content:space-between;
+}
+
+@media(max-width:1100px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .grid,.bottom{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .footer{left:0}
+}
+
+@media(max-width:600px){
+  .topbar{overflow-x:auto;padding:0 16px}
+  .hero h1{font-size:36px}
+  .stats{grid-template-columns:1fr}
+}
+</style>
 </head>
 
 <body>
-  <header>
-    <h1>LFL History Book</h1>
-    <p>Official league history powered by MA3DTribe</p>
-    <div class="status" id="loadStatus">Loading Google Sheets data...</div>
-  </header>
+<div class="app">
 
-  <nav>
-    <a href="#dashboard">Dashboard</a>
-    <a href="#champions">Champions</a>
-    <a href="#regular">Regular Season</a>
-    <a href="#playoffs">Playoffs</a>
-    <a href="#franchises">Franchises</a>
-    <a href="#dynasty">Dynasty Eras</a>
-    <a href="#season-results">Season Results</a>
+<aside class="sidebar">
+  <div class="logo">MA3DTRIBE</div>
+  <div class="logo-sub">ANALYTICS</div>
+
+  <div class="badge">LFL</div>
+
+  <div class="side-title">LFL HISTORY BOOK</div>
+  <div class="side-years">2007 - 2025</div>
+  <div class="side-small">OFFICIAL LEAGUE RECORDS<br>& MEDIA GUIDE</div>
+
+  <nav class="side-menu">
+    <a class="active" href="#">🏠 OVERVIEW</a>
+    <a href="#">⚙️ FRANCHISE RANKINGS</a>
+    <a href="#">🏆 CHAMPIONSHIP CENTER</a>
+    <a href="#">👥 TEAM PROFILES</a>
+    <a href="#">📈 LEAGUE RECORDS</a>
+    <a href="#">🏆 PLAYOFF HISTORY</a>
+    <a href="#">🎖️ HALL OF FAME</a>
+    <a href="#">⚔️ RIVALRIES</a>
+    <a href="#">ⓘ 2025 SEASON REVIEW</a>
+    <a href="#">▣ 2026 PREVIEW</a>
   </nav>
 
-  <main>
-    <section id="dashboard">
-      <h2>League Dashboard</h2>
-      <div class="grid" id="dashboardCards"></div>
-    </section>
+  <div class="current-champ">
+    <h3>CURRENT CHAMPION</h3>
+    <div class="name">GPLAY</div>
+    <div style="font-size:42px">🏆</div>
+    <strong>2025 CHAMPION</strong>
+  </div>
+</aside>
 
-    <section id="champions">
-      <h2>Championship Timeline</h2>
-      <div class="timeline" id="championshipTimeline"></div>
-    </section>
+<div>
+<header class="topbar">
+  <a class="active">DASHBOARD</a>
+  <a>NFL</a>
+  <a>DFS</a>
+  <a>TOOLS</a>
+  <a class="active">ANALYTICS</a>
+  <a>ABOUT</a>
+  <a>CONTACT</a>
+</header>
 
-    <section>
-      <h2>Championship Count</h2>
-      <div id="championshipCount"></div>
-    </section>
+<main class="main">
 
-    <section id="regular">
-      <h2>All-Time Regular Season Standings</h2>
-      <div id="regularStandings"></div>
-    </section>
+<section class="hero">
+  <h1>LFL HISTORY BOOK</h1>
+  <h2>17 SEASONS OF LEGENDARY FANTASY FOOTBALL</h2>
+  <p>Your complete league history, records, and legacy all in one place.</p>
+  <p>Est. 2007</p>
+</section>
 
-    <section id="playoffs">
-      <h2>All-Time Playoff Standings</h2>
-      <div id="playoffStandings"></div>
-    </section>
+<section class="stats">
+  <div class="stat"><div class="icon">🗓️</div><div class="num">19</div><div class="label">SEASONS<br>2007 - 2025</div></div>
+  <div class="stat"><div class="icon">🏆</div><div class="num">19</div><div class="label">CHAMPIONSHIPS<br>AWARDED</div></div>
+  <div class="stat"><div class="icon">👥</div><div class="num">11</div><div class="label">FRANCHISES<br>ALL TIME</div></div>
+  <div class="stat"><div class="icon">📈</div><div class="num">2,128</div><div class="label">TOTAL GAMES<br>PLAYED</div></div>
+  <div class="stat"><div class="icon">🏈</div><div class="num">38,420</div><div class="label">TOTAL POINTS<br>ALL TIME</div></div>
+</section>
 
-    <section id="franchises">
-      <h2>Franchise History</h2>
-      <div id="franchiseHistory"></div>
-    </section>
+<section class="grid">
 
-    <section id="dynasty">
-      <h2>Dynasty Eras</h2>
-      <div id="dynastyEras"></div>
-    </section>
+<div class="card">
+<h3>FRANCHISE POWER RANKINGS</h3>
+<table>
+<thead>
+<tr>
+<th>Rank</th><th>Team</th><th>Rings</th><th>Reg Season Record</th><th>Win %</th><th>Playoff Record</th><th>PL.Vision Wits</th><th>Division Titles</th><th>Power Score</th>
+</tr>
+</thead>
+<tbody>
+<tr class="highlight"><td>1</td><td>🦁 ZOO</td><td>4</td><td>144-94</td><td>60.5%</td><td>16-12</td><td>57.1%</td><td>5</td><td>87</td></tr>
+<tr><td>2</td><td class="blue">GPLAY</td><td>5</td><td>132-106</td><td>55.6%</td><td>20-11</td><td>64.5%</td><td>3</td><td>84</td></tr>
+<tr><td>3</td><td>JDF</td><td>3</td><td>133-105</td><td>55.9%</td><td>20-14</td><td>58.8%</td><td>4</td><td>84</td></tr>
+<tr><td>4</td><td>JUNGLE</td><td>3</td><td>132-106</td><td>55.6%</td><td>14-14</td><td>50.0%</td><td>3</td><td>77</td></tr>
+<tr><td>5</td><td>BREW</td><td>1</td><td>132-106</td><td>55.6%</td><td>10-15</td><td>40.0%</td><td>3</td><td>61</td></tr>
+<tr><td>6</td><td>LEGACY</td><td>1</td><td>105-133</td><td>44.1%</td><td>8-13</td><td>38.1%</td><td>0</td><td>39</td></tr>
+<tr><td>7</td><td>DC</td><td>1</td><td>51-40</td><td>56.1%</td><td>7-5</td><td>58.3%</td><td>0</td><td>36</td></tr>
+<tr><td>8</td><td>PC</td><td>1</td><td>86-152</td><td>36.1%</td><td>9-7</td><td>56.3%</td><td>0</td><td>33</td></tr>
+<tr><td>9</td><td>BP</td><td>0</td><td>109-129</td><td>45.8%</td><td>7-13</td><td>35.0%</td><td>0</td><td>26</td></tr>
+<tr><td>10</td><td>SWAMP</td><td>0</td><td>76-97</td><td>43.9%</td><td>7-10</td><td>41.2%</td><td>1</td><td>18</td></tr>
+<tr><td>11</td><td>IGGLES 4 LIFE</td><td>0</td><td>60-87</td><td>40.8%</td><td>3-6</td><td>33.3%</td><td>0</td><td>12</td></tr>
+</tbody>
+</table>
+<p class="center">POWER SCORE KEY: Ring (10) | Reg Season Title (3) | Division Title (2) | Playoff Win (1)</p>
+<p class="center gold">VIEW FULL RANKINGS →</p>
+</div>
 
-    <section id="season-results">
-      <h2>Season Results Database</h2>
-      <p class="small">Update the Google Sheet over time and this section will grow automatically.</p>
-      <div id="seasonResults"></div>
-    </section>
-  </main>
+<div class="card">
+<h3>LEAGUE AT A GLANCE</h3>
+<div class="small-grid">
+  <div><strong>RINGS DISTRIBUTION</strong><div class="donut"></div></div>
+  <div><strong>PLAYOFF WINS</strong><div class="donut"></div></div>
+  <div><strong>DIVISION TITLES</strong><div class="donut"></div></div>
+  <div><strong>REG SEASON WIN %</strong><div class="donut"></div></div>
+</div>
+<p class="center gold">VIEW MORE STATS →</p>
+</div>
 
-  <footer>
-    LFL History Book • MA3DTribe • Built from Google Sheets
-  </footer>
+<div>
+<div class="card">
+<h3>CHAMPIONSHIP LEADERBOARD</h3>
+<div class="leader-row"><strong>1</strong><span class="blue">GPLAY</span><strong>5</strong><span>🏆🏆🏆🏆🏆</span></div>
+<div class="leader-row"><strong>2</strong><span>ZOO</span><strong>4</strong><span>🏆🏆🏆🏆</span></div>
+<div class="leader-row"><strong>3</strong><span>JDF</span><strong>3</strong><span>🏆🏆🏆</span></div>
+<div class="leader-row"><strong>4</strong><span>JUNGLE</span><strong>3</strong><span>🏆🏆🏆</span></div>
+<div class="leader-row"><strong>5</strong><span>BREW</span><strong>1</strong><span>🏆</span></div>
+<div class="leader-row"><strong>6</strong><span>LEGACY</span><strong>1</strong><span>🏆</span></div>
+<div class="leader-row"><strong>7</strong><span>PC</span><strong>1</strong><span>🏆</span></div>
+<div class="leader-row"><strong>8</strong><span>DC</span><strong>1</strong><span>🏆</span></div>
+<p class="center gold">VIEW FULL CHAMPIONSHIP HISTORY →</p>
+</div>
 
-  <script>
-    const SHEET_ID = "1-ydpgPMn60vq1cV9Y1nQu6UN4-xX3HtR24vEhhsplhA";
+<div class="card" style="margin-top:8px">
+<h3>CHAMPIONSHIP TIMELINE</h3>
+<div class="timeline-row"><span>2025</span><strong class="blue">GPLAY</strong></div>
+<div class="timeline-row"><span>2024</span><strong>ZOO</strong></div>
+<div class="timeline-row"><span>2023</span><strong class="blue">GPLAY</strong></div>
+<div class="timeline-row"><span>2022</span><strong>JDF</strong></div>
+<div class="timeline-row"><span>2021</span><strong>JUNGLE</strong></div>
+<div class="timeline-row"><span>2020</span><strong class="blue">GPLAY</strong></div>
+<div class="timeline-row"><span>2019</span><strong>ZOO</strong></div>
+<div class="timeline-row"><span>2018</span><strong>JDF</strong></div>
+<div class="timeline-row"><span>2017</span><strong>ZOO</strong></div>
+<div class="timeline-row"><span>2016</span><strong class="blue">GPLAY</strong></div>
+<p class="center gold">VIEW ALL 19 SEASONS →</p>
+</div>
+</div>
 
-    const TAB_NAMES = {
-      championshipTimeline: "Championship_Timeline",
-      championshipCount: "Championship_Count",
-      regularStandings: "All_Time_Regular_Season_Standings",
-      playoffStandings: "All_Time_Playoff_Standings",
-      franchiseHistory: "Franchise_History",
-      dynastyEras: "Dynasty_Eras",
-      seasonResults: "Season_Results"
-    };
+</section>
 
-    const fallback = {
-      championshipTimeline: [
-        {Year:"2007", Champion:"DC Ruff Ryders", "Runner Up":"Honey Pack", Notes:"First LFL Champion"},
-        {Year:"2008", Champion:"JDF", "Runner Up":"Damage Inc", Notes:""},
-        {Year:"2009", Champion:"Zoo", "Runner Up":"DC Ruff Ryders", Notes:""},
-        {Year:"2010", Champion:"Brew", "Runner Up":"JDF", Notes:""},
-        {Year:"2011", Champion:"Legacy", "Runner Up":"PC DemBoyz", Notes:""},
-        {Year:"2012", Champion:"Jungle", "Runner Up":"JDF", Notes:""},
-        {Year:"2013", Champion:"Jungle", "Runner Up":"Brew", Notes:""},
-        {Year:"2014", Champion:"Honey Pack", "Runner Up":"Brew", Notes:""},
-        {Year:"2015", Champion:"Honey Pack", "Runner Up":"Zoo", Notes:""},
-        {Year:"2016", Champion:"JDF", "Runner Up":"Swamp", Notes:""},
-        {Year:"2017", Champion:"Honey Pack", "Runner Up":"Zoo", Notes:""},
-        {Year:"2018", Champion:"Zoo", "Runner Up":"Legacy", Notes:""},
-        {Year:"2019", Champion:"PC DemBoyz", "Runner Up":"JDF", Notes:""},
-        {Year:"2020", Champion:"Zoo", "Runner Up":"PC DemBoyz", Notes:""},
-        {Year:"2021", Champion:"Honey Pack", "Runner Up":"Jungle", Notes:""},
-        {Year:"2022", Champion:"JDF & Jungle", "Runner Up":"Co-Champions", Notes:"MNF Injury Game"},
-        {Year:"2023", Champion:"Zoo", "Runner Up":"Black Panther", Notes:""},
-        {Year:"2024", Champion:"JDF", "Runner Up":"Jungle", Notes:""},
-        {Year:"2025", Champion:"Honey Pack", "Runner Up":"Iggles 4 Life", Notes:""}
-      ],
-      championshipCount: [
-        {Rank:"1", Franchise:"Honey Pack", Titles:"5.0"},
-        {Rank:"2", Franchise:"Zoo", Titles:"4.0"},
-        {Rank:"3", Franchise:"JDF", Titles:"3.5"},
-        {Rank:"4", Franchise:"Jungle", Titles:"2.5"},
-        {Rank:"5", Franchise:"Legacy", Titles:"1.0"},
-        {Rank:"5", Franchise:"Brew", Titles:"1.0"},
-        {Rank:"5", Franchise:"PC DemBoyz", Titles:"1.0"},
-        {Rank:"5", Franchise:"DC Ruff Ryders", Titles:"1.0"}
-      ],
-      regularStandings: [
-        {Rank:"1", Franchise:"Zoo", Wins:"151", Losses:"101", WinPct:".599"},
-        {Rank:"2", Franchise:"Honey Pack", Wins:"144", Losses:"108", WinPct:".571"},
-        {Rank:"3", Franchise:"JDF", Wins:"142", Losses:"110", WinPct:".563"},
-        {Rank:"4", Franchise:"Brew", Wins:"141", Losses:"111", WinPct:".559"},
-        {Rank:"5", Franchise:"Jungle", Wins:"137", Losses:"115", WinPct:".544"},
-        {Rank:"6", Franchise:"Legacy", Wins:"117", Losses:"135", WinPct:".464"},
-        {Rank:"7", Franchise:"Swamp", Wins:"87", Losses:"96", WinPct:".475"},
-        {Rank:"8", Franchise:"Black Panther", Wins:"111", Losses:"141", WinPct:".440"},
-        {Rank:"9", Franchise:"Iggles 4 Life", Wins:"56", Losses:"95", WinPct:".371"},
-        {Rank:"10", Franchise:"PC DemBoyz", Wins:"92", Losses:"160", WinPct:".365"},
-        {Rank:"11", Franchise:"DC Ruff Ryders", Wins:"43", Losses:"29", WinPct:".597"}
-      ],
-      playoffStandings: [
-        {Rank:"1", Franchise:"JDF", Wins:"23", Losses:"14", WinPct:".622"},
-        {Rank:"2", Franchise:"Honey Pack", Wins:"20", Losses:"11", WinPct:".645"},
-        {Rank:"3", Franchise:"Zoo", Wins:"17", Losses:"13", WinPct:".567"},
-        {Rank:"4", Franchise:"Jungle", Wins:"16", Losses:"15", WinPct:".516"},
-        {Rank:"5", Franchise:"Brew", Wins:"11", Losses:"16", WinPct:".407"},
-        {Rank:"6", Franchise:"PC DemBoyz", Wins:"9", Losses:"8", WinPct:".529"},
-        {Rank:"7", Franchise:"Legacy", Wins:"8", Losses:"14", WinPct:".364"},
-        {Rank:"8", Franchise:"Black Panther", Wins:"7", Losses:"14", WinPct:".333"},
-        {Rank:"9", Franchise:"Swamp", Wins:"7", Losses:"11", WinPct:".389"},
-        {Rank:"10", Franchise:"DC Ruff Ryders", Wins:"7", Losses:"5", WinPct:".583"},
-        {Rank:"11", Franchise:"Iggles 4 Life", Wins:"3", Losses:"6", WinPct:".333"}
-      ],
-      franchiseHistory: [
-        {"Current Franchise":"Zoo","Previous Names":"Carpet Express | Zoo Crew | Zoo"},
-        {"Current Franchise":"Honey Pack","Previous Names":"Lauderhill Ryders | Gunplay Gang | Maybach Boyz | GunPlay Gunner | Honey Pack"},
-        {"Current Franchise":"JDF","Previous Names":"Jamaica Defense Force | JDF"},
-        {"Current Franchise":"Brew","Previous Names":"Rink Responsibly | Beer 30 | BEER-ack Obama | 1st Down 11 To Go | Drunken Irish | Bearly Sober"},
-        {"Current Franchise":"Jungle","Previous Names":"MO'TOWN MONSTA'S | Tarzan's Jungle"},
-        {"Current Franchise":"Black Panther","Previous Names":"The Reapers | The Fighting Whites | Black Dynamite | Honey Badgers | Dragon Fly | Black Panther"},
-        {"Current Franchise":"Swamp","Previous Names":"One Man Swamp | They Hate Me Swamp | Swamp Boyz"},
-        {"Current Franchise":"Legacy","Previous Names":"Team Randolph | Legacy"},
-        {"Current Franchise":"PC","Previous Names":"PC DemBoyz"},
-        {"Current Franchise":"Iggles 4 Life","Previous Names":"Iggles 4 Life"},
-        {"Current Franchise":"DC Ruff Ryders","Previous Names":"2007-2013 Franchise"},
-        {"Current Franchise":"Damage Inc","Previous Names":"2007-2011 Franchise"}
-      ],
-      dynastyEras: [
-        {Era:"2007-2013", "Dominant Franchise":"Jungle", Notes:"Back-to-back championships"},
-        {Era:"2014-2017", "Dominant Franchise":"Honey Pack", Notes:"3 titles in 4 seasons"},
-        {Era:"2018-2025", "Dominant Franchise":"Big Three Era", Notes:"Zoo, Honey Pack and JDF dominate"}
-      ],
-      seasonResults: []
-    };
+<section class="bottom">
+<div class="card records">
+<h3>LEAGUE RECORDS</h3>
+<div><span>MOST RINGS</span><span class="blue">GPLAY (5)</span></div>
+<div><span>MOST REG SEASON WINS</span><span>ZOO (144)</span></div>
+<div><span>HIGHEST WIN %</span><span>ZOO (60.5%)</span></div>
+<div><span>MOST PLAYOFF WINS</span><span class="blue">GPLAY & JDF (20)</span></div>
+<div><span>MOST DIVISION TITLES</span><span>ZOO (10)</span></div>
+<div><span>MOST REG SEASON TITLES</span><span>ZOO (5)</span></div>
+<div><span>LONGEST WIN STREAK</span><span>ZOO (11 WINS)</span></div>
+<p class="center gold">VIEW ALL RECORDS →</p>
+</div>
 
-    function normalizeHeader(h) {
-      return String(h || "").trim();
-    }
+<div class="card">
+<h3>HALL OF FAME</h3>
+<div class="small-grid center">
+  <div><strong class="gold">GOLD TIER</strong><br><br>🌿<br><span class="gold">GPLAY<br>ZOO<br>JDF</span></div>
+  <div><strong>SILVER TIER</strong><br><br>🌿<br>JUNGLE<br>BREW</div>
+  <div><strong style="color:#e87f26">BRONZE TIER</strong><br><br>🌿<br><span style="color:#e87f26">LEGACY<br>DC<br>BP<br>SWAMP<br>IGGLES 4 LIFE</span></div>
+</div>
+<p class="center gold">VIEW HALL OF FAME →</p>
+</div>
 
-    async function getSheet(tabName) {
-      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tabName)}`;
-      const res = await fetch(url);
-      const text = await res.text();
-      const json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
-      const table = json.table;
-      const headers = table.cols.map(c => normalizeHeader(c.label));
-      return table.rows.map(row => {
-        const obj = {};
-        headers.forEach((h, i) => {
-          obj[h || `Column${i+1}`] = row.c[i] ? row.c[i].v : "";
-        });
-        return obj;
-      }).filter(row => Object.values(row).some(v => String(v).trim() !== ""));
-    }
+<div class="card review">
+<h3>2025 SEASON REVIEW</h3>
+<div><span>CHAMPION</span><span class="blue">GPLAY</span></div>
+<div><span>RUNNER UP</span><span class="gold">ZOO</span></div>
+<div><span>BEST REG SEASON RECORD</span><span class="blue">GPLAY (11-3)</span></div>
+<div><span>HIGHEST SCORING TEAM</span><span class="blue">GPLAY (2,142)</span></div>
+<div><span>TOP PLAYOFF SCORER</span><span class="blue">GPLAY (538)</span></div>
+<p class="center gold">VIEW 2025 REVIEW →</p>
+</div>
 
-    function renderTable(rows) {
-      if (!rows || !rows.length) return "<p class='small'>No data available yet.</p>";
-      const headers = Object.keys(rows[0]);
-      return `
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>
-            </thead>
-            <tbody>
-              ${rows.map(r => `
-                <tr>${headers.map(h => `<td>${r[h] ?? ""}</td>`).join("")}</tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
+<div class="card links">
+<h3>QUICK LINKS</h3>
+<a href="#"><span>👥 TEAM PROFILES</span><span>→</span></a>
+<a href="#"><span>🏆 PLAYOFF HISTORY</span><span>→</span></a>
+<a href="#"><span>⚔️ RIVALRIES</span><span>→</span></a>
+<a href="#"><span>👁️ 2026 PREVIEW</span><span>→</span></a>
+</div>
+</section>
 
-    function renderDashboard(data) {
-      const champ = data.championshipTimeline?.slice(-1)[0]?.Champion || "Honey Pack";
-      const mostTitles = data.championshipCount?.[0]?.Franchise || "Honey Pack";
-      const topReg = data.regularStandings?.[0]?.Franchise || "Zoo";
-      const topPlayoff = data.playoffStandings?.[0]?.Franchise || "JDF";
+</main>
 
-      document.getElementById("dashboardCards").innerHTML = `
-        <div class="card"><div class="label">Founded</div><div class="value">2007</div></div>
-        <div class="card"><div class="label">Seasons Completed</div><div class="value">19</div></div>
-        <div class="card"><div class="label">Current Champion</div><div class="value gold">${champ}</div></div>
-        <div class="card"><div class="label">Most Titles</div><div class="value">${mostTitles}</div></div>
-        <div class="card"><div class="label">Most Regular Wins</div><div class="value">${topReg}</div></div>
-        <div class="card"><div class="label">Most Playoff Wins</div><div class="value">${topPlayoff}</div></div>
-      `;
-    }
+<footer class="footer">
+  <span>MA3DTRIBE.COM/ANALYTICS/LFL-HISTORY</span>
+  <span>DATA DRIVEN. LEGENDS FOREVER.</span>
+</footer>
 
-    function renderTimeline(rows) {
-      document.getElementById("championshipTimeline").innerHTML = rows.map(r => `
-        <div class="year-card">
-          <strong>${r.Year || ""}</strong>
-          <div class="gold">${r.Champion || ""}</div>
-          <div class="small">Runner-Up: ${r["Runner Up"] || r["Runner-Up"] || ""}</div>
-          ${r.Notes ? `<div class="small">${r.Notes}</div>` : ""}
-        </div>
-      `).join("");
-    }
-
-    async function init() {
-      const data = {};
-
-      for (const key in TAB_NAMES) {
-        try {
-          data[key] = await getSheet(TAB_NAMES[key]);
-        } catch (e) {
-          console.warn(`Using fallback for ${key}`, e);
-          data[key] = fallback[key] || [];
-        }
-      }
-
-      renderDashboard(data);
-      renderTimeline(data.championshipTimeline);
-      document.getElementById("championshipCount").innerHTML = renderTable(data.championshipCount);
-      document.getElementById("regularStandings").innerHTML = renderTable(data.regularStandings);
-      document.getElementById("playoffStandings").innerHTML = renderTable(data.playoffStandings);
-      document.getElementById("franchiseHistory").innerHTML = renderTable(data.franchiseHistory);
-      document.getElementById("dynastyEras").innerHTML = renderTable(data.dynastyEras);
-      document.getElementById("seasonResults").innerHTML = renderTable(data.seasonResults);
-
-      document.getElementById("loadStatus").textContent =
-        "Live data connected. Update Google Sheets to update this page.";
-    }
-
-    init();
-  </script>
+</div>
+</div>
 </body>
 </html>
