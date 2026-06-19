@@ -336,7 +336,7 @@ async function getSheet(tab){
     const obj={};
     headers.forEach((h,i)=>{
       const cell=r.c[i];
-      obj[h]=cell ? (cell.f ?? cell.v ?? "") : "";
+      obj[h]=cell ? (cell.v ?? cell.f ?? "") : "";
     });
     return obj;
   }).filter(r=>Object.values(r).some(v=>String(v).trim()!==""));
