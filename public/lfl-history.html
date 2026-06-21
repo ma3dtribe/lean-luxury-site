@@ -1,386 +1,643 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>LFL History Book</title>
-  <style>
-    :root{--ink:#07111b;--navy:#0b1d2b;--panel:#10283a;--panel2:#142f43;--line:rgba(255,255,255,.12);--gold:#f6bf2f;--blue:#69bfff;--text:#f6f8fb;--muted:#a9b8c7;--shadow:0 16px 40px rgba(0,0,0,.22)}
-    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 0 0,rgba(69,164,230,.22),transparent 28rem),radial-gradient(circle at 100% 100%,rgba(246,191,47,.12),transparent 30rem),var(--ink)}
-    button,input,select{font:inherit}.shell{max-width:1280px;margin:auto;padding:0 28px 72px}.site-header{height:78px;display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:1px solid var(--line)}
-    .brand{font-weight:950;font-style:italic;font-size:22px;letter-spacing:.04em;white-space:nowrap}.brand span,.gold{color:var(--gold)}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:.26em;font-style:normal;margin:1px 0 0 26px}
-    nav{display:flex;gap:4px;overflow:auto}.nav-button{color:var(--muted);border:0;background:transparent;padding:10px 12px;border-radius:9px;cursor:pointer;font-weight:750;white-space:nowrap}.nav-button:hover,.nav-button.active{background:rgba(255,255,255,.08);color:var(--text)}.nav-button.active{box-shadow:inset 0 -2px var(--gold)}
-    .view{display:none}.view.active{display:block;animation:fade .24s ease}@keyframes fade{from{opacity:.35;transform:translateY(5px)}to{opacity:1;transform:none}}
-    .hero{padding:58px 0 32px;display:grid;grid-template-columns:1.4fr .6fr;gap:28px;align-items:end}.eyebrow{color:var(--gold);font-weight:850;letter-spacing:.12em;font-size:12px}.hero h1{font-size:clamp(42px,7vw,82px);letter-spacing:-.06em;line-height:.9;margin:10px 0 18px}.hero p{font-size:17px;line-height:1.6;color:var(--muted);max-width:660px;margin:0}.champ-card,.card{border:1px solid var(--line);background:linear-gradient(145deg,rgba(20,47,67,.95),rgba(7,17,27,.92));border-radius:18px;box-shadow:var(--shadow)}.champ-card{padding:25px;text-align:center}.champ-card .trophy{font-size:48px}.champ-card h2{font-size:28px;color:var(--blue);margin:8px 0 4px}.champ-card p{font-size:13px;margin:auto}
-    .status{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding:8px 11px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:12px}.status i{display:block;width:7px;height:7px;border-radius:50%;background:var(--gold)}
-    .section{margin-top:38px}.section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:15px}.section-head h2{margin:0;font-size:23px;letter-spacing:-.03em}.section-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.text-button{border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);padding:9px 12px;border-radius:9px;font-weight:750;cursor:pointer}.text-button:hover{border-color:var(--gold)}
-    .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.stat{padding:18px;background:rgba(255,255,255,.045);border:1px solid var(--line);border-radius:14px}.stat strong{display:block;font-size:clamp(20px,2.6vw,32px);line-height:1.1;color:var(--gold);overflow-wrap:anywhere}.stat span{display:block;color:var(--muted);font-size:11px;font-weight:750;letter-spacing:.09em;margin-top:7px}
-    .two-col{display:grid;grid-template-columns:1.35fr .9fr;gap:18px}.card{padding:20px}.card h3{margin:0 0 14px;color:var(--gold);font-size:14px;letter-spacing:.07em;text-transform:uppercase}.rank{display:grid;grid-template-columns:28px 1fr auto;gap:11px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.rank:last-child{border:0}.rank b{color:var(--blue)}.rank small{display:block;color:var(--muted);margin-top:3px}.rank .number{font-weight:900;color:var(--gold)}
-    .filters{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 18px}.field{min-width:190px;flex:1;background:rgba(0,0,0,.2);border:1px solid var(--line);color:var(--text);padding:11px 13px;border-radius:10px;outline:0}.field:focus{border-color:var(--gold)}.tab-row{display:flex;gap:7px;overflow:auto;margin:20px 0}.tab{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);padding:9px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;font-weight:700}.tab.active,.tab:hover{background:var(--gold);border-color:var(--gold);color:#111}
-    .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:12px}.team{border:1px solid var(--line);border-radius:14px;padding:16px;background:rgba(255,255,255,.04)}.team h3{font-size:18px;letter-spacing:-.02em;color:var(--blue);margin:0 0 10px}.team p{color:var(--muted);font-size:13px;line-height:1.5;margin:4px 0}.team button{margin-top:12px}.timeline{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}.season{border:1px solid var(--line);border-radius:14px;padding:16px;background:rgba(255,255,255,.04)}.season strong{font-size:24px;color:var(--gold)}.season b{display:block;color:var(--blue);font-size:17px;margin:8px 0 4px}.season span{color:var(--muted);font-size:12px}
-    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:620px;font-size:13px}th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line)}th{position:sticky;top:0;background:#11293a;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;font-size:10px}tr:last-child td{border-bottom:0}tbody tr:hover{background:rgba(246,191,47,.07)}.empty{border:1px dashed var(--line);padding:26px;border-radius:12px;color:var(--muted);text-align:center}.loading{color:var(--muted);padding:18px}.detail{margin-top:18px}.archive-controls{display:grid;grid-template-columns:260px 1fr;gap:10px;margin:20px 0}
-    @media(max-width:760px){.shell{padding:0 16px 48px}.site-header{height:68px}.brand{font-size:18px}.brand small{display:none}.hero{padding:38px 0 25px;grid-template-columns:1fr}.champ-card{display:none}.stat-grid{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}.section{margin-top:28px}.archive-controls{grid-template-columns:1fr}}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LFL History Book | MA3DTribe</title>
+
+<style>
+:root{
+  --bg:#05070d;--panel:#0b1622;--panel2:#10283a;--panel3:#07111b;
+  --gold:#f6bf2f;--gold2:#ffd76a;--blue:#4fb3ff;--green:#22c55e;
+  --red:#ef4444;--purple:#a78bfa;--text:#f6f8fb;--muted:#a7b4c2;
+  --line:rgba(255,255,255,.12);--soft:rgba(255,255,255,.055);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);
+  background:
+    radial-gradient(circle at top left,rgba(79,179,255,.25),transparent 32%),
+    radial-gradient(circle at bottom right,rgba(246,191,47,.14),transparent 30%),
+    linear-gradient(135deg,#02070d,#071927 58%,#020406);
+}
+.app{display:grid;grid-template-columns:292px 1fr;min-height:100vh}
+.sidebar{
+  position:sticky;top:0;height:100vh;overflow-y:auto;padding:18px 18px 90px;
+  background:rgba(2,10,15,.88);border-right:1px solid var(--line);
+}
+.logo{font-size:27px;font-weight:900;letter-spacing:1px;font-style:italic}
+.logo span,.gold{color:var(--gold)}
+.logo-sub{color:var(--gold);letter-spacing:8px;font-size:11px;margin-left:38px}
+.badge{
+  margin:24px auto 12px;width:168px;height:168px;border-radius:50%;
+  border:5px solid var(--gold);display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle,#fff 0,#222 48%,#000 72%);
+  box-shadow:0 0 28px rgba(246,191,47,.3);color:#111;font-size:62px;font-weight:900;
+  text-shadow:0 2px #fff;
+}
+.side-title{text-align:center;font-size:23px;font-weight:900;margin-top:10px}
+.side-years{color:var(--gold);text-align:center;font-size:21px;font-weight:900}
+.side-small{text-align:center;font-size:13px;line-height:1.6;margin:18px 0;color:#fff}
+.side-menu{display:flex;flex-direction:column;gap:8px}
+.side-menu a{
+  color:white;text-decoration:none;padding:12px 14px;border-radius:8px;font-size:14px;
+}
+.side-menu a.active,.side-menu a:hover{
+  background:linear-gradient(90deg,var(--gold2),#d79b18);color:#111;font-weight:900;
+}
+.current-champ{
+  margin-top:26px;border:1px solid var(--line);border-radius:14px;padding:18px;
+  text-align:center;background:rgba(8,24,35,.92);
+}
+.current-champ h3{color:var(--gold);margin:0 0 12px;font-size:15px}
+.current-champ .name{color:var(--blue);font-size:28px;font-weight:900}
+.topbar{
+  height:62px;display:flex;align-items:center;gap:26px;padding:0 34px;
+  background:rgba(0,0,0,.46);border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:20;backdrop-filter:blur(8px);overflow-x:auto;
+}
+.topbar a{color:white;text-decoration:none;font-size:14px;font-weight:800;white-space:nowrap}
+.topbar a.active{color:var(--gold);border-bottom:3px solid var(--gold);padding-bottom:20px}
+.main{padding:24px 24px 85px;min-width:0}
+.section{scroll-margin-top:80px;margin-bottom:22px}
+.hero{
+  border:1px solid var(--line);border-radius:18px;padding:28px;
+  background:linear-gradient(135deg,rgba(16,40,58,.94),rgba(5,12,19,.92));
+  box-shadow:0 16px 40px rgba(0,0,0,.25);
+}
+.hero h1{font-size:clamp(42px,6vw,76px);line-height:.95;margin:0;letter-spacing:1px}
+.hero h2{margin:10px 0;color:var(--gold);font-size:20px}
+.hero p{margin:5px 0;color:#e8eef6}
+.status{
+  display:inline-block;margin-top:14px;color:var(--muted);border:1px solid var(--line);
+  padding:8px 12px;border-radius:999px;background:rgba(0,0,0,.25);font-size:13px;
+}
+.quick-buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.quick-buttons a{
+  text-decoration:none;color:#111;background:var(--gold);border-radius:999px;
+  padding:10px 14px;font-weight:900;font-size:13px;
+}
+.quick-buttons a.secondary{background:rgba(255,255,255,.08);color:#fff;border:1px solid var(--line)}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin:18px 0}
+.stat{
+  border:1px solid var(--line);border-radius:14px;background:rgba(11,27,38,.86);
+  padding:18px;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.18);
+}
+.stat .icon{font-size:28px}.stat .num{font-size:25px;font-weight:900}
+.stat .label{font-size:12px;color:var(--muted);line-height:1.35}
+.card{
+  background:rgba(8,24,35,.88);border:1px solid var(--line);border-radius:14px;
+  padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.22);min-width:0;
+}
+.card h2,.card h3{margin:0 0 14px;color:var(--gold);letter-spacing:.5px}
+.section-head{display:flex;justify-content:space-between;align-items:end;gap:14px;margin-bottom:14px}
+.section-head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.grid-2{display:grid;grid-template-columns:1.35fr .85fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.table-wrap{width:100%;overflow-x:auto;border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:720px}
+th{color:var(--gold);font-size:11px;text-transform:uppercase;background:rgba(0,0,0,.28)}
+td,th{padding:9px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;vertical-align:top}
+tr:hover td{background:rgba(246,191,47,.08)}
+.small{color:var(--muted);font-size:13px;line-height:1.45}
+.blue{color:var(--blue);font-weight:900}.green{color:var(--green);font-weight:900}
+.pill{display:inline-block;padding:6px 9px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+.rank-card,.leader-card,.record-card,.team-card,.era-card{
+  border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.045);
+  padding:14px;
+}
+.rank-card{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center}
+.rank-num{
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:rgba(246,191,47,.18);color:var(--gold);font-weight:900;
+}
+.power-score{font-size:24px;font-weight:900;color:var(--gold)}
+.bar{height:8px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:8px}
+.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--blue));width:50%}
+.timeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.year-card{
+  border:1px solid var(--line);border-radius:14px;padding:14px;
+  background:linear-gradient(180deg,rgba(16,40,57,.95),rgba(8,24,35,.88));
+}
+.year-card strong{color:var(--gold);font-size:20px}
+.year-card .champ{color:var(--blue);font-size:18px;font-weight:900;margin-top:6px}
+.searchbar input,.compare select{
+  background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:999px;
+  padding:10px 14px;color:white;outline:none;min-width:220px;
+}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.team-card{text-decoration:none;color:white;display:block}
+.team-card:hover{border-color:var(--gold);background:rgba(246,191,47,.08)}
+.team-card h3{margin:0 0 8px;color:var(--gold)}
+.compare{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.footer{
+  position:fixed;bottom:0;left:292px;right:0;background:rgba(0,0,0,.78);
+  border-top:1px solid var(--line);padding:12px 22px;color:var(--gold);
+  font-size:12px;letter-spacing:2px;display:flex;justify-content:space-between;z-index:30;
+}
+@media(max-width:1180px){
+  .app{grid-template-columns:1fr}.sidebar{position:relative;height:auto}
+  .side-menu{display:grid;grid-template-columns:repeat(2,1fr)}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .footer{left:0}
+}
+@media(max-width:680px){
+  .main{padding:16px 14px 90px}.hero{padding:20px}
+  .side-menu{grid-template-columns:1fr}.stats{grid-template-columns:1fr}
+  .section-head{display:block}.footer{font-size:10px;display:block;text-align:center}
+}
+</style>
 </head>
+
 <body>
-  <div class="shell">
-    <header class="site-header">
-      <div class="brand">MA3D<span>TRIBE</span><small>LEAGUE ARCHIVES</small></div>
-      <nav>
-        <button class="nav-button active" data-view="home">Home</button>
-        <button class="nav-button" data-view="teams">Teams</button>
-        <button class="nav-button" data-view="seasons">Seasons</button>
-        <button class="nav-button" data-view="records">Records</button>
-        <button class="nav-button" data-view="archive">Archive</button>
-      </nav>
-    </header>
+<div class="app">
+<aside class="sidebar">
+  <div class="logo">MA3D<span>TRIBE</span></div>
+  <div class="logo-sub">ANALYTICS</div>
+  <div class="badge">LFL</div>
+  <div class="side-title">LFL HISTORY BOOK</div>
+  <div class="side-years">2007 - 2025</div>
+  <div class="side-small">OFFICIAL LEAGUE RECORDS<br>& MEDIA GUIDE</div>
 
-    <main>
-      <section id="home" class="view active">
-        <div class="hero">
-          <div>
-            <div class="eyebrow">2007 — 2025</div>
-            <h1>LFL<br>History Book</h1>
-            <p>The living record of the league: championships, franchise legacies, scoring excellence, and the seasons that became lore.</p>
-            <div class="status" id="connection"><i></i>Connecting to league archive…</div>
-          </div>
-          <aside class="champ-card">
-            <div class="eyebrow">Current champion</div>
-            <div class="trophy">🏆</div>
-            <h2 id="championName">—</h2>
-            <p id="championYear">Latest season</p>
-          </aside>
-        </div>
+  <nav class="side-menu">
+    <a class="active" href="#overview">🏠 Overview</a>
+    <a href="#championships">🏆 Champions</a>
+    <a href="#power">📈 Power Index</a>
+    <a href="#divisions">🏁 Divisions</a>
+    <a href="#scoring">🔥 Scoring Center</a>
+    <a href="#records">⭐ Record Book</a>
+    <a href="#dynasty">👑 Dynasty / HOF</a>
+    <a href="#compare">⚔️ Compare Teams</a>
+    <a href="#teams">👥 Team Profiles</a>
+    <a href="#database">📊 Full Database</a>
+  </nav>
 
-        <div class="stat-grid" id="headlineStats"></div>
-
-        <div class="section two-col">
-          <article class="card">
-            <div class="section-head">
-              <div><h2>Power snapshot</h2><p>Legacy at a glance. The complete table lives in Records.</p></div>
-              <button class="text-button" data-go="records">Full rankings</button>
-            </div>
-            <div id="powerSnapshot" class="loading">Loading league leaders…</div>
-          </article>
-          <article class="card">
-            <div class="section-head">
-              <div><h2>Recent champions</h2><p>The last five names on the trophy.</p></div>
-              <button class="text-button" data-go="seasons">All seasons</button>
-            </div>
-            <div id="recentChamps" class="loading">Loading timeline…</div>
-          </article>
-        </div>
-      </section>
-
-      <section id="teams" class="view">
-        <div class="section">
-          <div class="section-head"><div><h2>Franchise profiles</h2><p>Find a team, then open its complete history only when you want it.</p></div></div>
-          <div class="filters"><input id="teamSearch" class="field" placeholder="Search a franchise…"></div>
-          <div id="teamGrid" class="team-grid loading">Loading franchise index…</div>
-          <div id="teamDetail" class="detail"></div>
-        </div>
-      </section>
-
-      <section id="seasons" class="view">
-        <div class="section">
-          <div class="section-head"><div><h2>Season library</h2><p>Choose a year to explore its result rows. No endless wall of data.</p></div></div>
-          <div class="filters"><select id="seasonPicker" class="field"><option value="">All championship seasons</option></select></div>
-          <div id="seasonTimeline" class="timeline loading">Loading championship timeline…</div>
-        </div>
-      </section>
-
-      <section id="records" class="view">
-        <div class="section">
-          <div class="section-head"><div><h2>Record book</h2><p>One category at a time. The rest stays politely out of the way.</p></div></div>
-          <div class="tab-row" id="recordTabs"></div>
-          <div id="recordContent" class="loading">Choose a record category.</div>
-        </div>
-      </section>
-
-      <section id="archive" class="view">
-        <div class="section">
-          <div class="section-head"><div><h2>League archive</h2><p>The unfiltered Google Sheet data—kept here for research, not clutter.</p></div></div>
-          <div class="archive-controls">
-            <select id="archivePicker" class="field"></select>
-            <input id="archiveSearch" class="field" placeholder="Filter this table…">
-          </div>
-          <div id="archiveContent" class="empty">Choose a sheet to load it.</div>
-        </div>
-      </section>
-    </main>
+  <div class="current-champ">
+    <h3>CURRENT CHAMPION</h3>
+    <div class="name" id="sideChampion">Loading...</div>
+    <div style="font-size:42px">🏆</div>
+    <strong id="sideChampionYear">Latest Champion</strong>
   </div>
+</aside>
+
+<div>
+<header class="topbar">
+  <a class="active" href="#overview">DASHBOARD</a>
+  <a href="#championships">CHAMPIONS</a>
+  <a href="#power">POWER INDEX</a>
+  <a href="#scoring">SCORING</a>
+  <a href="#records">RECORDS</a>
+  <a href="#teams">TEAMS</a>
+  <a href="#database">DATABASE</a>
+</header>
+
+<main class="main">
+
+<section class="hero section" id="overview">
+  <h1>LFL HISTORY BOOK</h1>
+  <h2>THE OFFICIAL LEAGUE RECORD BOOK • 2007 - 2025</h2>
+  <p>A modern media guide built from championships, division titles, PF history, playoff success, franchise records, and era dominance.</p>
+  <div class="status" id="loadStatus">Loading Google Sheets data...</div>
+  <div class="quick-buttons">
+    <a href="#power">View Power Index</a>
+    <a href="#championships" class="secondary">Championship Center</a>
+    <a href="#scoring" class="secondary">Scoring Center</a>
+    <a href="#teams" class="secondary">Team Profiles</a>
+  </div>
+</section>
+
+<section class="stats" id="dashboardStats"></section>
+
+<section class="grid-2 section">
+  <div class="card">
+    <div class="section-head">
+      <div><h2>All-Time Franchise Power Index</h2><p>Built from rings, wins, PF data, playoff success, division titles, and best overall records.</p></div>
+      <span class="pill">Playoff points ready for future add</span>
+    </div>
+    <div id="powerTopFive"></div>
+  </div>
+  <div class="card">
+    <h2>League Leaders</h2>
+    <div id="leagueLeaders"></div>
+  </div>
+</section>
+
+<section class="card section" id="championships">
+  <div class="section-head">
+    <div><h2>Championship Center</h2><p>Champions, title leaders, and full championship timeline.</p></div>
+  </div>
+  <div class="grid-2">
+    <div><h3>Championship Timeline</h3><div class="timeline" id="championshipTimeline"></div></div>
+    <div><h3>Championship Leaders</h3><div id="championshipCount"></div></div>
+  </div>
+</section>
+
+<section class="card section" id="power">
+  <div class="section-head">
+    <div><h2>Franchise Power Index</h2><p>Weighted ranking across legacy, dominance, scoring, consistency, and future playoff points.</p></div>
+  </div>
+  <div id="powerIndexFull"></div>
+</section>
+
+<section class="card section" id="divisions">
+  <h2>Division History Center</h2>
+  <div class="grid-3">
+    <div><h3>Division Champions</h3><div id="divisionChampions"></div></div>
+    <div><h3>Deep Side Titles</h3><div id="deepSideTitles"></div></div>
+    <div><h3>Jam Hill Titles</h3><div id="jamHillTitles"></div></div>
+  </div>
+  <br>
+  <h3>Best Overall Record Leaders</h3>
+  <div id="bestOverallLeaders"></div>
+</section>
+
+<section class="card section" id="scoring">
+  <h2>PF & Scoring Center</h2>
+  <div class="grid-2">
+    <div><h3>All-Time PF Leaders</h3><div id="allTimePFLeaders"></div></div>
+    <div><h3>Yearly PF Champions</h3><div id="yearlyPFChampions"></div></div>
+  </div>
+  <br>
+  <div class="grid-2">
+    <div><h3>Top 25 Raw PF Seasons</h3><div id="top25RawPF"></div></div>
+    <div><h3>Top 25 PPG Seasons</h3><div id="top25PPG"></div></div>
+  </div>
+  <br>
+  <h3>PF Movement</h3>
+  <div id="pfMovement"></div>
+</section>
+
+<section class="card section" id="records">
+  <h2>Record Book & Superlatives</h2>
+  <div class="grid-2">
+    <div><h3>Superlatives</h3><div id="superlatives"></div></div>
+    <div><h3>Franchise Records</h3><div id="franchiseRecords"></div></div>
+  </div>
+  <br>
+  <div class="grid-2">
+    <div><h3>Dominance Index</h3><div id="dominanceIndex"></div></div>
+    <div><h3>Mount Rushmore</h3><div id="mountRushmore"></div></div>
+  </div>
+</section>
+
+<section class="card section" id="dynasty">
+  <h2>Dynasty Center & Hall of Fame</h2>
+  <div class="grid-3">
+    <div><h3>Dynasty Eras</h3><div id="dynastyEras"></div></div>
+    <div><h3>Era Leaders</h3><div id="eraLeaders"></div></div>
+    <div><h3>Franchise Identities</h3><div id="franchiseIdentities"></div></div>
+  </div>
+  <br>
+  <h3>Franchise History</h3>
+  <div id="franchiseHistory"></div>
+</section>
+
+<section class="card section" id="compare">
+  <h2>Franchise Comparison Tool</h2>
+  <p class="small">Pick two teams and compare championships, division titles, PF, wins, playoff success, and power index.</p>
+  <div class="compare">
+    <select id="teamA"></select>
+    <select id="teamB"></select>
+  </div>
+  <div id="comparisonTable"></div>
+</section>
+
+<section class="card section" id="teams">
+  <div class="section-head">
+    <div><h2>Team Profile Center</h2><p>Auto-built from all tabs. Click a team to search its full history.</p></div>
+    <div class="searchbar"><input id="teamSearch" placeholder="Search teams..." /></div>
+  </div>
+  <div class="team-grid" id="teamProfiles"></div>
+</section>
+
+<section class="card section" id="database">
+  <h2>Full Sheet Database</h2>
+  <p class="small">All connected Google Sheet tabs. Search any team, season, stat, or record.</p>
+  <div class="searchbar"><input id="databaseSearch" placeholder="Search all data..." /></div><br>
+  <div id="allSheets"></div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <span>MA3DTRIBE.COM/LFL-HISTORY</span>
+  <span>DATA DRIVEN. LEGENDS FOREVER.</span>
+</footer>
+</div>
+</div>
 
 <script>
-const SHEET_ID='1-ydpgPMn60vq1cV9Y1nQu6UN4-xX3HtR24vEhhsplhA';
+const SHEET_ID = "1-ydpgPMn60vq1cV9Y1nQu6UN4-xX3HtR24vEhhsplhA";
 
-const SHEETS=[
-  'Championship_Timeline','Championship_Count','All-Time PF Leaders',
-  'Regular_Season_Standings','Playoff_Standings','Season_Results',
-  'Division Champions','Deep Side Titles','Jam Hill Titles',
-  'Best Overall Leaders','Top 25 Raw PF Seasons','Top 25 PPG Seasons',
-  'Yearly PF Champions','Franchise Records','Superlatives',
-  'Dominance Index','Dynasty_Eras','Era Leaders','Mount_Rushmore',
-  'Franchise_History','Franchise Identities','Biggest PF Improvements',
-  'Biggest PF Declines','Biggest PPG Improvements','Raw PF Moves',
-  'Moves Leaders','Efficiency PF Per Move'
+const TABS = [
+  "Dashboard","Dashboard (1)","League_Info","Divisions","Franchise_History",
+  "Franchise Identities","Championship_Timeline","Championship_Count",
+  "Regular_Season_Standings","Playoff_Standings","Season_Results","Dynasty_Eras",
+  "Mount_Rushmore","Website_Homepage_Data","Division Champions","Deep Side Titles",
+  "Jam Hill Titles","Best Overall Leaders","Dominance Index","Read Me","Raw PF Moves",
+  "All-Time PF Leaders","Moves Leaders","Efficiency PF Per Move","Top 25 Raw PF Seasons",
+  "Top 25 PPG Seasons","Yearly PF Champions","Era Leaders","Franchise Records",
+  "Biggest PF Improvements","Biggest PF Declines","Biggest PPG Improvements",
+  "Superlatives","2007 PF Data"
 ];
 
-const RECORDS=[
-  ['All-Time Standings','Regular_Season_Standings'],
-  ['Championships','Championship_Count'],
-  ['Scoring Leaders','All-Time PF Leaders'],
-  ['Top Scoring Seasons','Top 25 Raw PF Seasons'],
-  ['PPG Seasons','Top 25 PPG Seasons'],
-  ['Franchise Records','Franchise Records'],
-  ['Superlatives','Superlatives'],
-  ['Dynasties','Dynasty_Eras'],
-  ['Mount Rushmore','Mount_Rushmore']
-];
+let DATA = {};
+let POWER = [];
 
-const cache={};
-let teams=[];
+function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+function num(v){const n=Number(String(v??"").replace(/[^0-9.-]/g,""));return Number.isFinite(n)?n:0}
+function val(row,keys){for(const k of keys){if(row[k]!==undefined&&String(row[k]).trim()!=="")return row[k]}return""}
+function normTeam(t){
+  return String(t??"").toLowerCase().replace(/[^a-z0-9]/g,"").replace("honeypack","honeypack").trim();
+}
 
-const $=selector=>document.querySelector(selector);
-const $$=selector=>[...document.querySelectorAll(selector)];
-const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({
-  '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'
-}[char]));
-const num=value=>Number(String(value??'').replace(/[^0-9.-]/g,''))||0;
-const value=(row,keys)=>keys.map(key=>row[key]).find(item=>item!==undefined&&String(item).trim()!=='')||'';
-
-async function sheet(name){
-  if(cache[name]) return cache[name];
-
-  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&cachebust=${Date.now()}`;
-  const response=await fetch(url);
-  if(!response.ok) throw Error(name);
-
-  const raw=await response.text();
-  const json=JSON.parse(raw.slice(raw.indexOf('{'),raw.lastIndexOf('}')+1));
-  const headers=json.table.cols.map((column,index)=>String(column.label||`Column ${index+1}`).trim());
-
-  cache[name]=json.table.rows
-    .map(row=>Object.fromEntries(headers.map((header,index)=>[header,row.c[index]?.f??row.c[index]?.v??''])))
-    .filter(row=>Object.values(row).some(item=>String(item).trim()));
-
-  return cache[name];
+async function getSheet(tab){
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tab)}&cachebust=${Date.now()}`;
+  const res=await fetch(url); if(!res.ok) throw new Error(tab);
+  const text=await res.text();
+  const json=JSON.parse(text.substring(text.indexOf("{"),text.lastIndexOf("}")+1));
+  const headers=json.table.cols.map((c,i)=>String(c.label||`Column${i+1}`).trim());
+  return json.table.rows.map(r=>{
+    const obj={};
+    headers.forEach((h,i)=>{const cell=r.c[i];obj[h]=cell?(cell.v??cell.f??""):""});
+    return obj;
+  }).filter(r=>Object.values(r).some(v=>String(v).trim()!==""));
 }
 
 function table(rows){
-  if(!rows?.length) return '<div class="empty">No matching data is available yet.</div>';
-
-  const headers=[...new Set(rows.flatMap(Object.keys))];
-
-  return `
-    <div class="table-wrap">
-      <table>
-        <thead><tr>${headers.map(header=>`<th>${esc(header)}</th>`).join('')}</tr></thead>
-        <tbody>
-          ${rows.map(row=>`<tr>${headers.map(header=>`<td>${esc(row[header])}</td>`).join('')}</tr>`).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
+  if(!rows||!rows.length)return"<p class='small'>No data available.</p>";
+  const headers=[...new Set(rows.flatMap(r=>Object.keys(r)))];
+  return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>
+  ${rows.map(r=>`<tr>${headers.map(h=>`<td>${esc(r[h])}</td>`).join("")}</tr>`).join("")}
+  </tbody></table></div>`;
 }
 
-function findTeam(row){
-  return value(row,['Franchise','Team','Champion','Winner','Current Franchise','Owner']);
+function renderTab(tab,target){
+  const el=document.getElementById(target);
+  if(el)el.innerHTML=table(DATA[tab]||[]);
 }
 
-function switchView(id){
-  $$('.view').forEach(view=>view.classList.toggle('active',view.id===id));
-  $$('.nav-button').forEach(button=>button.classList.toggle('active',button.dataset.view===id));
-
-  if(id==='records') loadRecord(0);
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-async function boot(){
-  try{
-    const [timeline,titles,pf,standings]=await Promise.all(
-      ['Championship_Timeline','Championship_Count','All-Time PF Leaders','Regular_Season_Standings'].map(sheet)
-    );
-
-    renderHome(timeline,titles,pf,standings);
-    buildTeams(timeline,titles,pf,standings);
-    buildSeasons(timeline);
-    $('#connection').innerHTML='<i></i>Live league data connected';
-  }catch(error){
-    $('#connection').textContent='Could not connect to the Google Sheet. Check sharing permissions.';
-    console.error(error);
-  }
-}
-
-function renderHome(timeline,titles,pf,standings){
-  const ordered=[...timeline].sort((a,b)=>num(value(b,['Year','Season']))-num(value(a,['Year','Season'])));
-  const latest=ordered[0]||{};
-  const champion=value(latest,['Champion','Winner','Champions'])||'—';
-
-  $('#championName').textContent=champion;
-  $('#championYear').textContent=value(latest,['Year','Season']) ? `${value(latest,['Year','Season'])} Champion` : 'Latest season';
-
-  const titleLead=findTeam(titles[0])||'—';
-  const pfLead=findTeam(pf[0])||'—';
-
-  $('#headlineStats').innerHTML=`
-    <div class="stat"><strong>${timeline.length||'—'}</strong><span>SEASONS RECORDED</span></div>
-    <div class="stat"><strong>${esc(titleLead)}</strong><span>TITLE LEADER</span></div>
-    <div class="stat"><strong>${esc(pfLead)}</strong><span>ALL-TIME PF LEADER</span></div>
-    <div class="stat"><strong>${SHEETS.length}</strong><span>ARCHIVE TABLES</span></div>
-  `;
-
-  $('#powerSnapshot').innerHTML=standings.slice(0,5).map((row,index)=>`
-    <div class="rank">
-      <span class="number">${index+1}</span>
-      <span>
-        <b>${esc(findTeam(row)||'—')}</b>
-        <small>${esc(value(row,['Wins','W','Win %','Record'])||'All-time standing')}</small>
-      </span>
-      <strong>${esc(value(row,['Wins','W','Win %'])||'')}</strong>
-    </div>
-  `).join('') || '<div class="empty">No standings data.</div>';
-
-  $('#recentChamps').innerHTML=ordered.slice(0,5).map(row=>`
-    <div class="rank">
-      <span class="number">${esc(value(row,['Year','Season']))}</span>
-      <span>
-        <b>${esc(value(row,['Champion','Winner','Champions']))}</b>
-        <small>${esc(value(row,['Runner Up','Runner-Up','RunnerUp']) ? 'Runner-up: '+value(row,['Runner Up','Runner-Up','RunnerUp']) : 'League champion')}</small>
-      </span>
-    </div>
-  `).join('');
-}
-
-function buildTeams(...sources){
-  const set=new Set();
-
-  sources.flat().forEach(row=>{
-    const name=findTeam(row);
-    if(name&&name.length<45&&!/^\d/.test(name)) set.add(name);
+function getTeams(){
+  const teams=new Set();
+  const keys=["Team","Franchise","Current Franchise","Champion","Winner","Deep Side Champion","Jam Hill Champion","Best Overall Record"];
+  Object.values(DATA).flat().forEach(row=>{
+    keys.forEach(k=>{
+      if(row[k]){
+        String(row[k]).split("&").forEach(x=>{
+          const name=x.replace(/\([^)]+\)/g,"").trim();
+          if(name && name.length<42 && !/^\d/.test(name)) teams.add(name);
+        });
+      }
+    });
   });
+  return [...teams].sort();
+}
 
-  teams=[...set].sort();
+function teamRows(team){
+  const q=team.toLowerCase();
+  const hits={};
+  Object.entries(DATA).forEach(([tab,rows])=>{
+    hits[tab]=rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q)));
+  });
+  return hits;
+}
+
+function metricFromTable(tab, team, teamKeys, metricKeys){
+  const rows=DATA[tab]||[];
+  const n=normTeam(team);
+  const row=rows.find(r=>teamKeys.some(k=>normTeam(r[k])===n || String(r[k]??"").toLowerCase().includes(team.toLowerCase())));
+  if(!row)return 0;
+  return num(val(row,metricKeys));
+}
+
+function countChampion(team){
+  const n=normTeam(team);
+  return (DATA["Championship_Timeline"]||[]).reduce((s,r)=>{
+    const champ=String(val(r,["Champion","Winner","Champions"])).toLowerCase();
+    if(champ.includes(team.toLowerCase())) return s+1;
+    return s;
+  },0);
+}
+
+function countMentions(tab, team){
+  const q=team.toLowerCase();
+  return (DATA[tab]||[]).filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))).length;
+}
+
+function buildPowerIndex(){
+  const teams=getTeams();
+  const pfRows=DATA["All-Time PF Leaders"]||[];
+  const pfRankMax=pfRows.length || 1;
+
+  POWER=teams.map(team=>{
+    const titles=metricFromTable("Championship_Count",team,["Franchise","Team"],["Titles","Rings","Championships"]) || countChampion(team);
+    const regWins=metricFromTable("Regular_Season_Standings",team,["Franchise","Team"],["Wins","W","Reg W"]);
+    const playoffWins=metricFromTable("Playoff_Standings",team,["Franchise","Team"],["Wins","W","Playoff Wins"]);
+    const divTitles=countMentions("Division Champions",team)+metricFromTable("Deep Side Titles",team,["Franchise","Team"],["Titles","Division Titles"])+metricFromTable("Jam Hill Titles",team,["Franchise","Team"],["Titles","Division Titles"]);
+    const bestOverall=metricFromTable("Best Overall Leaders",team,["Franchise","Team"],["Best Overall","Count","Titles"]);
+    const pfTotal=metricFromTable("All-Time PF Leaders",team,["Franchise","Team"],["PF","Total PF","Points For"]);
+    const pfTitles=countMentions("Yearly PF Champions",team);
+    const topRaw=countMentions("Top 25 Raw PF Seasons",team);
+    const topPPG=countMentions("Top 25 PPG Seasons",team);
+    const seasonHits=countMentions("Season_Results",team);
+    const playoffApps=metricFromTable("Playoff_Standings",team,["Franchise","Team"],["Playoff App","Appearances","Apps"]);
+
+    const pfRankIndex=pfRows.findIndex(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(team.toLowerCase())));
+    const pfRankScore=pfRankIndex>=0 ? (pfRankMax-pfRankIndex) : 0;
+
+    const score =
+      titles*30 +
+      bestOverall*8 +
+      divTitles*6 +
+      playoffWins*3 +
+      playoffApps*2 +
+      pfTitles*8 +
+      pfRankScore*1.2 +
+      topRaw*3 +
+      topPPG*3 +
+      regWins*.18 +
+      seasonHits*.4;
+
+    return {Team:team, "Power Index":Math.round(score*10)/10, Championships:titles, "Division Titles":divTitles, "Best Overall":bestOverall, "Reg Wins":regWins, "Playoff Wins":playoffWins, "PF Titles":pfTitles, "Top PF Seasons":topRaw, "Top PPG Seasons":topPPG, "Future Playoff Points":"Pending"};
+  }).sort((a,b)=>b["Power Index"]-a["Power Index"]);
+}
+
+function renderPowerCards(){
+  const max=POWER[0]?.["Power Index"]||1;
+  const cards=POWER.slice(0,8).map((r,i)=>{
+    const pct=Math.max(8,Math.round((r["Power Index"]/max)*100));
+    return `<div class="rank-card">
+      <div class="rank-num">${i+1}</div>
+      <div>
+        <div class="blue">${esc(r.Team)}</div>
+        <div class="small">${r.Championships} rings • ${r["Division Titles"]} division titles • ${r["PF Titles"]} PF titles • ${r["Playoff Wins"]} playoff wins</div>
+        <div class="bar"><span style="width:${pct}%"></span></div>
+      </div>
+      <div class="power-score">${r["Power Index"]}</div>
+    </div>`;
+  }).join("");
+  document.getElementById("powerTopFive").innerHTML=cards;
+  document.getElementById("powerIndexFull").innerHTML=table(POWER);
+}
+
+function renderStats(){
+  const champs=DATA["Championship_Timeline"]||[];
+  const franchises=DATA["Franchise_History"]||[];
+  const years=champs.map(r=>num(val(r,["Year","Season"]))).filter(Boolean);
+  const minY=years.length?Math.min(...years):2007, maxY=years.length?Math.max(...years):2025;
+  const current=POWER[0]?.Team||"—";
+  const topPF=(DATA["All-Time PF Leaders"]||[])[0];
+  const topPFTeam=topPF?val(topPF,["Franchise","Team"]):"—";
+
+  document.getElementById("dashboardStats").innerHTML=`
+    <div class="stat"><div class="icon">🗓️</div><div class="num">${champs.length||19}</div><div class="label">SEASONS<br>${minY}-${maxY}</div></div>
+    <div class="stat"><div class="icon">🏆</div><div class="num">${val((DATA["Championship_Count"]||[])[0]||{},["Franchise","Team"])||"—"}</div><div class="label">MOST TITLES</div></div>
+    <div class="stat"><div class="icon">👑</div><div class="num">${current}</div><div class="label">POWER INDEX KING</div></div>
+    <div class="stat"><div class="icon">🔥</div><div class="num">${topPFTeam||"—"}</div><div class="label">PF LEADER</div></div>
+    <div class="stat"><div class="icon">🏁</div><div class="num">${val((DATA["Best Overall Leaders"]||[])[0]||{},["Franchise","Team"])||"—"}</div><div class="label">BEST OVERALL LEADER</div></div>
+    <div class="stat"><div class="icon">📊</div><div class="num">${Object.keys(DATA).length}</div><div class="label">SHEET TABS CONNECTED</div></div>`;
+}
+
+function renderLeaders(){
+  const leaderRows=[
+    {Category:"Current Champion",Leader:document.getElementById("sideChampion").textContent},
+    {Category:"Greatest Franchise",Leader:POWER[0]?.Team||"—"},
+    {Category:"Highest Power Index",Leader:POWER[0]?`${POWER[0].Team} (${POWER[0]["Power Index"]})`:"—"},
+    {Category:"Most Championships",Leader:val((DATA["Championship_Count"]||[])[0]||{},["Franchise","Team"])||"—"},
+    {Category:"PF Leader",Leader:val((DATA["All-Time PF Leaders"]||[])[0]||{},["Franchise","Team"])||"—"},
+    {Category:"Best Overall Leader",Leader:val((DATA["Best Overall Leaders"]||[])[0]||{},["Franchise","Team"])||"—"}
+  ];
+  document.getElementById("leagueLeaders").innerHTML=table(leaderRows);
+}
+
+function latestChampion(){
+  const rows=DATA["Championship_Timeline"]||[];
+  const sorted=[...rows].sort((a,b)=>num(val(b,["Year","Season"]))-num(val(a,["Year","Season"])));
+  const latest=sorted[0]||{};
+  const champ=val(latest,["Champion","Winner","Champions"])||"No Data";
+  const year=val(latest,["Year","Season"])||"";
+  document.getElementById("sideChampion").textContent=champ;
+  document.getElementById("sideChampionYear").textContent=year?`${year} Champion`:"Latest Champion";
+}
+
+function renderTimeline(){
+  const rows=[...(DATA["Championship_Timeline"]||[])].sort((a,b)=>num(val(b,["Year","Season"]))-num(val(a,["Year","Season"])));
+  document.getElementById("championshipTimeline").innerHTML=rows.map(r=>{
+    const year=val(r,["Year","Season"]), champ=val(r,["Champion","Winner","Champions"]);
+    const runner=val(r,["Runner Up","Runner-Up","RunnerUp"]), notes=val(r,["Notes","Note"]);
+    return `<div class="year-card"><strong>${esc(year)}</strong><div class="champ">${esc(champ)}</div>${runner?`<div class="small">Runner-Up: ${esc(runner)}</div>`:""}${notes?`<div class="small">${esc(notes)}</div>`:""}</div>`;
+  }).join("");
+}
+
+function renderTeams(filter=""){
+  const q=filter.toLowerCase();
+  const teams=POWER.filter(t=>t.Team.toLowerCase().includes(q));
+  document.getElementById("teamProfiles").innerHTML=teams.map((r,i)=>`
+    <a class="team-card" href="#database" onclick="setDatabaseSearch('${esc(r.Team)}')">
+      <h3>${esc(r.Team)}</h3>
+      <div class="small">Power Rank: #${POWER.findIndex(x=>x.Team===r.Team)+1}</div>
+      <div class="small">Power Index: <span class="gold">${r["Power Index"]}</span></div>
+      <div class="small">Championships: ${r.Championships}</div>
+      <div class="small">Division Titles: ${r["Division Titles"]}</div>
+      <div class="small">PF Titles: ${r["PF Titles"]}</div>
+      <div class="gold">View full team history →</div>
+    </a>`).join("");
+}
+
+function renderCompare(){
+  const teams=POWER.map(r=>r.Team);
+  const a=document.getElementById("teamA"), b=document.getElementById("teamB");
+  a.innerHTML=teams.map(t=>`<option>${esc(t)}</option>`).join("");
+  b.innerHTML=teams.map((t,i)=>`<option ${i===1?"selected":""}>${esc(t)}</option>`).join("");
+  function update(){
+    const A=POWER.find(r=>r.Team===a.value)||{}, B=POWER.find(r=>r.Team===b.value)||{};
+    const rows=["Power Index","Championships","Division Titles","Best Overall","Reg Wins","Playoff Wins","PF Titles","Top PF Seasons","Top PPG Seasons","Future Playoff Points"]
+      .map(k=>({Category:k,[A.Team||"Team A"]:A[k]??"",[B.Team||"Team B"]:B[k]??""}));
+    document.getElementById("comparisonTable").innerHTML=table(rows);
+  }
+  a.addEventListener("change",update);b.addEventListener("change",update);update();
+}
+
+function setDatabaseSearch(team){
+  const input=document.getElementById("databaseSearch");
+  input.value=team;renderAllSheets(team);
+}
+
+function renderAllSheets(filter=""){
+  const q=String(filter||"").toLowerCase();
+  document.getElementById("allSheets").innerHTML=TABS.map(tab=>{
+    let rows=DATA[tab]||[];
+    if(q)rows=rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q)));
+    if(!rows.length && q)return "";
+    return `<div class="card" style="margin-bottom:16px"><h3>${esc(tab)}</h3>${table(rows)}</div>`;
+  }).join("");
+}
+
+function setupSearch(){
+  document.getElementById("teamSearch").addEventListener("input",e=>renderTeams(e.target.value));
+  document.getElementById("databaseSearch").addEventListener("input",e=>renderAllSheets(e.target.value));
+}
+
+function setupNav(){
+  const links=[...document.querySelectorAll(".side-menu a,.topbar a")];
+  const sections=links.map(a=>document.querySelector(a.getAttribute("href"))).filter(Boolean);
+  function active(){
+    let current=sections[0]?.id;
+    sections.forEach(s=>{if(s.getBoundingClientRect().top<=115)current=s.id});
+    links.forEach(a=>a.classList.toggle("active",a.getAttribute("href")==="#"+current));
+  }
+  window.addEventListener("scroll",active);active();
+}
+
+async function init(){
+  const failed=[];
+  for(const tab of TABS){
+    try{DATA[tab]=await getSheet(tab)}
+    catch(e){DATA[tab]=[];failed.push(tab)}
+  }
+
+  latestChampion();
+  buildPowerIndex();
+  renderStats();
+  renderPowerCards();
+  renderLeaders();
+  renderTimeline();
+
+  document.getElementById("championshipCount").innerHTML=table(DATA["Championship_Count"]||[]);
+  renderTab("Division Champions","divisionChampions");
+  renderTab("Deep Side Titles","deepSideTitles");
+  renderTab("Jam Hill Titles","jamHillTitles");
+  renderTab("Best Overall Leaders","bestOverallLeaders");
+  renderTab("All-Time PF Leaders","allTimePFLeaders");
+  renderTab("Yearly PF Champions","yearlyPFChampions");
+  renderTab("Top 25 Raw PF Seasons","top25RawPF");
+  renderTab("Top 25 PPG Seasons","top25PPG");
+  document.getElementById("pfMovement").innerHTML=
+    "<h3>Biggest PF Improvements</h3>"+table(DATA["Biggest PF Improvements"]||[])+
+    "<h3>Biggest PF Declines</h3>"+table(DATA["Biggest PF Declines"]||[])+
+    "<h3>Biggest PPG Improvements</h3>"+table(DATA["Biggest PPG Improvements"]||[]);
+  renderTab("Superlatives","superlatives");
+  renderTab("Franchise Records","franchiseRecords");
+  renderTab("Dominance Index","dominanceIndex");
+  renderTab("Mount_Rushmore","mountRushmore");
+  renderTab("Dynasty_Eras","dynastyEras");
+  renderTab("Era Leaders","eraLeaders");
+  renderTab("Franchise Identities","franchiseIdentities");
+  renderTab("Franchise_History","franchiseHistory");
+
   renderTeams();
+  renderCompare();
+  renderAllSheets();
+  setupSearch();
+  setupNav();
+
+  document.getElementById("loadStatus").textContent =
+    failed.length ? `Connected. Missing or private tabs: ${failed.join(", ")}` : "Live Google Sheets data connected.";
 }
-
-function renderTeams(query=''){
-  const found=teams.filter(team=>team.toLowerCase().includes(query.toLowerCase()));
-
-  $('#teamGrid').innerHTML=found.length ? found.map(team=>`
-    <article class="team">
-      <h3>${esc(team)}</h3>
-      <p>Open the archive only for this franchise—its story stays focused.</p>
-      <button class="text-button" data-team="${esc(team)}">View history</button>
-    </article>
-  `).join('') : '<div class="empty">No franchise matches that search.</div>';
-
-  $$('[data-team]').forEach(button=>button.onclick=()=>showTeam(button.dataset.team));
-}
-
-async function showTeam(name){
-  const element=$('#teamDetail');
-  element.innerHTML='<div class="loading">Finding every reference to this franchise…</div>';
-
-  const results=await Promise.all(SHEETS.map(async tab=>[tab,await sheet(tab).catch(()=>[])]));
-  const query=name.toLowerCase();
-
-  const chunks=results
-    .map(([tab,rows])=>[tab,rows.filter(row=>Object.values(row).some(item=>String(item).toLowerCase().includes(query)))])
-    .filter(([,rows])=>rows.length);
-
-  element.innerHTML=`
-    <article class="card">
-      <h3>${esc(name)} — complete history</h3>
-      ${chunks.length ? chunks.map(([tab,rows])=>`<h3 style="margin-top:25px">${esc(tab)}</h3>${table(rows)}`).join('') : '<div class="empty">No archived rows found.</div>'}
-    </article>
-  `;
-
-  element.scrollIntoView({behavior:'smooth',block:'start'});
-}
-
-function buildSeasons(rows){
-  const years=[...new Set(rows.map(row=>value(row,['Year','Season'])).filter(Boolean))].sort((a,b)=>num(b)-num(a));
-
-  $('#seasonPicker').innerHTML='<option value="">All championship seasons</option>'+years.map(year=>`<option>${esc(year)}</option>`).join('');
-  renderSeasons(rows);
-
-  $('#seasonPicker').onchange=event=>renderSeasons(rows,event.target.value);
-}
-
-function renderSeasons(rows,year=''){
-  const visible=year
-    ? rows.filter(row=>String(value(row,['Year','Season']))===year)
-    : [...rows].sort((a,b)=>num(value(b,['Year','Season']))-num(value(a,['Year','Season'])));
-
-  $('#seasonTimeline').innerHTML=visible.map(row=>`
-    <article class="season">
-      <strong>${esc(value(row,['Year','Season']))}</strong>
-      <b>${esc(value(row,['Champion','Winner','Champions'])||'Champion TBD')}</b>
-      <span>${esc(value(row,['Runner Up','Runner-Up','RunnerUp']) ? 'Runner-up: '+value(row,['Runner Up','Runner-Up','RunnerUp']) : '')}</span>
-    </article>
-  `).join('') || '<div class="empty">No season found.</div>';
-}
-
-function recordsNav(){
-  $('#recordTabs').innerHTML=RECORDS.map(([label],index)=>`
-    <button class="tab ${index===0?'active':''}" data-record="${index}">${esc(label)}</button>
-  `).join('');
-
-  $$('[data-record]').forEach(button=>button.onclick=()=>loadRecord(Number(button.dataset.record)));
-}
-
-async function loadRecord(index){
-  recordsNav();
-
-  const [label,tab]=RECORDS[index];
-  $$('[data-record]').forEach(button=>button.classList.toggle('active',Number(button.dataset.record)===index));
-
-  const element=$('#recordContent');
-  element.innerHTML=`<div class="loading">Loading ${esc(label)}…</div>`;
-
-  try{
-    element.innerHTML=table(await sheet(tab));
-  }catch{
-    element.innerHTML='<div class="empty">This sheet is unavailable. Check its name and sharing settings.</div>';
-  }
-}
-
-function archiveSetup(){
-  $('#archivePicker').innerHTML='<option value="">Choose an archive table…</option>'+SHEETS.map(tab=>`<option>${esc(tab)}</option>`).join('');
-  $('#archivePicker').onchange=loadArchive;
-  $('#archiveSearch').oninput=loadArchive;
-}
-
-async function loadArchive(){
-  const tab=$('#archivePicker').value;
-  const query=$('#archiveSearch').value.toLowerCase();
-  const element=$('#archiveContent');
-
-  if(!tab){
-    element.className='empty';
-    element.textContent='Choose a sheet to load it.';
-    return;
-  }
-
-  element.className='';
-  element.innerHTML='<div class="loading">Loading archive table…</div>';
-
-  try{
-    let rows=await sheet(tab);
-    if(query) rows=rows.filter(row=>Object.values(row).some(item=>String(item).toLowerCase().includes(query)));
-    element.innerHTML=table(rows);
-  }catch{
-    element.innerHTML='<div class="empty">This table could not be loaded.</div>';
-  }
-}
-
-$$('.nav-button').forEach(button=>button.onclick=()=>switchView(button.dataset.view));
-$$('[data-go]').forEach(button=>button.onclick=()=>switchView(button.dataset.go));
-$('#teamSearch').oninput=event=>renderTeams(event.target.value);
-
-recordsNav();
-archiveSetup();
-boot();
+init();
 </script>
 </body>
 </html>
