@@ -322,6 +322,7 @@ audio,video{
 <button class="filter" data-filter="vibes">Vibes District</button>
 <button class="filter" data-filter="afterdark">After Dark</button>
 <button class="filter" data-filter="juliant">Julian T</button>
+<button class="filter" data-filter="mook">DJ Mook</button>
 <button class="filter" data-filter="other">Other</button>
   </div>
 
@@ -357,11 +358,11 @@ audio,video{
   <p>Late Night Sessions</p>
 </div>
       
-      <div class="card dj-card">
-        <span class="badge">Coming Soon</span>
-        <h3>Guest DJs</h3>
-        <p>More live mixes and sets coming soon.</p>
-      </div>
+      <div class="card dj-card show-filter" data-show="mook">
+  <span class="badge">DJ Show</span>
+  <h3>DJ Mook</h3>
+  <p>Mook Sundays</p>
+</div>
     </div>
   </section>
 
@@ -462,6 +463,14 @@ if(
 
 if(combined.includes("vibes") || combined.includes("dw40")) return "vibes";
 
+if(
+  combined.includes("dj mook") ||
+  combined.includes("mook sundays") ||
+  combined.includes("mook")
+){
+  return "mook";
+}  
+
 return "other";
 }
 
@@ -470,6 +479,7 @@ function badgeText(show){
   if(key === "cutting") return "Cutting Room";
   if(key === "vibes") return "Vibes District";
   if(key === "juliant") return "DJ Julian T";
+  if(key === "mook") return "DJ Mook";
   return "Replay";
 }
 
