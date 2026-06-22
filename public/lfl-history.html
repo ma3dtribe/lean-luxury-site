@@ -358,69 +358,80 @@ const FRANCHISE_ALIASES = {
   "carpet":"Zoo",
   "carpetexpress":"Zoo",
 
-  "pc":"PC Dem Boyz",
-  "pcdemboyz":"PC Dem Boyz",
-  "demboyz":"PC Dem Boyz",
-
-  "dc":"DC Ruff Ryders",
-  "dcruffrider":"DC Ruff Ryders",
-  "dcruffriders":"DC Ruff Ryders",
-  "ruffrider":"DC Ruff Ryders",
-  "ruffriders":"DC Ruff Ryders",
-
-  "legacy":"The Legacy",
-  "thelegacy":"The Legacy",
-  "teamrandolph":"The Legacy",
-
   "honeypack":"Honey Pack",
   "lauderhillryders":"Honey Pack",
-  "maybach":"Honey Pack",
+  "gunplaygang":"Honey Pack",
   "gunplay":"Honey Pack",
   "gunplays":"Honey Pack",
+  "gunplaygunner":"Honey Pack",
+  "maybach":"Honey Pack",
+  "maybachboyz":"Honey Pack",
   "neisacbrown":"Honey Pack",
   "neisacbrowns":"Honey Pack",
 
-  "brew":"Brew",
-"bearlysober":"Brew",
-"rinkresponsibly":"Brew",
-"beerackobama":"Brew",
-"1stdown":"Brew",
-"1stdownand1togo":"Brew",
-"1stand1togo":"Brew",
-"1togo":"Brew",
-"1to go":"Brew",
+  "jdf":"JDF",
+  "jamaicadefenseforce":"JDF",
+  "jamaicandefenseforce":"JDF",
+  "jamaicandefenceforce":"JDF",
 
- "jungle":"Tarzan’s Jungle",
-"tarzansjungle":"Tarzan’s Jungle",
-"tarzanjungle":"Tarzan’s Jungle",
-"tarzan":"Tarzan’s Jungle",
-"tarzans":"Tarzan’s Jungle",
-"motown":"Tarzan’s Jungle",
-  "motownmonstas":"Tarzan’s Jungle",
-  "motownmonsters":"Tarzan’s Jungle",
+  "brew":"Brew",
+  "rinkresponsibly":"Brew",
+  "beer30":"Brew",
+  "beerackobama":"Brew",
+  "1stdown11togo":"Brew",
+  "1stdownand1togo":"Brew",
+  "1stand1togo":"Brew",
+  "1stdown":"Brew",
+  "drunkenirish":"Brew",
+  "bearlysober":"Brew",
+
+  "jungle":"Jungle",
+  "tarzansjungle":"Jungle",
+  "tarzanjungle":"Jungle",
+  "tarzan":"Jungle",
+  "tarzans":"Jungle",
+  "motown":"Jungle",
+  "motownmonstas":"Jungle",
+  "motownmonsters":"Jungle",
 
   "blackpanther":"Black Panther",
   "blackpanthers":"Black Panther",
+  "thereapers":"Black Panther",
+  "reapers":"Black Panther",
+  "thefightingwhites":"Black Panther",
+  "fightingwhites":"Black Panther",
   "fightingwhite":"Black Panther",
+  "blackdynamite":"Black Panther",
+  "honeybadgers":"Black Panther",
   "dragonfly":"Black Panther",
-  "broward":"Black Panther",
-
-  "jdf":"JDF",
-  "jamaicandefenseforce":"JDF",
-  "jamaicandefenceforce":"JDF",
-  "palmbeach":"JDF",
-  "pambeach":"JDF",
-
-  "iggles":"Iggles 4 Life",
-  "iggles4life":"Iggles 4 Life",
 
   "swamp":"Swamp",
-  "swampboyz":"Swamp",
   "onemanswamp":"Swamp",
+  "theyhatemeswamp":"Swamp",
+  "misterswamp":"Swamp",
+  "swampboyz":"Swamp",
+  "swampboys":"Swamp",
+
+  "legacy":"Legacy",
+  "thelegacy":"Legacy",
+  "teamrandolph":"Legacy",
+
+  "pc":"PC DemBoyz",
+  "pcdemboyz":"PC DemBoyz",
+  "demboyz":"PC DemBoyz",
+
+  "iggles4life":"Iggles 4 Life",
+  "iggles":"Iggles 4 Life",
+
+  "dc":"DC Ruff Ryders",
+  "dcruffryders":"DC Ruff Ryders",
+  "dcruffriders":"DC Ruff Ryders",
+  "dcruffrider":"DC Ruff Ryders",
+  "ruffryders":"DC Ruff Ryders",
+  "ruffriders":"DC Ruff Ryders",
 
   "damageinc":"Damage Inc",
-  "damage":"Damage Inc",
-  "bearlysober":"Brew"
+  "damage":"Damage Inc"
 };
 
 // Use this only when historical source tabs still have an incorrect aggregate.
@@ -553,7 +564,7 @@ function getTeams(){
       if(row[k]) splitTeams(row[k]).forEach(t=>{ if(t && t.length<42 && !/^\d/.test(t)) teams.add(t); });
     });
   });
-  ["Zoo","PC Dem Boyz","DC Ruff Ryders","The Legacy","Honey Pack","Brew","Tarzan’s Jungle","Black Panther","JDF","Iggles 4 Life","Swamp","Damage Inc","Bearly Sober"].forEach(t=>teams.add(t));
+  ["Zoo","Honey Pack","JDF","Brew","Jungle","Black Panther","Swamp","Legacy","PC DemBoyz","Iggles 4 Life","DC Ruff Ryders","Damage Inc"].forEach(t=>teams.add(t));
   return [...teams].sort();
 }
 
@@ -620,12 +631,21 @@ function getBestOverall(team){
 }
 
 function getPFTitles(team){
-  if(PF_TITLE_OVERRIDES[team] !== undefined){
-    return PF_TITLE_OVERRIDES[team];
+
+  const OVERRIDES = {
+    "Zoo": 8,
+    "Jungle": 3
+  };
+
+  if(OVERRIDES[team] !== undefined){
+    return OVERRIDES[team];
   }
 
-  return metricFromTable("Yearly PF Champions",team,["Franchise","Team"],["PF Titles","Titles","Count"]) ||
-         countUniqueTeamRows("Yearly PF Champions",team,["Year","Season"]);
+  return countUniqueTeamRows(
+    "Yearly PF Champions",
+    team,
+    ["Year","Season"]
+  );
 }
 
 function buildPowerIndex(){
