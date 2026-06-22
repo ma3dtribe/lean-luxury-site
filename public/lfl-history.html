@@ -381,17 +381,21 @@ const FRANCHISE_ALIASES = {
   "neisacbrowns":"Honey Pack",
 
   "brew":"Brew",
-  "rinkresponsibly":"Brew",
-  "beerackobama":"Brew",
-  "1stdown":"Brew",
-  "1stdownand1togo":"Brew",
-  "1stand1togo":"Brew",
-  "1to go":"Brew",
+"bearlysober":"Brew",
+"rinkresponsibly":"Brew",
+"beerackobama":"Brew",
+"1stdown":"Brew",
+"1stdownand1togo":"Brew",
+"1stand1togo":"Brew",
+"1togo":"Brew",
+"1to go":"Brew",
 
-  "tarzansjungle":"Tarzan’s Jungle",
-  "tarzanjungle":"Tarzan’s Jungle",
-  "tarzan":"Tarzan’s Jungle",
-  "motown":"Tarzan’s Jungle",
+ "jungle":"Tarzan’s Jungle",
+"tarzansjungle":"Tarzan’s Jungle",
+"tarzanjungle":"Tarzan’s Jungle",
+"tarzan":"Tarzan’s Jungle",
+"tarzans":"Tarzan’s Jungle",
+"motown":"Tarzan’s Jungle",
   "motownmonstas":"Tarzan’s Jungle",
   "motownmonsters":"Tarzan’s Jungle",
 
@@ -416,13 +420,17 @@ const FRANCHISE_ALIASES = {
 
   "damageinc":"Damage Inc",
   "damage":"Damage Inc",
-  "bearlysober":"Bearly Sober"
+  "bearlysober":"Brew"
 };
 
 // Use this only when historical source tabs still have an incorrect aggregate.
 // This keeps the website correct without forcing a Google Sheets edit first.
 const DIVISION_TITLE_OVERRIDES = {
   "Zoo": 9
+};
+
+const PF_TITLE_OVERRIDES = {
+  "Zoo": 8
 };
 
 const TEAM_FIELDS = [
@@ -612,6 +620,10 @@ function getBestOverall(team){
 }
 
 function getPFTitles(team){
+  if(PF_TITLE_OVERRIDES[team] !== undefined){
+    return PF_TITLE_OVERRIDES[team];
+  }
+
   return metricFromTable("Yearly PF Champions",team,["Franchise","Team"],["PF Titles","Titles","Count"]) ||
          countUniqueTeamRows("Yearly PF Champions",team,["Year","Season"]);
 }
