@@ -347,11 +347,138 @@ const TABS = [
 let DATA = {};
 let POWER = [];
 
+/* =========================
+   FRANCHISE NORMALIZATION
+   One mapping used sitewide.
+   Add future name changes here only.
+========================= */
+const FRANCHISE_ALIASES = {
+  "zoo":"Zoo",
+  "zoocrew":"Zoo",
+  "carpet":"Zoo",
+  "carpetexpress":"Zoo",
+
+  "pc":"PC Dem Boyz",
+  "pcdemboyz":"PC Dem Boyz",
+  "demboyz":"PC Dem Boyz",
+
+  "dc":"DC Ruff Ryders",
+  "dcruffrider":"DC Ruff Ryders",
+  "dcruffriders":"DC Ruff Ryders",
+  "ruffrider":"DC Ruff Ryders",
+  "ruffriders":"DC Ruff Ryders",
+
+  "legacy":"The Legacy",
+  "thelegacy":"The Legacy",
+  "teamrandolph":"The Legacy",
+
+  "honeypack":"Honey Pack",
+  "lauderhillryders":"Honey Pack",
+  "maybach":"Honey Pack",
+  "gunplay":"Honey Pack",
+  "gunplays":"Honey Pack",
+  "neisacbrown":"Honey Pack",
+  "neisacbrowns":"Honey Pack",
+
+  "brew":"Brew",
+  "rinkresponsibly":"Brew",
+  "beerackobama":"Brew",
+  "1stdown":"Brew",
+  "1stdownand1togo":"Brew",
+  "1stand1togo":"Brew",
+  "1to go":"Brew",
+
+  "tarzansjungle":"Tarzan’s Jungle",
+  "tarzanjungle":"Tarzan’s Jungle",
+  "tarzan":"Tarzan’s Jungle",
+  "motown":"Tarzan’s Jungle",
+  "motownmonstas":"Tarzan’s Jungle",
+  "motownmonsters":"Tarzan’s Jungle",
+
+  "blackpanther":"Black Panther",
+  "blackpanthers":"Black Panther",
+  "fightingwhite":"Black Panther",
+  "dragonfly":"Black Panther",
+  "broward":"Black Panther",
+
+  "jdf":"JDF",
+  "jamaicandefenseforce":"JDF",
+  "jamaicandefenceforce":"JDF",
+  "palmbeach":"JDF",
+  "pambeach":"JDF",
+
+  "iggles":"Iggles 4 Life",
+  "iggles4life":"Iggles 4 Life",
+
+  "swamp":"Swamp",
+  "swampboyz":"Swamp",
+  "onemanswamp":"Swamp",
+
+  "damageinc":"Damage Inc",
+  "damage":"Damage Inc",
+  "bearlysober":"Bearly Sober"
+};
+
+// Use this only when historical source tabs still have an incorrect aggregate.
+// This keeps the website correct without forcing a Google Sheets edit first.
+const DIVISION_TITLE_OVERRIDES = {
+  "Zoo": 9
+};
+
+const TEAM_FIELDS = [
+  "Team","Franchise","Current Franchise","Champion","Winner","Champions",
+  "Deep Side Champion","Jam Hill Champion","Best Overall Record",
+  "Runner Up","Runner-Up","RunnerUp","Opponent"
+];
+
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
 function num(v){const n=Number(String(v??"").replace(/[^0-9.-]/g,""));return Number.isFinite(n)?n:0}
 function val(row,keys){for(const k of keys){if(row[k]!==undefined&&String(row[k]).trim()!=="")return row[k]}return""}
-function normTeam(t){
-  return String(t??"").toLowerCase().replace(/[^a-z0-9]/g,"").replace("honeypack","honeypack").trim();
+
+function teamKey(t){
+  return String(t??"")
+    .toLowerCase()
+    .replace(/&amp;/g,"and")
+    .replace(/’/g,"")
+    .replace(/'/g,"")
+    .replace(/[^a-z0-9]/g,"")
+    .trim();
+}
+
+function cleanTeamText(t){
+  return String(t??"")
+    .replace(/\([^)]+\)/g,"")
+    .replace(/\bco[- ]?champions?\b/ig,"")
+    .trim();
+}
+
+function canonicalTeam(t){
+  const cleaned = cleanTeamText(t);
+  const key = teamKey(cleaned);
+  return FRANCHISE_ALIASES[key] || cleaned;
+}
+
+function splitTeams(value){
+  return String(value??"")
+    .split(/\s*(?:&|\+|,|\/|\band\b)\s*/i)
+    .map(cleanTeamText)
+    .filter(Boolean)
+    .map(canonicalTeam);
+}
+
+function canonicalizeTeamCell(value){
+  const teams = splitTeams(value);
+  return teams.length ? [...new Set(teams)].join(" & ") : value;
+}
+
+function canonicalizeRows(rows){
+  return rows.map(row=>{
+    const out={...row};
+    TEAM_FIELDS.forEach(k=>{
+      if(out[k]!==undefined && String(out[k]).trim()!=="") out[k]=canonicalizeTeamCell(out[k]);
+    });
+    return out;
+  });
 }
 
 async function getSheet(tab){
@@ -360,11 +487,11 @@ async function getSheet(tab){
   const text=await res.text();
   const json=JSON.parse(text.substring(text.indexOf("{"),text.lastIndexOf("}")+1));
   const headers=json.table.cols.map((c,i)=>String(c.label||`Column${i+1}`).trim());
-  return json.table.rows.map(r=>{
+  return canonicalizeRows(json.table.rows.map(r=>{
     const obj={};
     headers.forEach((h,i)=>{const cell=r.c[i];obj[h]=cell?(cell.v??cell.f??""):""});
     return obj;
-  }).filter(r=>Object.values(r).some(v=>String(v).trim()!==""));
+  }).filter(r=>Object.values(r).some(v=>String(v).trim()!=="")));
 }
 
 function table(rows){
@@ -375,77 +502,139 @@ function table(rows){
   </tbody></table></div>`;
 }
 
-function renderTab(tab,target){
+function aggregateTeamTable(tab, teamKeys=["Franchise","Team"], forceColumns=null){
+  const rows=DATA[tab]||[];
+  const grouped={};
+  rows.forEach(row=>{
+    const raw=val(row,teamKeys);
+    const teams=splitTeams(raw);
+    if(!teams.length)return;
+    teams.forEach(team=>{
+      grouped[team] ||= {};
+      Object.entries(row).forEach(([k,v])=>{
+        if(teamKeys.includes(k)){ grouped[team][k]=team; return; }
+        if(forceColumns && !forceColumns.includes(k) && k!=="Franchise" && k!=="Team") return;
+        if(num(v) && !String(v).match(/^\d{4}$/)){
+          grouped[team][k]=(grouped[team][k]||0)+num(v);
+        }else if(grouped[team][k]===undefined && String(v).trim()!==""){
+          grouped[team][k]=v;
+        }
+      });
+      if(!grouped[team].Franchise && !grouped[team].Team) grouped[team].Franchise=team;
+    });
+  });
+  return Object.values(grouped).sort((a,b)=>{
+    const ak=Object.keys(a).find(k=>/title|champ|count|pf|wins|best/i.test(k));
+    const bk=Object.keys(b).find(k=>/title|champ|count|pf|wins|best/i.test(k));
+    return num(b[bk])-num(a[ak]);
+  });
+}
+
+function renderTab(tab,target, aggregate=false){
   const el=document.getElementById(target);
-  if(el)el.innerHTML=table(DATA[tab]||[]);
+  if(!el)return;
+  let rows=DATA[tab]||[];
+  if(aggregate) rows=aggregateTeamTable(tab);
+  el.innerHTML=table(rows);
 }
 
 function getTeams(){
   const teams=new Set();
-  const keys=["Team","Franchise","Current Franchise","Champion","Winner","Deep Side Champion","Jam Hill Champion","Best Overall Record"];
   Object.values(DATA).flat().forEach(row=>{
-    keys.forEach(k=>{
-      if(row[k]){
-        String(row[k]).split("&").forEach(x=>{
-          const name=x.replace(/\([^)]+\)/g,"").trim();
-          if(name && name.length<42 && !/^\d/.test(name)) teams.add(name);
-        });
-      }
+    TEAM_FIELDS.forEach(k=>{
+      if(row[k]) splitTeams(row[k]).forEach(t=>{ if(t && t.length<42 && !/^\d/.test(t)) teams.add(t); });
     });
   });
+  ["Zoo","PC Dem Boyz","DC Ruff Ryders","The Legacy","Honey Pack","Brew","Tarzan’s Jungle","Black Panther","JDF","Iggles 4 Life","Swamp","Damage Inc","Bearly Sober"].forEach(t=>teams.add(t));
   return [...teams].sort();
 }
 
-function teamRows(team){
-  const q=team.toLowerCase();
-  const hits={};
-  Object.entries(DATA).forEach(([tab,rows])=>{
-    hits[tab]=rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q)));
-  });
-  return hits;
+function rowMatchesTeam(row, team){
+  const n=teamKey(canonicalTeam(team));
+  return Object.values(row).some(v=>splitTeams(v).some(t=>teamKey(t)===n) || teamKey(v)===n);
 }
 
 function metricFromTable(tab, team, teamKeys, metricKeys){
   const rows=DATA[tab]||[];
-  const n=normTeam(team);
-  const row=rows.find(r=>teamKeys.some(k=>normTeam(r[k])===n || String(r[k]??"").toLowerCase().includes(team.toLowerCase())));
-  if(!row)return 0;
-  return num(val(row,metricKeys));
+  const n=teamKey(team);
+  let total=0, found=false;
+  rows.forEach(r=>{
+    const raw=val(r,teamKeys);
+    const teams=splitTeams(raw);
+    if(teams.some(t=>teamKey(t)===n) || rowMatchesTeam(r,team)){
+      const metric=num(val(r,metricKeys));
+      if(metric){ total+=metric; found=true; }
+    }
+  });
+  return found ? total : 0;
+}
+
+function countUniqueTeamRows(tab, team, yearKeys=["Year","Season"], extraKeys=[]){
+  const n=teamKey(team);
+  const seen=new Set();
+  (DATA[tab]||[]).forEach((r,idx)=>{
+    if(!rowMatchesTeam(r,team))return;
+    const y=val(r,yearKeys) || idx;
+    const extra=extraKeys.map(k=>val(r,[k])).join("|");
+    seen.add(`${tab}|${y}|${extra}|${n}`);
+  });
+  return seen.size;
 }
 
 function countChampion(team){
-  const n=normTeam(team);
-  return (DATA["Championship_Timeline"]||[]).reduce((s,r)=>{
-    const champ=String(val(r,["Champion","Winner","Champions"])).toLowerCase();
-    if(champ.includes(team.toLowerCase())) return s+1;
-    return s;
-  },0);
+  const n=teamKey(team);
+  const seen=new Set();
+  (DATA["Championship_Timeline"]||[]).forEach((r,idx)=>{
+    const champs=splitTeams(val(r,["Champion","Winner","Champions"]));
+    if(champs.some(t=>teamKey(t)===n)){
+      seen.add(val(r,["Year","Season"]) || idx);
+    }
+  });
+  return seen.size;
 }
 
-function countMentions(tab, team){
-  const q=team.toLowerCase();
-  return (DATA[tab]||[]).filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))).length;
+function getDivisionTitles(team){
+  const fromDeep = metricFromTable("Deep Side Titles",team,["Franchise","Team"],["Titles","Division Titles","Count"]);
+  const fromJam = metricFromTable("Jam Hill Titles",team,["Franchise","Team"],["Titles","Division Titles","Count"]);
+  let total = fromDeep + fromJam;
+
+  // Fallback only. Do not add Division Champions on top of Deep/Jam title summaries.
+  if(!total){
+    total = countUniqueTeamRows("Division Champions",team,["Year","Season"],["Division"]);
+  }
+
+  return DIVISION_TITLE_OVERRIDES[team] ?? total;
+}
+
+function getBestOverall(team){
+  return metricFromTable("Best Overall Leaders",team,["Franchise","Team"],["Best Overall","Count","Titles","Times"]) ||
+         countUniqueTeamRows("Best Overall Leaders",team,["Year","Season"]);
+}
+
+function getPFTitles(team){
+  return metricFromTable("Yearly PF Champions",team,["Franchise","Team"],["PF Titles","Titles","Count"]) ||
+         countUniqueTeamRows("Yearly PF Champions",team,["Year","Season"]);
 }
 
 function buildPowerIndex(){
   const teams=getTeams();
-  const pfRows=DATA["All-Time PF Leaders"]||[];
+  const pfRows=aggregateTeamTable("All-Time PF Leaders");
   const pfRankMax=pfRows.length || 1;
 
   POWER=teams.map(team=>{
     const titles=metricFromTable("Championship_Count",team,["Franchise","Team"],["Titles","Rings","Championships"]) || countChampion(team);
     const regWins=metricFromTable("Regular_Season_Standings",team,["Franchise","Team"],["Wins","W","Reg W"]);
     const playoffWins=metricFromTable("Playoff_Standings",team,["Franchise","Team"],["Wins","W","Playoff Wins"]);
-    const divTitles=countMentions("Division Champions",team)+metricFromTable("Deep Side Titles",team,["Franchise","Team"],["Titles","Division Titles"])+metricFromTable("Jam Hill Titles",team,["Franchise","Team"],["Titles","Division Titles"]);
-    const bestOverall=metricFromTable("Best Overall Leaders",team,["Franchise","Team"],["Best Overall","Count","Titles"]);
+    const divTitles=getDivisionTitles(team);
+    const bestOverall=getBestOverall(team);
     const pfTotal=metricFromTable("All-Time PF Leaders",team,["Franchise","Team"],["PF","Total PF","Points For"]);
-    const pfTitles=countMentions("Yearly PF Champions",team);
-    const topRaw=countMentions("Top 25 Raw PF Seasons",team);
-    const topPPG=countMentions("Top 25 PPG Seasons",team);
-    const seasonHits=countMentions("Season_Results",team);
+    const pfTitles=getPFTitles(team);
+    const topRaw=countUniqueTeamRows("Top 25 Raw PF Seasons",team,["Year","Season"]);
+    const topPPG=countUniqueTeamRows("Top 25 PPG Seasons",team,["Year","Season"]);
+    const seasonHits=countUniqueTeamRows("Season_Results",team,["Year","Season"]);
     const playoffApps=metricFromTable("Playoff_Standings",team,["Franchise","Team"],["Playoff App","Appearances","Apps"]);
 
-    const pfRankIndex=pfRows.findIndex(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(team.toLowerCase())));
+    const pfRankIndex=pfRows.findIndex(r=>rowMatchesTeam(r,team));
     const pfRankScore=pfRankIndex>=0 ? (pfRankMax-pfRankIndex) : 0;
 
     const score =
@@ -461,8 +650,23 @@ function buildPowerIndex(){
       regWins*.18 +
       seasonHits*.4;
 
-    return {Team:team, "Power Index":Math.round(score*10)/10, Championships:titles, "Division Titles":divTitles, "Best Overall":bestOverall, "Reg Wins":regWins, "Playoff Wins":playoffWins, "PF Titles":pfTitles, "Top PF Seasons":topRaw, "Top PPG Seasons":topPPG, "Future Playoff Points":"Pending"};
-  }).sort((a,b)=>b["Power Index"]-a["Power Index"]);
+    return {
+      Team:team,
+      "Power Index":Math.round(score*10)/10,
+      Championships:titles,
+      "Division Titles":divTitles,
+      "Best Overall":bestOverall,
+      "Reg Wins":regWins,
+      "Playoff Wins":playoffWins,
+      "PF Titles":pfTitles,
+      "Total PF":Math.round(pfTotal*10)/10,
+      "Top PF Seasons":topRaw,
+      "Top PPG Seasons":topPPG,
+      "Future Playoff Points":"Pending"
+    };
+  })
+  .filter(r=>r.Championships || r["Division Titles"] || r["Best Overall"] || r["Reg Wins"] || r["Playoff Wins"] || r["PF Titles"] || r["Total PF"] || r["Top PF Seasons"] || r["Top PPG Seasons"])
+  .sort((a,b)=>b["Power Index"]-a["Power Index"]);
 }
 
 function renderPowerCards(){
@@ -485,19 +689,19 @@ function renderPowerCards(){
 
 function renderStats(){
   const champs=DATA["Championship_Timeline"]||[];
-  const franchises=DATA["Franchise_History"]||[];
   const years=champs.map(r=>num(val(r,["Year","Season"]))).filter(Boolean);
   const minY=years.length?Math.min(...years):2007, maxY=years.length?Math.max(...years):2025;
   const current=POWER[0]?.Team||"—";
-  const topPF=(DATA["All-Time PF Leaders"]||[])[0];
-  const topPFTeam=topPF?val(topPF,["Franchise","Team"]):"—";
+  const topPF=(aggregateTeamTable("All-Time PF Leaders")||[])[0];
+  const champLeader=(aggregateTeamTable("Championship_Count")||[])[0];
+  const bestLeader=(aggregateTeamTable("Best Overall Leaders")||[])[0];
 
   document.getElementById("dashboardStats").innerHTML=`
     <div class="stat"><div class="icon">🗓️</div><div class="num">${champs.length||19}</div><div class="label">SEASONS<br>${minY}-${maxY}</div></div>
-    <div class="stat"><div class="icon">🏆</div><div class="num">${val((DATA["Championship_Count"]||[])[0]||{},["Franchise","Team"])||"—"}</div><div class="label">MOST TITLES</div></div>
+    <div class="stat"><div class="icon">🏆</div><div class="num">${val(champLeader||{},["Franchise","Team"])||"—"}</div><div class="label">MOST TITLES</div></div>
     <div class="stat"><div class="icon">👑</div><div class="num">${current}</div><div class="label">POWER INDEX KING</div></div>
-    <div class="stat"><div class="icon">🔥</div><div class="num">${topPFTeam||"—"}</div><div class="label">PF LEADER</div></div>
-    <div class="stat"><div class="icon">🏁</div><div class="num">${val((DATA["Best Overall Leaders"]||[])[0]||{},["Franchise","Team"])||"—"}</div><div class="label">BEST OVERALL LEADER</div></div>
+    <div class="stat"><div class="icon">🔥</div><div class="num">${val(topPF||{},["Franchise","Team"])||"—"}</div><div class="label">PF LEADER</div></div>
+    <div class="stat"><div class="icon">🏁</div><div class="num">${val(bestLeader||{},["Franchise","Team"])||"—"}</div><div class="label">BEST OVERALL LEADER</div></div>
     <div class="stat"><div class="icon">📊</div><div class="num">${Object.keys(DATA).length}</div><div class="label">SHEET TABS CONNECTED</div></div>`;
 }
 
@@ -506,9 +710,9 @@ function renderLeaders(){
     {Category:"Current Champion",Leader:document.getElementById("sideChampion").textContent},
     {Category:"Greatest Franchise",Leader:POWER[0]?.Team||"—"},
     {Category:"Highest Power Index",Leader:POWER[0]?`${POWER[0].Team} (${POWER[0]["Power Index"]})`:"—"},
-    {Category:"Most Championships",Leader:val((DATA["Championship_Count"]||[])[0]||{},["Franchise","Team"])||"—"},
-    {Category:"PF Leader",Leader:val((DATA["All-Time PF Leaders"]||[])[0]||{},["Franchise","Team"])||"—"},
-    {Category:"Best Overall Leader",Leader:val((DATA["Best Overall Leaders"]||[])[0]||{},["Franchise","Team"])||"—"}
+    {Category:"Most Championships",Leader:val((aggregateTeamTable("Championship_Count")||[])[0]||{},["Franchise","Team"])||"—"},
+    {Category:"PF Leader",Leader:val((aggregateTeamTable("All-Time PF Leaders")||[])[0]||{},["Franchise","Team"])||"—"},
+    {Category:"Best Overall Leader",Leader:val((aggregateTeamTable("Best Overall Leaders")||[])[0]||{},["Franchise","Team"])||"—"}
   ];
   document.getElementById("leagueLeaders").innerHTML=table(leaderRows);
 }
@@ -517,7 +721,7 @@ function latestChampion(){
   const rows=DATA["Championship_Timeline"]||[];
   const sorted=[...rows].sort((a,b)=>num(val(b,["Year","Season"]))-num(val(a,["Year","Season"])));
   const latest=sorted[0]||{};
-  const champ=val(latest,["Champion","Winner","Champions"])||"No Data";
+  const champ=canonicalizeTeamCell(val(latest,["Champion","Winner","Champions"])||"No Data");
   const year=val(latest,["Year","Season"])||"";
   document.getElementById("sideChampion").textContent=champ;
   document.getElementById("sideChampionYear").textContent=year?`${year} Champion`:"Latest Champion";
@@ -526,10 +730,22 @@ function latestChampion(){
 function renderTimeline(){
   const rows=[...(DATA["Championship_Timeline"]||[])].sort((a,b)=>num(val(b,["Year","Season"]))-num(val(a,["Year","Season"])));
   document.getElementById("championshipTimeline").innerHTML=rows.map(r=>{
-    const year=val(r,["Year","Season"]), champ=val(r,["Champion","Winner","Champions"]);
-    const runner=val(r,["Runner Up","Runner-Up","RunnerUp"]), notes=val(r,["Notes","Note"]);
+    const year=val(r,["Year","Season"]), champ=canonicalizeTeamCell(val(r,["Champion","Winner","Champions"]));
+    const runner=canonicalizeTeamCell(val(r,["Runner Up","Runner-Up","RunnerUp"])), notes=val(r,["Notes","Note"]);
     return `<div class="year-card"><strong>${esc(year)}</strong><div class="champ">${esc(champ)}</div>${runner?`<div class="small">Runner-Up: ${esc(runner)}</div>`:""}${notes?`<div class="small">${esc(notes)}</div>`:""}</div>`;
   }).join("");
+}
+
+function renderDominanceIndex(){
+  const rows=POWER.map(r=>({
+    Franchise:r.Team,
+    Championships:r.Championships,
+    "Division Titles":r["Division Titles"],
+    "Best Overall":r["Best Overall"],
+    "PF Titles":r["PF Titles"],
+    "Power Index":r["Power Index"]
+  }));
+  document.getElementById("dominanceIndex").innerHTML=table(rows);
 }
 
 function renderTeams(filter=""){
@@ -554,7 +770,7 @@ function renderCompare(){
   b.innerHTML=teams.map((t,i)=>`<option ${i===1?"selected":""}>${esc(t)}</option>`).join("");
   function update(){
     const A=POWER.find(r=>r.Team===a.value)||{}, B=POWER.find(r=>r.Team===b.value)||{};
-    const rows=["Power Index","Championships","Division Titles","Best Overall","Reg Wins","Playoff Wins","PF Titles","Top PF Seasons","Top PPG Seasons","Future Playoff Points"]
+    const rows=["Power Index","Championships","Division Titles","Best Overall","Reg Wins","Playoff Wins","PF Titles","Total PF","Top PF Seasons","Top PPG Seasons","Future Playoff Points"]
       .map(k=>({Category:k,[A.Team||"Team A"]:A[k]??"",[B.Team||"Team B"]:B[k]??""}));
     document.getElementById("comparisonTable").innerHTML=table(rows);
   }
@@ -570,7 +786,10 @@ function renderAllSheets(filter=""){
   const q=String(filter||"").toLowerCase();
   document.getElementById("allSheets").innerHTML=TABS.map(tab=>{
     let rows=DATA[tab]||[];
-    if(q)rows=rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q)));
+    if(q)rows=rows.filter(r=>Object.values(r).some(v=>{
+      const s=String(v).toLowerCase();
+      return s.includes(q) || splitTeams(v).some(t=>t.toLowerCase().includes(q));
+    }));
     if(!rows.length && q)return "";
     return `<div class="card" style="margin-bottom:16px"><h3>${esc(tab)}</h3>${table(rows)}</div>`;
   }).join("");
@@ -606,12 +825,12 @@ async function init(){
   renderLeaders();
   renderTimeline();
 
-  document.getElementById("championshipCount").innerHTML=table(DATA["Championship_Count"]||[]);
+  document.getElementById("championshipCount").innerHTML=table(aggregateTeamTable("Championship_Count"));
   renderTab("Division Champions","divisionChampions");
-  renderTab("Deep Side Titles","deepSideTitles");
-  renderTab("Jam Hill Titles","jamHillTitles");
-  renderTab("Best Overall Leaders","bestOverallLeaders");
-  renderTab("All-Time PF Leaders","allTimePFLeaders");
+  renderTab("Deep Side Titles","deepSideTitles",true);
+  renderTab("Jam Hill Titles","jamHillTitles",true);
+  renderTab("Best Overall Leaders","bestOverallLeaders",true);
+  renderTab("All-Time PF Leaders","allTimePFLeaders",true);
   renderTab("Yearly PF Champions","yearlyPFChampions");
   renderTab("Top 25 Raw PF Seasons","top25RawPF");
   renderTab("Top 25 PPG Seasons","top25PPG");
@@ -621,10 +840,10 @@ async function init(){
     "<h3>Biggest PPG Improvements</h3>"+table(DATA["Biggest PPG Improvements"]||[]);
   renderTab("Superlatives","superlatives");
   renderTab("Franchise Records","franchiseRecords");
-  renderTab("Dominance Index","dominanceIndex");
+  renderDominanceIndex();
   renderTab("Mount_Rushmore","mountRushmore");
   renderTab("Dynasty_Eras","dynastyEras");
-  renderTab("Era Leaders","eraLeaders");
+  renderTab("Era Leaders","eraLeaders",true);
   renderTab("Franchise Identities","franchiseIdentities");
   renderTab("Franchise_History","franchiseHistory");
 
