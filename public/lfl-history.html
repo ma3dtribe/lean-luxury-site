@@ -270,6 +270,22 @@ tr:hover td{background:rgba(246,191,47,.08)}
   <div id="pfMovement"></div>
 </section>
 
+<section class="card section" id="singleGameRecords">
+  <h2>🎯 Single Game Scoring Records</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3>Highest Single Game Scores</h3>
+      <div id="highestSingleGames"></div>
+    </div>
+
+    <div>
+      <h3>Lowest Single Game Scores</h3>
+      <div id="lowestSingleGames"></div>
+    </div>
+  </div>
+</section>
+  
 <section class="card section" id="records">
   <h2>Record Book & Superlatives</h2>
   <div class="grid-2">
@@ -341,7 +357,7 @@ const TABS = [
   "All-Time PF Leaders","Moves Leaders","Efficiency PF Per Move","Top 25 Raw PF Seasons",
   "Top 25 PPG Seasons","Yearly PF Champions","Era Leaders","Franchise Records",
   "Biggest PF Improvements","Biggest PF Declines","Biggest PPG Improvements",
-  "Superlatives","2007 PF Data"
+    "Superlatives","2007 PF Data","single Game Total (High/Low)"
 ];
 
 let DATA = {};
@@ -768,6 +784,60 @@ function renderTimeline(){
   }).join("");
 }
 
+function renderSingleGameRecords(){
+
+  const rows = DATA["single Game Total (High/Low)"] || [];
+
+  const highest = [];
+  const lowest = [];
+
+  let mode = "";
+
+  rows.forEach(r => {
+
+    const values = Object.values(r).filter(v => String(v).trim() !== "");
+
+    const first = String(values[0] || "").trim();
+
+    if(first.toLowerCase().includes("highest")){
+      mode = "highest";
+      return;
+    }
+
+    if(first.toLowerCase().includes("lowest")){
+      mode = "lowest";
+      return;
+    }
+
+    if(values.length < 2) return;
+
+    const team = canonicalTeam(values[0]);
+    const points = num(values[1]);
+
+    if(!team || !points) return;
+
+    if(mode === "highest"){
+      highest.push({
+        Rank: highest.length + 1,
+        Team: team,
+        Points: points
+      });
+    }
+
+    if(mode === "lowest"){
+      lowest.push({
+        Rank: lowest.length + 1,
+        Team: team,
+        Points: points
+      });
+    }
+
+  });
+
+  document.getElementById("highestSingleGames").innerHTML = table(highest);
+  document.getElementById("lowestSingleGames").innerHTML = table(lowest);
+}
+  
 function renderDominanceIndex(){
   const rows=POWER.map(r=>({
     Franchise:r.Team,
@@ -866,6 +936,7 @@ async function init(){
   renderTab("Yearly PF Champions","yearlyPFChampions");
   renderTab("Top 25 Raw PF Seasons","top25RawPF");
   renderTab("Top 25 PPG Seasons","top25PPG");
+renderSingleGameRecords();  
   document.getElementById("pfMovement").innerHTML=
     "<h3>Biggest PF Improvements</h3>"+table(DATA["Biggest PF Improvements"]||[])+
     "<h3>Biggest PF Declines</h3>"+table(DATA["Biggest PF Declines"]||[])+
