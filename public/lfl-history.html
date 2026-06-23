@@ -357,7 +357,7 @@ const TABS = [
   "All-Time PF Leaders","Moves Leaders","Efficiency PF Per Move","Top 25 Raw PF Seasons",
   "Top 25 PPG Seasons","Yearly PF Champions","Era Leaders","Franchise Records",
   "Biggest PF Improvements","Biggest PF Declines","Biggest PPG Improvements",
-    "Superlatives","2007 PF Data","single Game Total (High/Low)"
+    "Superlatives","2007 PF Data","Single Game Totals (High/Low)"
 ];
 
 let DATA = {};
@@ -786,12 +786,12 @@ function renderTimeline(){
 
 function renderSingleGameRecords(){
 
-  const rows = DATA["single Game Total (High/Low)"] || [];
+ const rows = DATA["Single Game Totals (High/Low)"] || [];
 
   const highest = [];
   const lowest = [];
 
-  let mode = "";
+ let mode = "highest";
 
   rows.forEach(r => {
 
