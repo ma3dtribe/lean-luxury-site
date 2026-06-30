@@ -822,20 +822,36 @@ function buildPowerIndex(){
 }
 
 function renderPowerCards(){
-  const max=POWER[0]?.["Power Index"]||1;
-  const cards=POWER.slice(0,8).map((r,i)=>{
-    const pct=Math.max(8,Math.round((r["Power Index"]/max)*100));
-    return `<div class="rank-card">
-      <div class="rank-num">${i+1}</div>
-      <div>
-        <div class="blue">${esc(r.Team)}</div>
-        <div class="small">${r.Championships} rings • ${r["Division Titles"]} division titles • ${r["PF Titles"]} PF titles • ${r["Playoff Wins"]} playoff wins</div>
-         </div>
-      <div class="power-score">${r["Power Index"]}</div>
-    </div>`;
-  }).join("");
-  document.getElementById("powerTopFive").innerHTML=cards;
-  document.getElementById("powerIndexFull").innerHTML=table(POWER);
+  const rows = POWER.slice(0,8);
+
+  const html = `
+    <div class="power-table">
+      <div class="power-row power-head">
+        <div>Rank</div>
+        <div>Franchise</div>
+        <div>Rings</div>
+        <div>Div Titles</div>
+        <div>PF Titles</div>
+        <div>Playoff Wins</div>
+        <div>Power Score</div>
+      </div>
+
+      ${rows.map((r,i)=>`
+        <div class="power-row">
+          <div class="rank-num">${i+1}</div>
+          <div class="power-franchise">${esc(r.Team)}</div>
+          <div class="power-metric"><span class="power-label">Rings:</span>${r.Championships}</div>
+          <div class="power-metric"><span class="power-label">Div:</span>${r["Division Titles"]}</div>
+          <div class="power-metric"><span class="power-label">PF:</span>${r["PF Titles"]}</div>
+          <div class="power-metric"><span class="power-label">Playoff:</span>${r["Playoff Wins"]}</div>
+          <div class="power-score-pill">${r["Power Index"]}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  document.getElementById("powerTopFive").innerHTML = html;
+  document.getElementById("powerIndexFull").innerHTML = table(POWER);
 }
 
 function renderStats(){
