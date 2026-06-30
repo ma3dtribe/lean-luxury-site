@@ -3,20 +3,22 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>LFL History Book 2.1 | MA3DTribe</title>
+<title>LFL History Book 2.2 | MA3DTribe</title>
 
-<meta property="og:title" content="LFL History Book 2.1 | MA3DTribe">
+<meta property="og:title" content="LFL History Book 2.2 | MA3DTribe">
 <meta property="og:description" content="Explore 19 seasons of LFL history, championships, power rankings, scoring leaders, records, and franchise legacies.">
 <meta property="og:image" content="https://ma3dtribe.com/images/lfl-history-preview.png">
 <meta property="og:url" content="https://ma3dtribe.com/lfl-history.html">
 <meta property="og:type" content="website">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="LFL History Book 2.1 | MA3DTribe">
+<meta name="twitter:title" content="LFL History Book 2.2 | MA3DTribe">
 <meta name="twitter:description" content="Championships • Records • Team Histories • Power Rankings">
 <meta name="twitter:image" content="https://ma3dtribe.com/images/lfl-history-preview.png">
 
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Rajdhani:wght@600;700&display=swap');
+
 :root{
   --bg:#03070d;
   --panel:#071723;
@@ -36,7 +38,7 @@
 html{scroll-behavior:smooth}
 body{
   margin:0;
-  font-family:Arial,Helvetica,sans-serif;
+  font-family:'Inter',Arial,Helvetica,sans-serif;
   color:var(--ink);
   background:
     radial-gradient(circle at 8% 5%,rgba(255,194,27,.14),transparent 23%),
@@ -50,7 +52,7 @@ a{color:inherit}
   background:linear-gradient(180deg,rgba(2,10,15,.97),rgba(3,13,20,.9));
   border-right:1px solid var(--line);
 }
-.logo{font-size:26px;font-weight:950;letter-spacing:1px;line-height:.95}
+.logo{font-family:'Rajdhani','Inter',Arial,sans-serif;font-size:29px;font-weight:700;letter-spacing:1px;line-height:.95}
 .logo span{color:var(--gold)}
 .logo-sub{color:var(--gold);letter-spacing:7px;font-size:9px;margin-left:35px;margin-top:5px}
 .badge{
@@ -119,7 +121,7 @@ a{color:inherit}
   content:"LFL";position:absolute;right:22px;bottom:-16px;font-size:110px;font-weight:950;
   color:rgba(255,255,255,.035);letter-spacing:-7px;
 }
-.hero h1{font-size:clamp(38px,5vw,62px);line-height:.95;margin:6px 0 0;letter-spacing:.5px}
+.hero h1{font-family:'Rajdhani','Inter',Arial,sans-serif;font-size:clamp(42px,5.4vw,70px);line-height:.9;margin:6px 0 0;letter-spacing:1.5px}
 .hero h2{margin:9px 0;color:var(--gold);font-size:17px}
 .hero p{margin:6px 0;color:#e6eef8;max-width:790px;line-height:1.48}
 .status{
@@ -145,7 +147,7 @@ a{color:inherit}
   border:1px solid var(--line);border-radius:14px;padding:15px;
   box-shadow:0 10px 30px rgba(0,0,0,.22);min-width:0;
 }
-.card h2,.card h3{margin:0 0 11px;color:var(--gold);letter-spacing:.3px}
+.card h2,.card h3{font-family:'Rajdhani','Inter',Arial,sans-serif;margin:0 0 11px;color:var(--gold);letter-spacing:.6px}
 .card h2{font-size:19px}
 .card h3{font-size:14px}
 .section-head{display:flex;justify-content:space-between;align-items:end;gap:14px;margin-bottom:12px}
@@ -195,6 +197,13 @@ tr:hover td{background:rgba(255,194,27,.07)}
 .bar-track{height:24px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
 .bar-fill{height:100%;background:linear-gradient(90deg,#b37b00,var(--gold));border-radius:5px}
 .bar-value{text-align:right;font-weight:950}
+.chart-card{border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.045);padding:14px}
+.chart-title{font-family:'Rajdhani','Inter',Arial,sans-serif;color:var(--gold);font-weight:700;font-size:17px;margin-bottom:10px}
+.mini-bars{display:grid;gap:9px}
+.mini-bar-row{display:grid;grid-template-columns:125px 1fr 58px;gap:10px;align-items:center;font-size:12px}
+.mini-bar-track{height:22px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+.mini-bar-fill{height:100%;background:linear-gradient(90deg,#b37b00,var(--gold));border-radius:999px}
+.database-hint{border:1px dashed rgba(255,194,27,.35);border-radius:12px;padding:14px;background:rgba(255,194,27,.06)}
 .timeline-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(65px,1fr));gap:8px}
 .time-dot{
   border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:11px;padding:8px 7px;text-align:center;
@@ -284,15 +293,12 @@ details .inside{padding:0 14px 14px}
   <nav class="side-menu">
     <a class="active" href="#dashboard"><span>🏠 Dashboard</span><span>›</span></a>
     <a href="#timeline"><span>🏆 Timeline</span><span>›</span></a>
-    <a href="#power"><span>👑 Power Index</span><span>›</span></a>
+    <a href="#power"><span>👑 Power Ranking</span><span>›</span></a>
     <a href="#scoringRecords"><span>🔥 Scoring & Records</span><span>›</span></a>
     <a href="#legacy"><span>⭐ Legacy</span><span>›</span></a>
     <a href="#teams"><span>👥 Teams</span><span>›</span></a>
     <a href="#compare"><span>⚔️ Compare</span><span>›</span></a>
-    <a href="#database" onclick="openDatabase()">
-    <span>🗃️ Database</span>
-    <span>›</span>
-</a>
+    <a href="#database" onclick="openDatabase()"><span>🗃️ Database</span><span>›</span></a>
   </nav>
 
   <div class="side-search">
@@ -316,7 +322,7 @@ details .inside{padding:0 14px 14px}
   <a href="#scoringRecords">SCORING & RECORDS</a>
   <a href="#legacy">LEGACY</a>
   <a href="#teams">TEAMS</a>
-  <a href="#database">DATABASE</a>
+  <a href="#database" onclick="openDatabase()">DATABASE</a>
 </header>
 
 <main class="main">
@@ -324,12 +330,12 @@ details .inside{padding:0 14px 14px}
 
 <section class="hero section" id="dashboard">
   <div class="kicker">MA3DTRIBE Analytics Presents</div>
-  <h1>LFL HISTORY BOOK 2.1</h1>
+  <h1>LFL HISTORY BOOK 2.2</h1>
   <h2>THE OFFICIAL LEAGUE RECORD BOOK • 2007 - 2025</h2>
   <p>A cleaner version built to tell the story first. Duplicate tables have been combined into fewer sections, and raw data now lives in the searchable database.</p>
   <div class="status" id="loadStatus">Loading Google Sheets data...</div>
   <div class="quick-buttons">
-    <a href="#power">Power Index</a>
+    <a href="#power">Power Ranking</a>
     <a href="#timeline" class="secondary">Timeline</a>
     <a href="#scoringRecords" class="secondary">Scoring & Records</a>
     <a href="#teams" class="secondary">Teams</a>
@@ -342,7 +348,7 @@ details .inside{padding:0 14px 14px}
   <div class="card">
     <div class="section-head">
       <div>
-        <h2>All-Time Power Index</h2>
+        <h2>All-Time Power Ranking</h2>
         <p>One clean ranking across rings, dominance, scoring, division titles, best overall seasons, and playoff success.</p>
       </div>
       <a class="pill" href="#power">View full power index →</a>
@@ -364,18 +370,9 @@ details .inside{padding:0 14px 14px}
   </div>
 </section>
 
-<section class="story-grid section" id="storyCards"></section>
 
-<section class="card section">
-  <div class="section-head">
-    <div>
-      <h2>Championship Timeline</h2>
-      <p>Quick visual version. Full season cards are below.</p>
-    </div>
-    <a href="#timeline" class="pill">Open season timeline →</a>
-  </div>
-  <div class="timeline-strip" id="championshipTimelineStrip"></div>
-</section>
+
+
 
 <section class="card section" id="timeline">
   <div class="section-head">
@@ -390,7 +387,7 @@ details .inside{padding:0 14px 14px}
 <section class="card section" id="power">
   <div class="section-head">
     <div>
-      <h2>Franchise Power Index</h2>
+      <h2>Franchise Power Ranking</h2>
       <p>This replaces separate dominance, power, and leader tables with one full ranking.</p>
     </div>
     <span class="pill">Playoff points can be added later</span>
@@ -448,8 +445,8 @@ details .inside{padding:0 14px 14px}
   </div>
   <br>
 
-  <details>
-    <summary>Open full legacy tables</summary>
+  <details open>
+    <summary>Full legacy tables</summary>
     <div class="inside">
       <div class="grid-2">
         <div><h3>Mount Rushmore</h3><div id="mountRushmore"></div></div>
@@ -502,7 +499,7 @@ details .inside{padding:0 14px 14px}
     </div>
     <div class="searchbar"><input id="databaseSearch" placeholder="Search all data..." /></div>
   </div>
-  <div id="databaseEmpty" class="small">Type in the search box above, or use the sidebar search, to view raw matching data.</div>
+  <div id="databaseEmpty" class="database-hint small">Type a team, season, or stat above. The raw database is hidden by default so the main page stays clean.</div>
   <div class="database-tabs" id="allSheets"></div>
 </section>
 
@@ -562,6 +559,13 @@ const TEAM_FIELDS = [
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
 function num(v){const n=Number(String(v??"").replace(/[^0-9.-]/g,""));return Number.isFinite(n)?n:0}
 function fmt(v){return Number(v||0).toLocaleString(undefined,{maximumFractionDigits:1})}
+function formatMetric(k,v){
+  if(v===undefined || v===null || v==="") return "";
+  if(typeof v==="number") return fmt(v);
+  const n=Number(String(v).replace(/,/g,""));
+  if(Number.isFinite(n) && /pf|wins|score|ranking|titles|championship|overall|season/i.test(String(k))) return fmt(n);
+  return v;
+}
 function val(row,keys){for(const k of keys){if(row && row[k]!==undefined && String(row[k]).trim()!=="")return row[k]}return""}
 
 function teamKey(t){
@@ -611,7 +615,7 @@ function table(rows, limit){
   const display = limit ? rows.slice(0,limit) : rows;
   const headers=[...new Set(display.flatMap(r=>Object.keys(r)))];
   return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>
-  ${display.map(r=>`<tr>${headers.map(h=>`<td>${esc(r[h])}</td>`).join("")}</tr>`).join("")}
+  ${display.map(r=>`<tr>${headers.map(h=>`<td>${esc(formatMetric(h,r[h]))}</td>`).join("")}</tr>`).join("")}
   </tbody></table></div>`;
 }
 
@@ -717,26 +721,68 @@ function getPFTitles(team){
 }
 
 function seasonValue(row){return num(val(row,["Year","Season"]))}
+function firstSeasonRow(tab, year){
+  return (DATA[tab]||[]).find(r=>seasonValue(r)===year)||{};
+}
+function seasonRows(tab, year){
+  return (DATA[tab]||[]).filter(r=>seasonValue(r)===year);
+}
+function getSeasonTeam(row, keys){
+  return canonicalizeTeamCell(val(row,keys));
+}
 function buildSeasonStories(){
   const years = new Set();
   Object.values(DATA).flat().forEach(r=>{const y=seasonValue(r); if(y>=2007 && y<=2025) years.add(y);});
   if(!years.size){for(let y=2007;y<=2025;y++) years.add(y);}
+
   LEAGUE.seasons = [...years].sort((a,b)=>a-b).map(year=>{
-    const champRow=(DATA["Championship_Timeline"]||[]).find(r=>seasonValue(r)===year)||{};
-    const divRows=(DATA["Division Champions"]||[]).filter(r=>seasonValue(r)===year);
-    const pfRow=(DATA["Yearly PF Champions"]||[]).find(r=>seasonValue(r)===year)||{};
-    const bestRow=(DATA["Best Overall Leaders"]||[]).find(r=>seasonValue(r)===year)||{};
-    const deep = divRows.find(r=>String(val(r,["Division"])).toLowerCase().includes("deep"));
-    const jam = divRows.find(r=>String(val(r,["Division"])).toLowerCase().includes("jam"));
+    const champRow=firstSeasonRow("Championship_Timeline",year);
+    const pfRow=firstSeasonRow("Yearly PF Champions",year);
+    const bestRow=firstSeasonRow("Best Overall Leaders",year);
+    const divRows=seasonRows("Division Champions",year);
+    const standingRows=seasonRows("Regular_Season_Standings",year);
+
+    let deep = divRows.find(r=>String(val(r,["Division","Div"])).toLowerCase().includes("deep"));
+    let jam = divRows.find(r=>String(val(r,["Division","Div"])).toLowerCase().includes("jam"));
+
+    let deepTeam = getSeasonTeam(deep||{},["Champion","Winner","Team","Franchise","Deep Side Champion"]);
+    let jamTeam = getSeasonTeam(jam||{},["Champion","Winner","Team","Franchise","Jam Hill Champion"]);
+
+    if(!deepTeam){
+      const direct = firstSeasonRow("Deep Side Titles",year);
+      deepTeam = getSeasonTeam(direct,["Champion","Winner","Team","Franchise","Deep Side Champion"]);
+    }
+    if(!jamTeam){
+      const direct = firstSeasonRow("Jam Hill Titles",year);
+      jamTeam = getSeasonTeam(direct,["Champion","Winner","Team","Franchise","Jam Hill Champion"]);
+    }
+
+    let bestOverall = getSeasonTeam(bestRow,["Franchise","Team","Best Overall Record","Winner","Champion"]);
+    if(!bestOverall && standingRows.length){
+      const topPct = Math.max(...standingRows.map(r=>num(val(r,["PCT","Pct","Win %"]))));
+      const topWins = Math.max(...standingRows.map(r=>num(val(r,["W","Wins"]))));
+      const bestRows = standingRows.filter(r=>num(val(r,["PCT","Pct","Win %"]))===topPct || num(val(r,["W","Wins"]))===topWins);
+      bestOverall = [...new Set(bestRows.map(r=>getSeasonTeam(r,["Team","Franchise"])).filter(Boolean))].join(" & ");
+    }
+
+    let pfChampion = getSeasonTeam(pfRow,["Franchise","Team","PF Champion","Champion","Winner"]);
+    if(!pfChampion){
+      const pfRows = seasonRows("Raw PF Moves",year);
+      if(pfRows.length){
+        const topPF = Math.max(...pfRows.map(r=>num(val(r,["PF","Total PF","Points For"]))));
+        pfChampion = [...new Set(pfRows.filter(r=>num(val(r,["PF","Total PF","Points For"]))===topPF).map(r=>getSeasonTeam(r,["Team","Franchise"])).filter(Boolean))].join(" & ");
+      }
+    }
+
     return {
       Year:year,
-      Champion:canonicalizeTeamCell(val(champRow,["Champion","Winner","Champions"])),
-      RunnerUp:canonicalizeTeamCell(val(champRow,["Runner Up","Runner-Up","RunnerUp"])),
+      Champion:getSeasonTeam(champRow,["Champion","Winner","Champions"]),
+      RunnerUp:getSeasonTeam(champRow,["Runner Up","Runner-Up","RunnerUp"]),
       Notes:val(champRow,["Notes","Note"]),
-      PFChampion:canonicalizeTeamCell(val(pfRow,["Franchise","Team","PF Champion","Champion","Winner"])),
-      BestOverall:canonicalizeTeamCell(val(bestRow,["Franchise","Team","Best Overall Record","Winner","Champion"])),
-      DeepSide:canonicalizeTeamCell(val(deep||{},["Champion","Winner","Team","Franchise","Deep Side Champion"])),
-      JamHill:canonicalizeTeamCell(val(jam||{},["Champion","Winner","Team","Franchise","Jam Hill Champion"]))
+      PFChampion:pfChampion,
+      BestOverall:bestOverall,
+      DeepSide:deepTeam,
+      JamHill:jamTeam
     };
   });
 }
@@ -767,7 +813,7 @@ function buildPowerIndex(){
 
     return {
       Team:team,
-      "Power Index":Math.round(score*10)/10,
+      "Power Ranking":Math.round(score*10)/10,
       Championships:titles,
       "Division Titles":divTitles,
       "Best Overall":bestOverall,
@@ -781,7 +827,7 @@ function buildPowerIndex(){
     };
   })
   .filter(r=>r.Championships || r["Division Titles"] || r["Best Overall"] || r["Reg Wins"] || r["Playoff Wins"] || r["PF Titles"] || r["Total PF"] || r["Top PF Seasons"] || r["Top PPG Seasons"])
-  .sort((a,b)=>b["Power Index"]-a["Power Index"]);
+  .sort((a,b)=>b["Power Ranking"]-a["Power Ranking"]);
 
   LEAGUE.teams = POWER;
 }
@@ -794,13 +840,13 @@ function renderPowerTable(target, rows){
       </div>
       ${rows.map((r,i)=>`
         <div class="power-row">
-          <div class="rank-num ${i>2?"rank-dark":""}">${i+1}</div>
+          <div class="rank-num ">${i+1}</div>
           <div class="power-franchise">${esc(r.Team)}</div>
-          <div class="power-metric"><span class="power-label">Rings:</span>${r.Championships}</div>
-          <div class="power-metric"><span class="power-label">Div:</span>${r["Division Titles"]}</div>
-          <div class="power-metric"><span class="power-label">PF:</span>${r["PF Titles"]}</div>
-          <div class="power-metric"><span class="power-label">Playoff:</span>${r["Playoff Wins"]}</div>
-          <div class="power-score-pill">${r["Power Index"]}</div>
+          <div class="power-metric"><span class="power-label">Rings:</span>${fmt(r.Championships)}</div>
+          <div class="power-metric"><span class="power-label">Div:</span>${fmt(r["Division Titles"])}</div>
+          <div class="power-metric"><span class="power-label">PF:</span>${fmt(r["PF Titles"])}</div>
+          <div class="power-metric"><span class="power-label">Playoff:</span>${fmt(r["Playoff Wins"])}</div>
+          <div class="power-score-pill">${fmt(r["Power Ranking"])}</div>
         </div>
       `).join("")}
     </div>`;
@@ -833,7 +879,7 @@ function renderStats(){
   document.getElementById("dashboardStats").innerHTML=`
     <div class="stat"><div class="icon">🗓️</div><div class="num">${seasons.length||19}</div><div class="label">Seasons<br>${minY}-${maxY}</div></div>
     <div class="stat"><div class="icon">🏆</div><div class="num">${val(champLeader||{},["Franchise","Team"])||"—"}</div><div class="label">Most Championships</div></div>
-    <div class="stat"><div class="icon">👑</div><div class="num">${POWER[0]?.Team||"—"}</div><div class="label">Power Index King<br>${POWER[0]?.["Power Index"]||""}</div></div>
+    <div class="stat"><div class="icon">👑</div><div class="num">${POWER[0]?.Team||"—"}</div><div class="label">Power Ranking King<br>${fmt(POWER[0]?.["Power Ranking"]||0)}</div></div>
     <div class="stat"><div class="icon">🔥</div><div class="num">${val(topPF||{},["Franchise","Team"])||"—"}</div><div class="label">All-Time PF Leader</div></div>
     <div class="stat"><div class="icon">🛡️</div><div class="num">${activeFranchises}</div><div class="label">Active Franchises</div></div>`;
 }
@@ -872,7 +918,7 @@ function renderStoryCards(){
   const bestImprovement = improvements[0] || {};
   const cards = [
     {icon:"🏆",title:"Greatest Dynasty",main:val(champLeader,["Franchise","Team"])||"—",sub:`${fmt(num(val(champLeader,["Titles","Rings","Championships","Count"])))} championships`,wm:"5"},
-    {icon:"👑",title:"Power King",main:POWER[0]?.Team||"—",sub:`Power Index ${POWER[0]?.["Power Index"]||"—"}`,wm:"#1"},
+    {icon:"👑",title:"Power King",main:POWER[0]?.Team||"—",sub:`Power Ranking ${fmt(POWER[0]?.["Power Ranking"]||0)}`,wm:"#1"},
     {icon:"⚔️",title:"Playoff Force",main:POWER.slice().sort((a,b)=>b["Playoff Wins"]-a["Playoff Wins"])[0]?.Team||"—",sub:`${POWER.slice().sort((a,b)=>b["Playoff Wins"]-a["Playoff Wins"])[0]?.["Playoff Wins"]||0} playoff wins`,wm:"W"},
     {icon:"🚀",title:"Most Improved",main:canonicalizeTeamCell(val(bestImprovement,["Franchise","Team"]))||"Swamp",sub:Object.values(bestImprovement).slice(0,3).join(" • ") || "PF improvement leader",wm:"↑"}
   ];
@@ -888,9 +934,6 @@ function renderStoryCards(){
 }
 
 function renderTimeline(){
-  document.getElementById("championshipTimelineStrip").innerHTML = LEAGUE.seasons.map(s=>`
-    <div class="time-dot"><div class="year">${s.Year}</div><div class="champ">${esc(s.Champion||"—")}</div></div>`).join("");
-
   document.getElementById("seasonTimeline").innerHTML = LEAGUE.seasons.slice().reverse().map(s=>`
     <div class="season-card">
       <strong>${s.Year}</strong>
@@ -898,10 +941,10 @@ function renderTimeline(){
       ${s.RunnerUp?`<div class="small">Runner-Up: ${esc(s.RunnerUp)}</div>`:""}
       ${s.Notes?`<div class="small">${esc(s.Notes)}</div>`:""}
       <div class="season-meta">
-        <div class="meta-box"><div class="label">Best Overall</div><div class="value">${esc(s.BestOverall||"—")}</div></div>
+        <div class="meta-box"><div class="label">Best Overall Record</div><div class="value">${esc(s.BestOverall||"—")}</div></div>
         <div class="meta-box"><div class="label">PF Champion</div><div class="value">${esc(s.PFChampion||"—")}</div></div>
-        <div class="meta-box"><div class="label">Deep Side</div><div class="value">${esc(s.DeepSide||"—")}</div></div>
-        <div class="meta-box"><div class="label">Jam Hill</div><div class="value">${esc(s.JamHill||"—")}</div></div>
+        <div class="meta-box"><div class="label">Deep Side Winner</div><div class="value">${esc(s.DeepSide||"—")}</div></div>
+        <div class="meta-box"><div class="label">Jam Hill Winner</div><div class="value">${esc(s.JamHill||"—")}</div></div>
       </div>
     </div>`).join("");
 }
@@ -937,14 +980,24 @@ function renderSingleGameSummary(){
   document.getElementById("singleGameSummary").innerHTML=table(summary.length?summary:[{Record:"No single-game data loaded",Team:"—",Points:"—"}]);
 }
 
+function miniBarChart(title, rows, keys){
+  const data=rows.map(r=>({
+    team:val(r,["Franchise","Team"])||"—",
+    value:num(val(r,keys))
+  })).filter(r=>r.value);
+  const max=Math.max(...data.map(r=>r.value),1);
+  return `<div class="chart-card"><div class="chart-title">${esc(title)}</div><div class="mini-bars">${
+    data.map(r=>`<div class="mini-bar-row"><div>${esc(r.team)}</div><div class="mini-bar-track"><div class="mini-bar-fill" style="width:${Math.max(7,(r.value/max)*100)}%"></div></div><div>${fmt(r.value)}</div></div>`).join("")
+  }</div></div>`;
+}
 function renderDivisionSummary(){
   const deep=aggregateTeamTable("Deep Side Titles").slice(0,5);
   const jam=aggregateTeamTable("Jam Hill Titles").slice(0,5);
   const best=aggregateTeamTable("Best Overall Leaders").slice(0,5);
   document.getElementById("divisionSummary").innerHTML =
-    "<h3>Deep Side Title Leaders</h3>"+table(deep,5)+
-    "<br><h3>Jam Hill Title Leaders</h3>"+table(jam,5)+
-    "<br><h3>Best Overall Leaders</h3>"+table(best,5);
+    miniBarChart("Deep Side Title Leaders", deep, ["Titles","Division Titles","Count"]) +
+    "<br>" + miniBarChart("Jam Hill Title Leaders", jam, ["Titles","Division Titles","Count"]) +
+    "<br>" + miniBarChart("Best Overall Leaders", best, ["Best Overall","Count","Titles","Times"]);
 }
 
 function renderDominanceIndex(){
@@ -955,7 +1008,7 @@ function renderDominanceIndex(){
     "Best Overall":r["Best Overall"],
     "PF Titles":r["PF Titles"],
     "Playoff Wins":r["Playoff Wins"],
-    "Power Index":r["Power Index"]
+    "Power Ranking":r["Power Ranking"]
   }));
   document.getElementById("dominanceIndex").innerHTML=table(rows);
 }
@@ -968,11 +1021,11 @@ function renderTeams(filter=""){
       <h3>${esc(r.Team)}</h3>
       <div class="team-stats">
         <div class="team-stat"><b>#${POWER.findIndex(x=>x.Team===r.Team)+1}</b><span>Power Rank</span></div>
-        <div class="team-stat"><b>${r["Power Index"]}</b><span>Power Index</span></div>
-        <div class="team-stat"><b>${r.Championships}</b><span>Rings</span></div>
-        <div class="team-stat"><b>${r["Division Titles"]}</b><span>Div Titles</span></div>
-        <div class="team-stat"><b>${r["PF Titles"]}</b><span>PF Titles</span></div>
-        <div class="team-stat"><b>${r["Playoff Wins"]}</b><span>Playoff Wins</span></div>
+        <div class="team-stat"><b>${fmt(r["Power Ranking"])}</b><span>Power Ranking</span></div>
+        <div class="team-stat"><b>${fmt(r.Championships)}</b><span>Rings</span></div>
+        <div class="team-stat"><b>${fmt(r["Division Titles"])}</b><span>Div Titles</span></div>
+        <div class="team-stat"><b>${fmt(r["PF Titles"])}</b><span>PF Titles</span></div>
+        <div class="team-stat"><b>${fmt(r["Playoff Wins"])}</b><span>Playoff Wins</span></div>
       </div>
       <br><div class="gold">View full team history →</div>
     </a>`).join("");
@@ -985,8 +1038,8 @@ function renderCompare(){
   b.innerHTML=teams.map((t,i)=>`<option ${i===1?"selected":""}>${esc(t)}</option>`).join("");
   function update(){
     const A=POWER.find(r=>r.Team===a.value)||{}, B=POWER.find(r=>r.Team===b.value)||{};
-    const rows=["Power Index","Championships","Division Titles","Best Overall","Reg Wins","Playoff Wins","PF Titles","Total PF","Top PF Seasons","Top PPG Seasons","Future Playoff Points"]
-      .map(k=>({Category:k,[A.Team||"Team A"]:A[k]??"",[B.Team||"Team B"]:B[k]??""}));
+    const rows=["Power Ranking","Championships","Division Titles","Best Overall","Reg Wins","Playoff Wins","PF Titles","Total PF","Top PF Seasons","Top PPG Seasons","Future Playoff Points"]
+      .map(k=>({Category:k,[A.Team||"Team A"]:formatMetric(k,A[k]),[B.Team||"Team B"]:formatMetric(k,B[k])}));
     document.getElementById("comparisonTable").innerHTML=table(rows);
   }
   a.addEventListener("change",update);
@@ -1046,6 +1099,15 @@ function setupNav(){
   active();
 }
 
+function openDatabase(){
+  const section=document.getElementById("database");
+  if(section) section.scrollIntoView({behavior:"smooth"});
+  const input=document.getElementById("databaseSearch");
+  if(input) setTimeout(()=>input.focus(),350);
+  renderAllSheets(input ? input.value : "");
+}
+window.openDatabase=openDatabase;
+
 async function init(){
   const failed=[];
   for(const tab of TABS){
@@ -1060,7 +1122,6 @@ async function init(){
   renderPowerCards();
   renderLeagueGlance();
   renderPFMiniBars();
-  renderStoryCards();
   renderTimeline();
 
   renderTab("All-Time PF Leaders","allTimePFLeaders",true,12);
@@ -1095,20 +1156,6 @@ async function init(){
   document.getElementById("loadStatus").textContent =
     failed.length ? `Live data connected. Some optional tabs not found/private: ${failed.length}` : "Live Google Sheets data connected.";
 }
-
-function openDatabase() {
-    document.getElementById("database").scrollIntoView({
-        behavior: "smooth"
-    });
-
-    document.getElementById("databaseSearch").focus();
-
-    renderAllSheets(
-        document.getElementById("databaseSearch").value
-    );
-}
-
-  
 init();
 </script>
 </div>
