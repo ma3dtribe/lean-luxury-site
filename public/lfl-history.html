@@ -140,6 +140,79 @@ tr:hover td{background:rgba(246,191,47,.08)}
   padding:14px;
 }
 .rank-card{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center}
+
+.power-table{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:14px;
+  overflow:hidden;
+  background:rgba(255,255,255,.035);
+}
+
+.power-row{
+  display:grid;
+  grid-template-columns:70px 2fr repeat(4,1fr) 110px;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.power-row:last-child{border-bottom:0}
+
+.power-head{
+  color:var(--muted);
+  font-size:11px;
+  text-transform:uppercase;
+  font-weight:900;
+  background:rgba(0,0,0,.28);
+}
+
+.power-franchise{
+  font-size:18px;
+  font-weight:900;
+  color:white;
+}
+
+.power-metric{
+  font-size:20px;
+  font-weight:900;
+  color:var(--gold);
+  text-align:center;
+}
+
+.power-label{
+  display:none;
+}
+
+.power-score-pill{
+  background:rgba(246,191,47,.14);
+  border:1px solid rgba(246,191,47,.25);
+  color:var(--gold);
+  border-radius:10px;
+  padding:8px 10px;
+  text-align:center;
+  font-size:20px;
+  font-weight:900;
+}
+
+@media(max-width:900px){
+  .power-row{
+    grid-template-columns:44px 1fr;
+  }
+  .power-head{display:none}
+  .power-metric,.power-score-pill{
+    text-align:left;
+    font-size:14px;
+  }
+  .power-label{
+    display:inline;
+    color:var(--muted);
+    font-size:11px;
+    text-transform:uppercase;
+    margin-right:6px;
+  }
+}  
 .rank-num{
   width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   background:rgba(246,191,47,.18);color:var(--gold);font-weight:900;
@@ -757,8 +830,7 @@ function renderPowerCards(){
       <div>
         <div class="blue">${esc(r.Team)}</div>
         <div class="small">${r.Championships} rings • ${r["Division Titles"]} division titles • ${r["PF Titles"]} PF titles • ${r["Playoff Wins"]} playoff wins</div>
-        <div class="bar"><span style="width:${pct}%"></span></div>
-      </div>
+         </div>
       <div class="power-score">${r["Power Index"]}</div>
     </div>`;
   }).join("");
