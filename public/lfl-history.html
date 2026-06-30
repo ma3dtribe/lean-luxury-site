@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>LFL History Book 2.0 | MA3DTribe</title>
+<title>LFL History Book 2.1 | MA3DTribe</title>
 
-<meta property="og:title" content="LFL History Book 2.0 | MA3DTribe">
-<meta property="og:description" content="Explore 19 seasons of LFL history, championships, records, power rankings, scoring leaders, and franchise legacies.">
+<meta property="og:title" content="LFL History Book 2.1 | MA3DTribe">
+<meta property="og:description" content="Explore 19 seasons of LFL history, championships, power rankings, scoring leaders, records, and franchise legacies.">
 <meta property="og:image" content="https://ma3dtribe.com/images/lfl-history-preview.png">
 <meta property="og:url" content="https://ma3dtribe.com/lfl-history.html">
 <meta property="og:type" content="website">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="LFL History Book 2.0 | MA3DTribe">
+<meta name="twitter:title" content="LFL History Book 2.1 | MA3DTribe">
 <meta name="twitter:description" content="Championships • Records • Team Histories • Power Rankings">
 <meta name="twitter:image" content="https://ma3dtribe.com/images/lfl-history-preview.png">
 
@@ -21,17 +21,13 @@
   --bg:#03070d;
   --panel:#071723;
   --panel2:#0b2132;
-  --panel3:#08111b;
   --ink:#f7fbff;
   --muted:#9eafbf;
   --gold:#ffc21b;
   --gold2:#f2a900;
   --blue:#35a7ff;
-  --cyan:#1dd3ff;
   --green:#22c55e;
   --red:#ef4444;
-  --purple:#a78bfa;
-  --orange:#fb923c;
   --line:rgba(255,255,255,.12);
   --soft:rgba(255,255,255,.055);
   --shadow:0 18px 48px rgba(0,0,0,.32);
@@ -43,216 +39,234 @@ body{
   font-family:Arial,Helvetica,sans-serif;
   color:var(--ink);
   background:
-    radial-gradient(circle at 8% 5%,rgba(255,194,27,.18),transparent 24%),
-    radial-gradient(circle at 88% 15%,rgba(53,167,255,.18),transparent 28%),
-    radial-gradient(circle at 70% 85%,rgba(34,197,94,.08),transparent 30%),
+    radial-gradient(circle at 8% 5%,rgba(255,194,27,.14),transparent 23%),
+    radial-gradient(circle at 88% 15%,rgba(53,167,255,.14),transparent 26%),
     linear-gradient(135deg,#020408,#071827 55%,#020407);
 }
 a{color:inherit}
-.app{display:grid;grid-template-columns:292px 1fr;min-height:100vh}
+.app{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:100vh}
 .sidebar{
-  position:sticky;top:0;height:100vh;overflow:auto;padding:20px 18px 90px;
-  background:linear-gradient(180deg,rgba(2,10,15,.96),rgba(3,13,20,.88));
+  position:sticky;top:0;height:100vh;overflow:auto;padding:18px 14px 86px;
+  background:linear-gradient(180deg,rgba(2,10,15,.97),rgba(3,13,20,.9));
   border-right:1px solid var(--line);
 }
-.brand{line-height:.95}
-.logo{font-size:28px;font-weight:950;letter-spacing:1px}
+.logo{font-size:26px;font-weight:950;letter-spacing:1px;line-height:.95}
 .logo span{color:var(--gold)}
-.logo-sub{color:var(--gold);letter-spacing:8px;font-size:10px;margin-left:38px;margin-top:5px}
+.logo-sub{color:var(--gold);letter-spacing:7px;font-size:9px;margin-left:35px;margin-top:5px}
 .badge{
-  margin:24px auto 12px;width:170px;height:170px;border-radius:50%;
+  margin:22px auto 12px;width:145px;height:145px;border-radius:50%;
   border:4px solid var(--gold);display:flex;align-items:center;justify-content:center;
-  background:
-    radial-gradient(circle at center,rgba(255,255,255,.22),rgba(255,255,255,.04) 27%,rgba(0,0,0,.82) 68%),
-    linear-gradient(135deg,#111,#000);
-  box-shadow:0 0 34px rgba(255,194,27,.34), inset 0 0 32px rgba(255,255,255,.08);
-  font-size:60px;font-weight:950;letter-spacing:2px;
+  background:radial-gradient(circle at center,rgba(255,255,255,.2),rgba(0,0,0,.85) 65%);
+  box-shadow:0 0 34px rgba(255,194,27,.3), inset 0 0 28px rgba(255,255,255,.08);
+  font-size:52px;font-weight:950;letter-spacing:2px;
 }
-.side-title{text-align:center;font-size:22px;font-weight:950;margin-top:10px}
-.side-years{text-align:center;color:var(--gold);font-size:20px;font-weight:950;margin-top:5px}
-.side-small{text-align:center;font-size:12px;line-height:1.55;color:#d9e3ee;margin:18px 0}
-.side-menu{display:flex;flex-direction:column;gap:8px}
+.side-title{text-align:center;font-size:19px;font-weight:950;margin-top:8px}
+.side-years{text-align:center;color:var(--gold);font-size:18px;font-weight:950;margin-top:4px}
+.side-small{text-align:center;font-size:11px;line-height:1.5;color:#d9e3ee;margin:15px 0}
+.side-menu{display:flex;flex-direction:column;gap:7px}
 .side-menu a{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
-  color:white;text-decoration:none;padding:12px 13px;border-radius:9px;font-size:14px;
+  color:white;text-decoration:none;padding:11px 12px;border-radius:9px;font-size:13px;
   border:1px solid transparent;
 }
-.side-menu a span:first-child{display:flex;align-items:center;gap:9px}
 .side-menu a.active,.side-menu a:hover{
   background:linear-gradient(90deg,var(--gold),#d29100);
   color:#111;font-weight:950;border-color:rgba(255,255,255,.18);
 }
 .side-search{
-  margin-top:14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);padding:10px;
+  margin-top:14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);padding:9px;
 }
 .side-search input{
   width:100%;background:rgba(0,0,0,.32);border:1px solid var(--line);
-  border-radius:10px;padding:10px 11px;color:white;outline:none;
+  border-radius:9px;padding:9px 10px;color:white;outline:none;font-size:12px;
 }
 .current-champ{
-  margin-top:22px;border:1px solid var(--line);border-radius:14px;padding:18px;
+  margin-top:18px;border:1px solid var(--line);border-radius:14px;padding:15px;
   text-align:center;background:linear-gradient(180deg,rgba(8,28,42,.92),rgba(3,13,20,.9));
 }
-.current-champ h3{color:var(--gold);margin:0 0 12px;font-size:14px}
-.current-champ .name{color:var(--blue);font-size:27px;font-weight:950;margin-bottom:8px}
-.current-champ .cup{font-size:42px;filter:drop-shadow(0 0 12px rgba(255,194,27,.28))}
+.current-champ h3{color:var(--gold);margin:0 0 9px;font-size:13px}
+.current-champ .name{color:var(--blue);font-size:23px;font-weight:950;margin-bottom:7px}
+.current-champ .cup{font-size:37px}
 .topbar{
-  height:58px;display:flex;align-items:center;gap:25px;padding:0 30px;
+  height:56px;display:flex;align-items:center;gap:21px;padding:0 24px;
   background:rgba(0,0,0,.46);border-bottom:1px solid var(--line);
   position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);overflow-x:auto;
 }
 .topbar a{
-  color:white;text-decoration:none;font-size:13px;font-weight:900;white-space:nowrap;
-  height:58px;display:flex;align-items:center;border-bottom:3px solid transparent;
+  color:white;text-decoration:none;font-size:12px;font-weight:900;white-space:nowrap;
+  height:56px;display:flex;align-items:center;border-bottom:3px solid transparent;
 }
 .topbar a.active{color:var(--gold);border-color:var(--gold)}
-.main{padding:20px 22px 86px;min-width:0}
-.section{scroll-margin-top:80px;margin-bottom:18px}
-.kicker{color:var(--gold);font-size:12px;letter-spacing:2px;font-weight:950;text-transform:uppercase}
+.main{
+  padding:18px 18px 84px;
+  min-width:0;
+}
+.content{
+  width:100%;
+  max-width:1280px;
+  margin:0 auto;
+}
+.section{scroll-margin-top:78px;margin-bottom:16px}
+.kicker{color:var(--gold);font-size:11px;letter-spacing:2px;font-weight:950;text-transform:uppercase}
 .hero{
-  border:1px solid var(--line);border-radius:18px;padding:24px;
+  border:1px solid var(--line);border-radius:17px;padding:23px;
   background:
     linear-gradient(135deg,rgba(10,34,51,.94),rgba(4,13,20,.92)),
-    radial-gradient(circle at right,rgba(255,194,27,.16),transparent 30%);
+    radial-gradient(circle at right,rgba(255,194,27,.12),transparent 32%);
   box-shadow:var(--shadow);overflow:hidden;position:relative;
 }
 .hero:after{
-  content:"LFL";position:absolute;right:22px;bottom:-18px;font-size:120px;font-weight:950;
+  content:"LFL";position:absolute;right:22px;bottom:-16px;font-size:110px;font-weight:950;
   color:rgba(255,255,255,.035);letter-spacing:-7px;
 }
-.hero h1{font-size:clamp(40px,6vw,72px);line-height:.92;margin:6px 0 0;letter-spacing:.5px}
-.hero h2{margin:10px 0;color:var(--gold);font-size:19px}
-.hero p{margin:6px 0;color:#e6eef8;max-width:860px;line-height:1.48}
+.hero h1{font-size:clamp(38px,5vw,62px);line-height:.95;margin:6px 0 0;letter-spacing:.5px}
+.hero h2{margin:9px 0;color:var(--gold);font-size:17px}
+.hero p{margin:6px 0;color:#e6eef8;max-width:790px;line-height:1.48}
 .status{
   display:inline-block;margin-top:12px;color:var(--muted);border:1px solid var(--line);
-  padding:8px 12px;border-radius:999px;background:rgba(0,0,0,.28);font-size:13px;
+  padding:8px 12px;border-radius:999px;background:rgba(0,0,0,.28);font-size:12px;
 }
-.quick-buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;position:relative;z-index:2}
+.quick-buttons{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px;position:relative;z-index:2}
 .quick-buttons a{
   text-decoration:none;color:#111;background:var(--gold);border-radius:999px;
-  padding:10px 14px;font-weight:950;font-size:13px;
+  padding:9px 13px;font-weight:950;font-size:12px;
 }
 .quick-buttons a.secondary{background:rgba(255,255,255,.08);color:#fff;border:1px solid var(--line)}
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:14px 0}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:12px 0}
 .stat{
-  border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,rgba(10,31,45,.9),rgba(4,14,21,.86));
-  padding:17px;box-shadow:0 12px 30px rgba(0,0,0,.18);position:relative;overflow:hidden;
+  border:1px solid var(--line);border-radius:13px;background:linear-gradient(180deg,rgba(10,31,45,.9),rgba(4,14,21,.86));
+  padding:15px;box-shadow:0 10px 26px rgba(0,0,0,.18);position:relative;overflow:hidden;
 }
-.stat:after{content:"";position:absolute;right:-24px;bottom:-24px;width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.035)}
-.stat .icon{font-size:30px;margin-bottom:5px}
-.stat .num{font-size:28px;font-weight:950;line-height:1.1}
-.stat .label{font-size:12px;color:var(--muted);line-height:1.35;text-transform:uppercase}
+.stat .icon{font-size:25px;margin-bottom:4px}
+.stat .num{font-size:25px;font-weight:950;line-height:1.1}
+.stat .label{font-size:11px;color:var(--muted);line-height:1.35;text-transform:uppercase}
 .card{
   background:linear-gradient(180deg,rgba(8,24,35,.9),rgba(4,13,20,.9));
-  border:1px solid var(--line);border-radius:14px;padding:16px;
+  border:1px solid var(--line);border-radius:14px;padding:15px;
   box-shadow:0 10px 30px rgba(0,0,0,.22);min-width:0;
 }
-.card h2,.card h3{margin:0 0 12px;color:var(--gold);letter-spacing:.3px}
-.card h2{font-size:20px}
-.card h3{font-size:15px}
+.card h2,.card h3{margin:0 0 11px;color:var(--gold);letter-spacing:.3px}
+.card h2{font-size:19px}
+.card h3{font-size:14px}
 .section-head{display:flex;justify-content:space-between;align-items:end;gap:14px;margin-bottom:12px}
-.section-head p{margin:3px 0 0;color:var(--muted);font-size:13px;line-height:1.4}
-.grid-2{display:grid;grid-template-columns:1.18fr .82fr;gap:14px}
-.grid-2-even{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.section-head p{margin:3px 0 0;color:var(--muted);font-size:12px;line-height:1.4}
+.grid-stack{display:grid;grid-template-columns:1fr;gap:14px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .story-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .story-card{
-  border:1px solid var(--line);border-radius:13px;padding:15px;
-  background:rgba(255,255,255,.045);position:relative;overflow:hidden;min-height:118px;
+  border:1px solid var(--line);border-radius:13px;padding:14px;
+  background:rgba(255,255,255,.045);position:relative;overflow:hidden;min-height:112px;
 }
 .story-card .big-watermark{
-  position:absolute;right:10px;bottom:-14px;font-size:72px;font-weight:950;color:rgba(255,255,255,.04);
+  position:absolute;right:10px;bottom:-14px;font-size:67px;font-weight:950;color:rgba(255,255,255,.04);
 }
-.story-card .icon{font-size:28px;margin-bottom:5px}
-.story-card .title{font-weight:950;text-transform:uppercase;font-size:12px;letter-spacing:.5px}
-.story-card .main-line{color:var(--blue);font-size:20px;font-weight:950;margin-top:6px}
-.story-card .sub{color:#dbe8f4;font-size:13px;line-height:1.4;margin-top:3px}
-.pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted);background:rgba(0,0,0,.22)}
-.small{color:var(--muted);font-size:13px;line-height:1.45}
+.story-card .icon{font-size:25px;margin-bottom:5px}
+.story-card .title{font-weight:950;text-transform:uppercase;font-size:11px;letter-spacing:.5px}
+.story-card .main-line{color:var(--blue);font-size:19px;font-weight:950;margin-top:5px}
+.story-card .sub{color:#dbe8f4;font-size:12px;line-height:1.35;margin-top:3px}
+.pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:rgba(0,0,0,.22);text-decoration:none}
+.small{color:var(--muted);font-size:12px;line-height:1.45}
 .gold{color:var(--gold);font-weight:950}.blue{color:var(--blue);font-weight:950}.green{color:var(--green);font-weight:950}.red{color:var(--red);font-weight:950}
 .table-wrap{width:100%;overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,.06)}
-table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px}
-th{color:var(--gold);font-size:11px;text-transform:uppercase;background:rgba(0,0,0,.28);font-weight:950}
-td,th{padding:9px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;vertical-align:top}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:640px}
+th{color:var(--gold);font-size:10px;text-transform:uppercase;background:rgba(0,0,0,.28);font-weight:950}
+td,th{padding:8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;vertical-align:top}
 tr:hover td{background:rgba(255,194,27,.07)}
-.power-table{width:100%;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.035)}
+.power-table{width:100%;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:rgba(255,255,255,.035)}
 .power-row{
-  display:grid;grid-template-columns:66px 2fr repeat(4,1fr) 116px;
-  align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid rgba(255,255,255,.08)
+  display:grid;grid-template-columns:58px 2fr repeat(4,.8fr) 105px;
+  align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.08)
 }
 .power-row:last-child{border-bottom:0}
-.power-head{color:var(--muted);font-size:11px;text-transform:uppercase;font-weight:950;background:rgba(0,0,0,.28)}
+.power-head{color:var(--muted);font-size:10px;text-transform:uppercase;font-weight:950;background:rgba(0,0,0,.28)}
 .rank-num{
-  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,var(--gold),#c28300);color:#111;font-weight:950;
+  width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--gold),#c28300);color:#111;font-weight:950;font-size:13px;
 }
 .rank-dark{background:rgba(255,255,255,.08);color:white}
-.power-franchise{font-size:18px;font-weight:950;color:white}
-.power-metric{font-size:18px;font-weight:900;color:white;text-align:center}
-.power-score-pill{background:rgba(255,194,27,.14);border:1px solid rgba(255,194,27,.26);color:var(--gold);border-radius:10px;padding:8px 10px;text-align:center;font-size:20px;font-weight:950}
+.power-franchise{font-size:16px;font-weight:950;color:white}
+.power-metric{font-size:16px;font-weight:900;color:white;text-align:center}
+.power-score-pill{background:rgba(255,194,27,.14);border:1px solid rgba(255,194,27,.26);color:var(--gold);border-radius:10px;padding:7px 9px;text-align:center;font-size:18px;font-weight:950}
 .power-label{display:none}
 .bar-list{display:grid;gap:9px}
-.bar-row{display:grid;grid-template-columns:116px 1fr 82px;gap:10px;align-items:center;font-size:13px}
-.bar-track{height:28px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
+.bar-row{display:grid;grid-template-columns:116px 1fr 84px;gap:10px;align-items:center;font-size:12px}
+.bar-track{height:24px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
 .bar-fill{height:100%;background:linear-gradient(90deg,#b37b00,var(--gold));border-radius:5px}
 .bar-value{text-align:right;font-weight:950}
-.timeline-strip{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:9px;
-}
+.timeline-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(65px,1fr));gap:8px}
 .time-dot{
-  border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:12px;padding:9px 8px;text-align:center;
+  border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:11px;padding:8px 7px;text-align:center;
 }
-.time-dot .year{font-size:11px;color:var(--muted);font-weight:900}
-.time-dot .champ{font-size:12px;color:white;font-weight:950;margin-top:4px;min-height:30px}
-.season-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.time-dot .year{font-size:10px;color:var(--muted);font-weight:900}
+.time-dot .champ{font-size:11px;color:white;font-weight:950;margin-top:4px;min-height:28px}
+.season-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:11px}
 .season-card{
-  border:1px solid var(--line);border-radius:14px;padding:14px;background:rgba(255,255,255,.045);
+  border:1px solid var(--line);border-radius:13px;padding:13px;background:rgba(255,255,255,.045);
 }
-.season-card strong{font-size:22px;color:var(--gold)}
-.season-card .champ{font-size:19px;color:var(--blue);font-weight:950;margin:5px 0}
-.season-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.meta-box{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px}
-.meta-box .label{font-size:10px;text-transform:uppercase;color:var(--muted)}
-.meta-box .value{font-weight:950;margin-top:3px}
-.team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:12px}
-.team-card{text-decoration:none;color:white;display:block;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.045);padding:15px}
+.season-card strong{font-size:20px;color:var(--gold)}
+.season-card .champ{font-size:17px;color:var(--blue);font-weight:950;margin:5px 0}
+.season-meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.meta-box{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:7px}
+.meta-box .label{font-size:9px;text-transform:uppercase;color:var(--muted)}
+.meta-box .value{font-weight:950;margin-top:3px;font-size:12px}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:11px}
+.team-card{text-decoration:none;color:white;display:block;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.045);padding:14px}
 .team-card:hover{border-color:var(--gold);background:rgba(255,194,27,.075)}
-.team-card h3{font-size:20px;margin:0 0 10px;color:var(--gold)}
-.team-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.team-stat{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px}
-.team-stat b{display:block;font-size:18px}
-.team-stat span{font-size:10px;text-transform:uppercase;color:var(--muted)}
+.team-card h3{font-size:19px;margin:0 0 9px;color:var(--gold)}
+.team-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.team-stat{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:7px}
+.team-stat b{display:block;font-size:17px}
+.team-stat span{font-size:9px;text-transform:uppercase;color:var(--muted)}
 .searchbar input,.compare select{
   background:rgba(0,0,0,.32);border:1px solid var(--line);border-radius:999px;
-  padding:10px 14px;color:white;outline:none;min-width:220px;
+  padding:9px 13px;color:white;outline:none;min-width:210px;
 }
-.compare{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
-.database-tabs{display:grid;gap:14px}
+.compare{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:13px}
+.database-tabs{display:grid;gap:13px}
+details{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:rgba(255,255,255,.04);
+  overflow:hidden;
+}
+summary{
+  cursor:pointer;
+  padding:12px 14px;
+  color:var(--gold);
+  font-weight:950;
+}
+details .inside{padding:0 14px 14px}
 .footer{
-  position:fixed;bottom:0;left:292px;right:0;background:rgba(0,0,0,.78);
-  border-top:1px solid var(--line);padding:12px 22px;color:var(--gold);
-  font-size:12px;letter-spacing:2px;display:flex;justify-content:space-between;z-index:30;
+  position:fixed;bottom:0;left:260px;right:0;background:rgba(0,0,0,.78);
+  border-top:1px solid var(--line);padding:11px 18px;color:var(--gold);
+  font-size:11px;letter-spacing:1.8px;display:flex;justify-content:space-between;z-index:30;
 }
-@media(max-width:1220px){
+@media(max-width:1400px){
+  .content{max-width:1120px}
   .stats{grid-template-columns:repeat(3,1fr)}
   .story-grid,.grid-4{grid-template-columns:repeat(2,1fr)}
-  .grid-2,.grid-2-even,.grid-3{grid-template-columns:1fr}
 }
-@media(max-width:900px){
-  .app{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.footer{left:0}
+@media(max-width:1040px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:relative;height:auto}
+  .footer{left:0}
   .side-menu{display:grid;grid-template-columns:repeat(2,1fr)}
+  .grid-2,.grid-3{grid-template-columns:1fr}
   .power-row{grid-template-columns:44px 1fr}
   .power-head{display:none}
   .power-metric,.power-score-pill{text-align:left;font-size:14px}
-  .power-label{display:inline;color:var(--muted);font-size:11px;text-transform:uppercase;margin-right:6px}
+  .power-label{display:inline;color:var(--muted);font-size:10px;text-transform:uppercase;margin-right:6px}
 }
 @media(max-width:680px){
-  .main{padding:15px 12px 90px}.hero{padding:20px}
+  .main{padding:14px 11px 88px}
+  .hero{padding:18px}
   .stats,.story-grid{grid-template-columns:1fr}
-  .side-menu{grid-template-columns:1fr}.section-head{display:block}
-  .footer{font-size:10px;display:block;text-align:center}
-  .bar-row{grid-template-columns:88px 1fr 64px}
+  .side-menu{grid-template-columns:1fr}
+  .section-head{display:block}
+  .footer{font-size:9px;display:block;text-align:center}
+  .bar-row{grid-template-columns:82px 1fr 62px}
 }
 </style>
 </head>
@@ -260,10 +274,8 @@ tr:hover td{background:rgba(255,194,27,.07)}
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand">
-    <div class="logo">MA3D<span>TRIBE</span></div>
-    <div class="logo-sub">ANALYTICS</div>
-  </div>
+  <div class="logo">MA3D<span>TRIBE</span></div>
+  <div class="logo-sub">ANALYTICS</div>
   <div class="badge">LFL</div>
   <div class="side-title">LFL HISTORY BOOK</div>
   <div class="side-years">2007 - 2025</div>
@@ -273,13 +285,11 @@ tr:hover td{background:rgba(255,194,27,.07)}
     <a class="active" href="#dashboard"><span>🏠 Dashboard</span><span>›</span></a>
     <a href="#timeline"><span>🏆 Timeline</span><span>›</span></a>
     <a href="#power"><span>👑 Power Index</span><span>›</span></a>
-    <a href="#legacy"><span>⭐ Legacy Center</span><span>›</span></a>
-    <a href="#scoring"><span>🔥 Scoring Center</span><span>›</span></a>
-    <a href="#divisions"><span>🛡️ Divisions</span><span>›</span></a>
-    <a href="#records"><span>📚 Record Book</span><span>›</span></a>
-    <a href="#compare"><span>⚔️ Compare Teams</span><span>›</span></a>
-    <a href="#teams"><span>👥 Team Profiles</span><span>›</span></a>
-    <a href="#database"><span>🗃️ Full Database</span><span>›</span></a>
+    <a href="#scoringRecords"><span>🔥 Scoring & Records</span><span>›</span></a>
+    <a href="#legacy"><span>⭐ Legacy</span><span>›</span></a>
+    <a href="#teams"><span>👥 Teams</span><span>›</span></a>
+    <a href="#compare"><span>⚔️ Compare</span><span>›</span></a>
+    <a href="#database"><span>🗃️ Database</span><span>›</span></a>
   </nav>
 
   <div class="side-search">
@@ -300,82 +310,75 @@ tr:hover td{background:rgba(255,194,27,.07)}
   <a class="active" href="#dashboard">DASHBOARD</a>
   <a href="#timeline">TIMELINE</a>
   <a href="#power">POWER INDEX</a>
+  <a href="#scoringRecords">SCORING & RECORDS</a>
   <a href="#legacy">LEGACY</a>
-  <a href="#scoring">SCORING</a>
-  <a href="#divisions">DIVISIONS</a>
-  <a href="#records">RECORD BOOK</a>
   <a href="#teams">TEAMS</a>
   <a href="#database">DATABASE</a>
 </header>
 
 <main class="main">
+<div class="content">
 
 <section class="hero section" id="dashboard">
   <div class="kicker">MA3DTRIBE Analytics Presents</div>
-  <h1>LFL HISTORY BOOK 2.0</h1>
+  <h1>LFL HISTORY BOOK 2.1</h1>
   <h2>THE OFFICIAL LEAGUE RECORD BOOK • 2007 - 2025</h2>
-  <p>One streamlined league story built from championships, division titles, PF history, playoff success, franchise records, dynasty windows, and era dominance.</p>
+  <p>A cleaner version built to tell the story first. Duplicate tables have been combined into fewer sections, and raw data now lives in the searchable database.</p>
   <div class="status" id="loadStatus">Loading Google Sheets data...</div>
   <div class="quick-buttons">
-    <a href="#power">View Power Index</a>
-    <a href="#timeline" class="secondary">Season Timeline</a>
-    <a href="#scoring" class="secondary">Scoring Center</a>
-    <a href="#teams" class="secondary">Team Profiles</a>
+    <a href="#power">Power Index</a>
+    <a href="#timeline" class="secondary">Timeline</a>
+    <a href="#scoringRecords" class="secondary">Scoring & Records</a>
+    <a href="#teams" class="secondary">Teams</a>
   </div>
 </section>
 
 <section class="stats" id="dashboardStats"></section>
 
-<section class="grid-2 section">
+<section class="grid-stack section">
   <div class="card">
     <div class="section-head">
       <div>
         <h2>All-Time Power Index</h2>
-        <p>One clean ranking across rings, dominance, scoring, consistency, division titles, best overall seasons, and playoff success.</p>
+        <p>One clean ranking across rings, dominance, scoring, division titles, best overall seasons, and playoff success.</p>
       </div>
-      <a class="pill" href="#power">View full methodology →</a>
+      <a class="pill" href="#power">View full power index →</a>
     </div>
     <div id="powerTopFive"></div>
   </div>
+
   <div class="card">
-    <h2>League At A Glance</h2>
+    <div class="section-head">
+      <div>
+        <h2>League At A Glance</h2>
+        <p>Combined snapshot so the dashboard does not repeat the same data throughout the site.</p>
+      </div>
+    </div>
     <div id="leagueGlance"></div>
     <br>
-    <h3>PF Leaders</h3>
+    <h3>All-Time PF Leaders</h3>
     <div id="pfMiniBars"></div>
   </div>
 </section>
 
 <section class="story-grid section" id="storyCards"></section>
 
-<section class="grid-2-even section">
-  <div class="card">
-    <div class="section-head">
-      <div>
-        <h2>Championship Timeline</h2>
-        <p>A fast visual walk through every champion.</p>
-      </div>
-      <a href="#timeline" class="pill">Open season cards →</a>
+<section class="card section">
+  <div class="section-head">
+    <div>
+      <h2>Championship Timeline</h2>
+      <p>Quick visual version. Full season cards are below.</p>
     </div>
-    <div class="timeline-strip" id="championshipTimelineStrip"></div>
+    <a href="#timeline" class="pill">Open season timeline →</a>
   </div>
-  <div class="card">
-    <div class="section-head">
-      <div>
-        <h2>Power Score Trend</h2>
-        <p>Top five franchises by current power index.</p>
-      </div>
-      <span class="pill">Auto-built from live data</span>
-    </div>
-    <canvas id="powerTrendChart" height="190"></canvas>
-  </div>
+  <div class="timeline-strip" id="championshipTimelineStrip"></div>
 </section>
 
 <section class="card section" id="timeline">
   <div class="section-head">
     <div>
       <h2>Season Timeline</h2>
-      <p>Each season card pulls the champion, runner-up, best overall leader, yearly PF champion, and division champions into one story.</p>
+      <p>Each season combines champion, runner-up, best overall leader, PF champion, and division champions into one card.</p>
     </div>
   </div>
   <div class="season-grid" id="seasonTimeline"></div>
@@ -385,96 +388,100 @@ tr:hover td{background:rgba(255,194,27,.07)}
   <div class="section-head">
     <div>
       <h2>Franchise Power Index</h2>
-      <p>Built from championships, division titles, PF titles, PF rank, best overall records, playoff wins, regular-season wins, and top scoring seasons.</p>
+      <p>This replaces separate dominance, power, and leader tables with one full ranking.</p>
     </div>
     <span class="pill">Playoff points can be added later</span>
   </div>
   <div id="powerIndexFull"></div>
 </section>
 
+<section class="card section" id="scoringRecords">
+  <div class="section-head">
+    <div>
+      <h2>Scoring & Record Book</h2>
+      <p>PF leaders, yearly scoring champs, single-game records, superlatives, and franchise records are now together.</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div><h3>All-Time PF Leaders</h3><div id="allTimePFLeaders"></div></div>
+    <div><h3>Single Game Records</h3><div id="singleGameSummary"></div></div>
+  </div>
+  <br>
+
+  <details>
+    <summary>Open advanced scoring tables</summary>
+    <div class="inside">
+      <div class="grid-2">
+        <div><h3>Yearly PF Champions</h3><div id="yearlyPFChampions"></div></div>
+        <div><h3>Top 25 Raw PF Seasons</h3><div id="top25RawPF"></div></div>
+      </div>
+      <br>
+      <div class="grid-2">
+        <div><h3>Top 25 PPG Seasons</h3><div id="top25PPG"></div></div>
+        <div><h3>PF Movement</h3><div id="pfMovement"></div></div>
+      </div>
+    </div>
+  </details>
+  <br>
+
+  <div class="grid-2">
+    <div><h3>Superlatives</h3><div id="superlatives"></div></div>
+    <div><h3>Franchise Records</h3><div id="franchiseRecords"></div></div>
+  </div>
+</section>
+
 <section class="card section" id="legacy">
   <div class="section-head">
     <div>
       <h2>Legacy Center</h2>
-      <p>Dynasties, Mount Rushmore, era leaders, and franchise identities in one place.</p>
+      <p>Dynasties, eras, franchise identities, and division history consolidated here.</p>
     </div>
   </div>
-  <div class="grid-3">
+
+  <div class="grid-2">
     <div><h3>Dynasty Eras</h3><div id="dynastyEras"></div></div>
-    <div><h3>Mount Rushmore</h3><div id="mountRushmore"></div></div>
-    <div><h3>Era Leaders</h3><div id="eraLeaders"></div></div>
+    <div><h3>Division Leaders</h3><div id="divisionSummary"></div></div>
   </div>
   <br>
-  <div class="grid-2-even">
-    <div><h3>Franchise Identities</h3><div id="franchiseIdentities"></div></div>
-    <div><h3>Franchise History</h3><div id="franchiseHistory"></div></div>
-  </div>
+
+  <details>
+    <summary>Open full legacy tables</summary>
+    <div class="inside">
+      <div class="grid-2">
+        <div><h3>Mount Rushmore</h3><div id="mountRushmore"></div></div>
+        <div><h3>Era Leaders</h3><div id="eraLeaders"></div></div>
+      </div>
+      <br>
+      <div class="grid-2">
+        <div><h3>Franchise Identities</h3><div id="franchiseIdentities"></div></div>
+        <div><h3>Franchise History</h3><div id="franchiseHistory"></div></div>
+      </div>
+      <br>
+      <div class="grid-2">
+        <div><h3>Division Champions By Season</h3><div id="divisionChampions"></div></div>
+        <div><h3>Dominance Index</h3><div id="dominanceIndex"></div></div>
+      </div>
+    </div>
+  </details>
 </section>
 
-<section class="card section" id="scoring">
+<section class="card section" id="teams">
   <div class="section-head">
     <div>
-      <h2>Scoring Center</h2>
-      <p>All PF, PPG, single-game scoring, and movement records consolidated here.</p>
+      <h2>Team Profile Center</h2>
+      <p>Franchise cards replace repeated leader tables. Click a team to filter its full history.</p>
     </div>
+    <div class="searchbar"><input id="teamSearch" placeholder="Search teams..." /></div>
   </div>
-  <div class="grid-2-even">
-    <div><h3>All-Time PF Leaders</h3><div id="allTimePFLeaders"></div></div>
-    <div><h3>Yearly PF Champions</h3><div id="yearlyPFChampions"></div></div>
-  </div>
-  <br>
-  <div class="grid-2-even">
-    <div><h3>Top 25 Raw PF Seasons</h3><div id="top25RawPF"></div></div>
-    <div><h3>Top 25 PPG Seasons</h3><div id="top25PPG"></div></div>
-  </div>
-  <br>
-  <div class="grid-2-even">
-    <div><h3>Highest Single Game Scores</h3><div id="highestSingleGames"></div></div>
-    <div><h3>Lowest Single Game Scores</h3><div id="lowestSingleGames"></div></div>
-  </div>
-  <br>
-  <h3>PF Movement</h3>
-  <div id="pfMovement"></div>
-</section>
-
-<section class="card section" id="divisions">
-  <div class="section-head">
-    <div>
-      <h2>Division Center</h2>
-      <p>Deep Side, Jam Hill, division champions, and best overall records consolidated into one section.</p>
-    </div>
-  </div>
-  <div class="grid-3">
-    <div><h3>Deep Side Titles</h3><div id="deepSideTitles"></div></div>
-    <div><h3>Jam Hill Titles</h3><div id="jamHillTitles"></div></div>
-    <div><h3>Best Overall Leaders</h3><div id="bestOverallLeaders"></div></div>
-  </div>
-  <br>
-  <h3>Division Champions By Season</h3>
-  <div id="divisionChampions"></div>
-</section>
-
-<section class="card section" id="records">
-  <div class="section-head">
-    <div>
-      <h2>Record Book</h2>
-      <p>Superlatives, franchise records, and dominance index.</p>
-    </div>
-  </div>
-  <div class="grid-2-even">
-    <div><h3>Superlatives</h3><div id="superlatives"></div></div>
-    <div><h3>Franchise Records</h3><div id="franchiseRecords"></div></div>
-  </div>
-  <br>
-  <h3>Dominance Index</h3>
-  <div id="dominanceIndex"></div>
+  <div class="team-grid" id="teamProfiles"></div>
 </section>
 
 <section class="card section" id="compare">
   <div class="section-head">
     <div>
       <h2>Franchise Comparison Tool</h2>
-      <p>Pick two teams and compare power, rings, division titles, PF, wins, and playoff success.</p>
+      <p>Compare two teams without scrolling through repeated tables.</p>
     </div>
   </div>
   <div class="compare">
@@ -484,33 +491,24 @@ tr:hover td{background:rgba(255,194,27,.07)}
   <div id="comparisonTable"></div>
 </section>
 
-<section class="card section" id="teams">
-  <div class="section-head">
-    <div>
-      <h2>Team Profile Center</h2>
-      <p>Auto-built franchise cards. Click a team to filter the full database.</p>
-    </div>
-    <div class="searchbar"><input id="teamSearch" placeholder="Search teams..." /></div>
-  </div>
-  <div class="team-grid" id="teamProfiles"></div>
-</section>
-
 <section class="card section" id="database">
   <div class="section-head">
     <div>
       <h2>Full Database</h2>
-      <p>All connected Google Sheet tabs. This keeps the raw data available without making the main site feel duplicated.</p>
+      <p>Raw tabs are hidden by default to reduce data overload. Search a team, year, or stat to open the database.</p>
     </div>
     <div class="searchbar"><input id="databaseSearch" placeholder="Search all data..." /></div>
   </div>
+  <div id="databaseEmpty" class="small">Type in the search box above, or use the sidebar search, to view raw matching data.</div>
   <div class="database-tabs" id="allSheets"></div>
 </section>
 
+</div>
 </main>
 
 <footer class="footer">
   <span>MA3DTRIBE.COM/LFL-HISTORY</span>
-  <span>19 SEASONS. COUNTLESS MEMORIES. ONE HISTORY.</span>
+  <span>19 SEASONS. ONE HISTORY.</span>
 </footer>
 </div>
 </div>
@@ -564,20 +562,10 @@ function fmt(v){return Number(v||0).toLocaleString(undefined,{maximumFractionDig
 function val(row,keys){for(const k of keys){if(row && row[k]!==undefined && String(row[k]).trim()!=="")return row[k]}return""}
 
 function teamKey(t){
-  return String(t??"")
-    .toLowerCase()
-    .replace(/&amp;/g,"and")
-    .replace(/’/g,"")
-    .replace(/'/g,"")
-    .replace(/[^a-z0-9]/g,"")
-    .trim();
+  return String(t??"").toLowerCase().replace(/&amp;/g,"and").replace(/’/g,"").replace(/'/g,"").replace(/[^a-z0-9]/g,"").trim();
 }
 function cleanTeamText(t){
-  return String(t??"")
-    .replace(/\([^)]+\)/g,"")
-    .replace(/\bco[- ]?champions?\b/ig,"")
-    .replace(/\bchampions?\b/ig,"")
-    .trim();
+  return String(t??"").replace(/\([^)]+\)/g,"").replace(/\bco[- ]?champions?\b/ig,"").replace(/\bchampions?\b/ig,"").trim();
 }
 function canonicalTeam(t){
   const cleaned = cleanTeamText(t);
@@ -585,12 +573,7 @@ function canonicalTeam(t){
   return FRANCHISE_ALIASES[key] || cleaned;
 }
 function splitTeams(value){
-  return String(value??"")
-    .split(/\s*(?:&|\+|,|\/|\band\b)\s*/i)
-    .map(cleanTeamText)
-    .filter(Boolean)
-    .map(canonicalTeam)
-    .filter(Boolean);
+  return String(value??"").split(/\s*(?:&|\+|,|\/|\band\b)\s*/i).map(cleanTeamText).filter(Boolean).map(canonicalTeam).filter(Boolean);
 }
 function canonicalizeTeamCell(value){
   const teams = splitTeams(value);
@@ -710,9 +693,7 @@ function countChampion(team){
   const seen=new Set();
   (DATA["Championship_Timeline"]||[]).forEach((r,idx)=>{
     const champs=splitTeams(val(r,["Champion","Winner","Champions"]));
-    if(champs.some(t=>teamKey(t)===n)){
-      seen.add(val(r,["Year","Season"]) || idx);
-    }
+    if(champs.some(t=>teamKey(t)===n)) seen.add(val(r,["Year","Season"]) || idx);
   });
   return seen.size;
 }
@@ -774,22 +755,12 @@ function buildPowerIndex(){
     const topPPG=countUniqueTeamRows("Top 25 PPG Seasons",team,["Year","Season"]);
     const seasonHits=countUniqueTeamRows("Season_Results",team,["Year","Season"]);
     const playoffApps=metricFromTable("Playoff_Standings",team,["Franchise","Team"],["Playoff App","Appearances","Apps"]);
-
     const pfRankIndex=pfRows.findIndex(r=>rowMatchesTeam(r,team));
     const pfRankScore=pfRankIndex>=0 ? (pfRankMax-pfRankIndex) : 0;
 
     const score =
-      titles*30 +
-      bestOverall*8 +
-      divTitles*6 +
-      playoffWins*3 +
-      playoffApps*2 +
-      pfTitles*8 +
-      pfRankScore*1.2 +
-      topRaw*3 +
-      topPPG*3 +
-      regWins*.18 +
-      seasonHits*.4;
+      titles*30 + bestOverall*8 + divTitles*6 + playoffWins*3 + playoffApps*2 +
+      pfTitles*8 + pfRankScore*1.2 + topRaw*3 + topPPG*3 + regWins*.18 + seasonHits*.4;
 
     return {
       Team:team,
@@ -846,7 +817,7 @@ function latestChampion(){
   document.getElementById("sideChampion").textContent=champ;
   document.getElementById("sideChampionYear").textContent=year?`${year} Champion`:"Latest Champion";
   const count = POWER.find(r=>r.Team===champ)?.Championships;
-  document.getElementById("sideChampionSub").textContent = count ? `${count}${count===1?"st":" total"} championship` : "";
+  document.getElementById("sideChampionSub").textContent = count ? `${count} total championship${count===1?"":"s"}` : "";
 }
 
 function renderStats(){
@@ -854,7 +825,6 @@ function renderStats(){
   const minY=seasons[0]?.Year||2007, maxY=seasons[seasons.length-1]?.Year||2025;
   const champLeader=(aggregateTeamTable("Championship_Count")||[])[0];
   const topPF=(aggregateTeamTable("All-Time PF Leaders")||[])[0];
-  const bestLeader=(aggregateTeamTable("Best Overall Leaders")||[])[0];
   const activeFranchises=POWER.filter(r=>!["DC Ruff Ryders","Damage Inc"].includes(r.Team)).length;
 
   document.getElementById("dashboardStats").innerHTML=`
@@ -895,22 +865,13 @@ function renderPFMiniBars(){
 
 function renderStoryCards(){
   const champLeader = aggregateTeamTable("Championship_Count")[0] || {};
-  const pfLeader = aggregateTeamTable("All-Time PF Leaders")[0] || {};
-  const bestLeader = aggregateTeamTable("Best Overall Leaders")[0] || {};
   const improvements = DATA["Biggest PF Improvements"] || [];
   const bestImprovement = improvements[0] || {};
-  const droughtTeam = "Brew";
-  const droughtYears = "2013 - 2023";
-
   const cards = [
     {icon:"🏆",title:"Greatest Dynasty",main:val(champLeader,["Franchise","Team"])||"—",sub:`${fmt(num(val(champLeader,["Titles","Rings","Championships","Count"])))} championships`,wm:"5"},
-    {icon:"🔥",title:"PF Leader",main:val(pfLeader,["Franchise","Team"])||"—",sub:`${fmt(num(val(pfLeader,["PF","Total PF","Points For"])))} total PF`,wm:"PF"},
-    {icon:"⭐",title:"Best Overall Leader",main:val(bestLeader,["Franchise","Team"])||"—",sub:`${fmt(num(val(bestLeader,["Best Overall","Count","Titles","Times"])))} time(s)`,wm:"1"},
-    {icon:"🚀",title:"Most Improved",main:canonicalizeTeamCell(val(bestImprovement,["Franchise","Team"]))||"Swamp",sub:Object.values(bestImprovement).slice(0,3).join(" • ") || "PF improvement leader",wm:"↑"},
     {icon:"👑",title:"Power King",main:POWER[0]?.Team||"—",sub:`Power Index ${POWER[0]?.["Power Index"]||"—"}`,wm:"#1"},
     {icon:"⚔️",title:"Playoff Force",main:POWER.slice().sort((a,b)=>b["Playoff Wins"]-a["Playoff Wins"])[0]?.Team||"—",sub:`${POWER.slice().sort((a,b)=>b["Playoff Wins"]-a["Playoff Wins"])[0]?.["Playoff Wins"]||0} playoff wins`,wm:"W"},
-    {icon:"🛡️",title:"Division Boss",main:POWER.slice().sort((a,b)=>b["Division Titles"]-a["Division Titles"])[0]?.Team||"—",sub:`${POWER.slice().sort((a,b)=>b["Division Titles"]-a["Division Titles"])[0]?.["Division Titles"]||0} division titles`,wm:"D"},
-    {icon:"⌛",title:"Longest Title Drought",main:droughtTeam,sub:`No titles in 11 seasons (${droughtYears})`,wm:"11"}
+    {icon:"🚀",title:"Most Improved",main:canonicalizeTeamCell(val(bestImprovement,["Franchise","Team"]))||"Swamp",sub:Object.values(bestImprovement).slice(0,3).join(" • ") || "PF improvement leader",wm:"↑"}
   ];
 
   document.getElementById("storyCards").innerHTML = cards.map(c=>`
@@ -925,10 +886,7 @@ function renderStoryCards(){
 
 function renderTimeline(){
   document.getElementById("championshipTimelineStrip").innerHTML = LEAGUE.seasons.map(s=>`
-    <div class="time-dot">
-      <div class="year">${s.Year}</div>
-      <div class="champ">${esc(s.Champion||"—")}</div>
-    </div>`).join("");
+    <div class="time-dot"><div class="year">${s.Year}</div><div class="champ">${esc(s.Champion||"—")}</div></div>`).join("");
 
   document.getElementById("seasonTimeline").innerHTML = LEAGUE.seasons.slice().reverse().map(s=>`
     <div class="season-card">
@@ -945,12 +903,11 @@ function renderTimeline(){
     </div>`).join("");
 }
 
-function renderSingleGameRecords(){
+function getSingleGameRows(){
   const rows = DATA["Single Game Totals (High/Low)"] || [];
   const highest = [];
   const lowest = [];
   let mode = "highest";
-
   rows.forEach(r => {
     const values = Object.values(r).filter(v => String(v).trim() !== "");
     const first = String(values[0] || "").trim();
@@ -964,9 +921,27 @@ function renderSingleGameRecords(){
     if(mode==="highest") highest.push(row);
     if(mode==="lowest") lowest.push(row);
   });
+  return {highest, lowest};
+}
 
-  document.getElementById("highestSingleGames").innerHTML = table(highest);
-  document.getElementById("lowestSingleGames").innerHTML = table(lowest);
+function renderSingleGameSummary(){
+  const {highest, lowest}=getSingleGameRows();
+  const summary=[];
+  if(highest[0]) summary.push({Record:"Highest Single Game", Team:highest[0].Team, Points:highest[0].Points});
+  if(lowest[0]) summary.push({Record:"Lowest Single Game", Team:lowest[0].Team, Points:lowest[0].Points});
+  if(highest[1]) summary.push({Record:"2nd Highest Single Game", Team:highest[1].Team, Points:highest[1].Points});
+  if(lowest[1]) summary.push({Record:"2nd Lowest Single Game", Team:lowest[1].Team, Points:lowest[1].Points});
+  document.getElementById("singleGameSummary").innerHTML=table(summary.length?summary:[{Record:"No single-game data loaded",Team:"—",Points:"—"}]);
+}
+
+function renderDivisionSummary(){
+  const deep=aggregateTeamTable("Deep Side Titles").slice(0,5);
+  const jam=aggregateTeamTable("Jam Hill Titles").slice(0,5);
+  const best=aggregateTeamTable("Best Overall Leaders").slice(0,5);
+  document.getElementById("divisionSummary").innerHTML =
+    "<h3>Deep Side Title Leaders</h3>"+table(deep,5)+
+    "<br><h3>Jam Hill Title Leaders</h3>"+table(jam,5)+
+    "<br><h3>Best Overall Leaders</h3>"+table(best,5);
 }
 
 function renderDominanceIndex(){
@@ -1024,15 +999,22 @@ function setDatabaseSearch(team){
 window.setDatabaseSearch=setDatabaseSearch;
 
 function renderAllSheets(filter=""){
-  const q=String(filter||"").toLowerCase();
+  const q=String(filter||"").toLowerCase().trim();
+  const empty=document.getElementById("databaseEmpty");
+  if(!q){
+    document.getElementById("allSheets").innerHTML="";
+    empty.style.display="block";
+    return;
+  }
+  empty.style.display="none";
   document.getElementById("allSheets").innerHTML=TABS.map(tab=>{
     let rows=DATA[tab]||[];
-    if(q)rows=rows.filter(r=>Object.values(r).some(v=>{
+    rows=rows.filter(r=>Object.values(r).some(v=>{
       const s=String(v).toLowerCase();
       return s.includes(q) || splitTeams(v).some(t=>t.toLowerCase().includes(q));
     }));
-    if(!rows.length && q)return "";
-    return `<div class="card"><h3>${esc(tab)}</h3>${table(rows)}</div>`;
+    if(!rows.length)return "";
+    return `<details open><summary>${esc(tab)} — ${rows.length} result${rows.length===1?"":"s"}</summary><div class="inside">${table(rows)}</div></details>`;
   }).join("") || "<p class='small'>No matching database results.</p>";
 }
 
@@ -1061,62 +1043,6 @@ function setupNav(){
   active();
 }
 
-function drawPowerTrend(){
-  const canvas=document.getElementById("powerTrendChart");
-  if(!canvas || !canvas.getContext) return;
-  const ctx=canvas.getContext("2d");
-  const w=canvas.width=canvas.clientWidth*devicePixelRatio;
-  const h=canvas.height=190*devicePixelRatio;
-  ctx.scale(devicePixelRatio,devicePixelRatio);
-  const width=canvas.clientWidth, height=190;
-  ctx.clearRect(0,0,width,height);
-
-  const top=POWER.slice(0,5);
-  const years=LEAGUE.seasons.map(s=>s.Year);
-  const left=40,right=20,topPad=15,bottom=28;
-  const chartW=width-left-right, chartH=height-topPad-bottom;
-  const maxScore=Math.max(...top.map(t=>t["Power Index"]),100);
-
-  ctx.strokeStyle="rgba(255,255,255,.12)";
-  ctx.lineWidth=1;
-  for(let i=0;i<4;i++){
-    const y=topPad+(chartH/3)*i;
-    ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(left+chartW,y);ctx.stroke();
-  }
-  ctx.fillStyle="rgba(255,255,255,.75)";
-  ctx.font="10px Arial";
-  years.forEach((yr,i)=>{
-    if(i%2===0 || i===years.length-1){
-      const x=left+(i/(years.length-1))*chartW;
-      ctx.fillText(String(yr),x-10,height-9);
-    }
-  });
-
-  const colors=["#ffc21b","#35a7ff","#22c55e","#a78bfa","#fb923c"];
-  top.forEach((team,ti)=>{
-    ctx.strokeStyle=colors[ti%colors.length];
-    ctx.lineWidth=2.5;
-    ctx.beginPath();
-    years.forEach((yr,i)=>{
-      const seasonFactor=(i+1)/years.length;
-      const wobble=Math.sin((i+1)*(ti+1))*0.05;
-      const value=team["Power Index"]*(.52 + seasonFactor*.48 + wobble);
-      const x=left+(i/(years.length-1))*chartW;
-      const y=topPad+chartH-(value/maxScore)*chartH;
-      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    });
-    ctx.stroke();
-  });
-
-  top.forEach((team,ti)=>{
-    ctx.fillStyle=colors[ti%colors.length];
-    ctx.fillRect(width-122,18+ti*18,12,3);
-    ctx.fillStyle="#fff";
-    ctx.font="11px Arial";
-    ctx.fillText(team.Team,width-104,22+ti*18);
-  });
-}
-
 async function init(){
   const failed=[];
   for(const tab of TABS){
@@ -1133,32 +1059,28 @@ async function init(){
   renderPFMiniBars();
   renderStoryCards();
   renderTimeline();
-  drawPowerTrend();
 
-  renderTab("Dynasty_Eras","dynastyEras",false,8);
+  renderTab("All-Time PF Leaders","allTimePFLeaders",true,12);
+  renderSingleGameSummary();
+  renderTab("Yearly PF Champions","yearlyPFChampions",false);
+  renderTab("Top 25 Raw PF Seasons","top25RawPF",false);
+  renderTab("Top 25 PPG Seasons","top25PPG",false);
+
+  document.getElementById("pfMovement").innerHTML=
+    "<h3>Biggest PF Improvements</h3>"+table(DATA["Biggest PF Improvements"]||[],10)+
+    "<h3>Biggest PF Declines</h3>"+table(DATA["Biggest PF Declines"]||[],10)+
+    "<h3>Biggest PPG Improvements</h3>"+table(DATA["Biggest PPG Improvements"]||[],10);
+
+  renderTab("Superlatives","superlatives",false,12);
+  renderTab("Franchise Records","franchiseRecords",false,12);
+
+  renderTab("Dynasty_Eras","dynastyEras",false,10);
+  renderDivisionSummary();
   renderTab("Mount_Rushmore","mountRushmore",false,8);
   renderTab("Era Leaders","eraLeaders",true,8);
   renderTab("Franchise Identities","franchiseIdentities",false,10);
   renderTab("Franchise_History","franchiseHistory",false,10);
-
-  renderTab("All-Time PF Leaders","allTimePFLeaders",true);
-  renderTab("Yearly PF Champions","yearlyPFChampions",false);
-  renderTab("Top 25 Raw PF Seasons","top25RawPF",false);
-  renderTab("Top 25 PPG Seasons","top25PPG",false);
-  renderSingleGameRecords();
-
-  document.getElementById("pfMovement").innerHTML=
-    "<h3>Biggest PF Improvements</h3>"+table(DATA["Biggest PF Improvements"]||[])+
-    "<h3>Biggest PF Declines</h3>"+table(DATA["Biggest PF Declines"]||[])+
-    "<h3>Biggest PPG Improvements</h3>"+table(DATA["Biggest PPG Improvements"]||[]);
-
-  renderTab("Deep Side Titles","deepSideTitles",true);
-  renderTab("Jam Hill Titles","jamHillTitles",true);
-  renderTab("Best Overall Leaders","bestOverallLeaders",true);
   renderTab("Division Champions","divisionChampions",false);
-
-  renderTab("Superlatives","superlatives",false);
-  renderTab("Franchise Records","franchiseRecords",false);
   renderDominanceIndex();
 
   renderTeams();
@@ -1168,11 +1090,10 @@ async function init(){
   setupNav();
 
   document.getElementById("loadStatus").textContent =
-    failed.length ? `Connected. Missing or private tabs: ${failed.join(", ")}` : "Live Google Sheets data connected.";
+    failed.length ? `Live data connected. Some optional tabs not found/private: ${failed.length}` : "Live Google Sheets data connected.";
 }
-
-window.addEventListener("resize",()=>setTimeout(drawPowerTrend,100));
 init();
 </script>
+</div>
 </body>
 </html>
