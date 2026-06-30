@@ -289,7 +289,10 @@ details .inside{padding:0 14px 14px}
     <a href="#legacy"><span>⭐ Legacy</span><span>›</span></a>
     <a href="#teams"><span>👥 Teams</span><span>›</span></a>
     <a href="#compare"><span>⚔️ Compare</span><span>›</span></a>
-    <a href="#database"><span>🗃️ Database</span><span>›</span></a>
+    <a href="#database" onclick="openDatabase()">
+    <span>🗃️ Database</span>
+    <span>›</span>
+</a>
   </nav>
 
   <div class="side-search">
@@ -1092,6 +1095,20 @@ async function init(){
   document.getElementById("loadStatus").textContent =
     failed.length ? `Live data connected. Some optional tabs not found/private: ${failed.length}` : "Live Google Sheets data connected.";
 }
+
+function openDatabase() {
+    document.getElementById("database").scrollIntoView({
+        behavior: "smooth"
+    });
+
+    document.getElementById("databaseSearch").focus();
+
+    renderAllSheets(
+        document.getElementById("databaseSearch").value
+    );
+}
+
+  
 init();
 </script>
 </div>
