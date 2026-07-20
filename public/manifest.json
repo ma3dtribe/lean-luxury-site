@@ -1,6 +1,7 @@
 {
   "name": "MA3DTribe",
   "short_name": "MA3DTribe",
+"id": "/",  
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
