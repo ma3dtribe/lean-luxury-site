@@ -300,42 +300,40 @@
         inset 0 -1px 0 rgba(0,0,0,0.14);
     }
 
-    .pick-number {
-      position: absolute;
-      left: 3px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: rgba(0, 0, 0, 0.52);
-      font-size: clamp(7px, 0.49vw, 9px);
-      font-weight: 1000;
-      letter-spacing: -0.3px;
-    }
+    .position-badge{
+    position:absolute;
+    left:3px;
+    top:50%;
+    transform:translateY(-50%);
+    width:16px;
+    text-align:center;
+    font-size:9px;
+    font-weight:900;
+    color:#222;
+}
 
-    .player-name {
-      display: block;
-      width: 100%;
-      overflow: hidden;
-      font-size: clamp(12px, 1.02vw, 18px);
-      font-weight: 1000;
-      letter-spacing: -0.12px;
-      line-height: 1.02;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+.player-first-name{
+    display:block;
+    margin-left:16px;
+    font-size:11px;
+    font-weight:700;
+    line-height:1;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
 
-    .player-details {
-      display: block;
-      width: 100%;
-      margin-top: 3px;
-      overflow: hidden;
-      color: rgba(0, 0, 0, 0.72);
-      font-size: clamp(10px, 0.72vw, 13px);
-      font-weight: 1000;
-      letter-spacing: 0.15px;
-      line-height: 1;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+.player-last-name{
+    display:block;
+    margin-left:16px;
+    margin-top:1px;
+    font-size:15px;
+    font-weight:1000;
+    line-height:1;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
 
     .pick-empty {
       background:
@@ -731,11 +729,15 @@
             position
           ].filter(Boolean).join(" — ");
 
-          card.innerHTML = `
-            <span class="position-badge">${escapeHtml(position)}</span>
-            <span class="player-first-name">${escapeHtml(nameParts.first)}</span>
-            <span class="player-last-name">${escapeHtml(nameParts.last)}</span>
-          `;
+          const parts = pick.player.trim().split(" ");
+const first = parts.slice(0, -1).join(" ");
+const last = parts.slice(-1).join("");
+
+card.innerHTML = `
+  <span class="position-badge">${escapeHtml(position)}</span>
+  <span class="player-first-name">${escapeHtml(first)}</span>
+  <span class="player-last-name">${escapeHtml(last)}</span>
+`;
         });
       });
 
