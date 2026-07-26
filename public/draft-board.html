@@ -7,6 +7,19 @@
   <title>LFL 2026 Live Draft Board</title>
 
   <style>
+    :root {
+      --page-bg: #050b15;
+      --panel-bg: #0a1423;
+      --panel-border: #2f415b;
+      --text-main: #ffffff;
+      --text-muted: #aebcd0;
+      --gold: #f5b942;
+      --round-width: 46px;
+      --header-height: 54px;
+      --team-header-height: 46px;
+      --gap: 3px;
+    }
+
     * {
       box-sizing: border-box;
     }
@@ -14,147 +27,243 @@
     html,
     body {
       width: 100%;
-      min-height: 100%;
+      height: 100%;
       margin: 0;
-      background: #07101f;
-      color: #ffffff;
-      font-family: Arial, Helvetica, sans-serif;
-      overflow-x: hidden;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text-main);
+      font-family: Inter, Arial, Helvetica, sans-serif;
     }
 
     body {
-      padding: 8px;
+      padding: 5px;
     }
 
     .page {
       width: 100%;
-      min-height: calc(100vh - 16px);
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
+      height: calc(100vh - 10px);
+      display: grid;
+      grid-template-rows: var(--header-height) 4px minmax(0, 1fr);
+      gap: 4px;
     }
 
     .top-bar {
-      min-height: 58px;
       display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      grid-template-columns: minmax(250px, 1.1fr) auto minmax(220px, 1fr);
       align-items: center;
       gap: 12px;
-      padding: 7px 14px;
-      border: 1px solid #32435e;
-      border-radius: 10px;
+      padding: 6px 13px;
+      border: 1px solid var(--panel-border);
+      border-radius: 9px;
       background:
-        linear-gradient(135deg, rgba(20, 44, 80, 0.97), rgba(7, 16, 31, 0.97));
-      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+        radial-gradient(circle at 20% 0%, rgba(62, 107, 170, 0.26), transparent 34%),
+        linear-gradient(135deg, #12243e, #07101f 72%);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.38);
+    }
+
+    .brand {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .league-mark {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border: 2px solid rgba(245, 185, 66, 0.75);
+      border-radius: 50%;
+      background: #101d30;
+      color: var(--gold);
+      font-size: 15px;
+      font-weight: 1000;
+      letter-spacing: 0.5px;
     }
 
     .league-title {
-      font-size: clamp(18px, 1.65vw, 30px);
-      font-weight: 900;
-      letter-spacing: 1px;
+      min-width: 0;
+      font-size: clamp(18px, 1.55vw, 29px);
+      font-weight: 1000;
+      letter-spacing: 0.7px;
+      line-height: 1;
       white-space: nowrap;
     }
 
     .league-title span {
-      color: #f5b942;
+      color: var(--gold);
+    }
+
+    .league-subtitle {
+      margin-top: 4px;
+      color: var(--text-muted);
+      font-size: clamp(9px, 0.68vw, 12px);
+      font-weight: 700;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
     }
 
     .draft-status {
+      min-width: 205px;
       text-align: center;
       white-space: nowrap;
     }
 
     .draft-status strong {
       display: block;
-      font-size: clamp(17px, 1.45vw, 27px);
+      font-size: clamp(18px, 1.5vw, 28px);
+      font-weight: 1000;
+      line-height: 1;
     }
 
     .draft-status small {
-      color: #b8c5d9;
-      font-size: clamp(10px, 0.78vw, 14px);
+      display: block;
+      margin-top: 4px;
+      color: var(--gold);
+      font-size: clamp(10px, 0.72vw, 13px);
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
     }
 
     .last-updated {
       text-align: right;
-      color: #c6d2e2;
-      font-size: clamp(10px, 0.72vw, 13px);
       white-space: nowrap;
+    }
+
+    .live-line {
+      color: #67e587;
+      font-size: clamp(10px, 0.72vw, 13px);
+      font-weight: 1000;
+      letter-spacing: 1px;
+    }
+
+    .updated-time {
+      margin-top: 4px;
+      color: var(--text-muted);
+      font-size: clamp(9px, 0.66vw, 12px);
+      font-weight: 700;
     }
 
     .progress-shell {
       width: 100%;
-      height: 5px;
+      height: 4px;
+      overflow: hidden;
       border-radius: 999px;
       background: #1b2a40;
-      overflow: hidden;
     }
 
     .progress-bar {
       width: 0%;
       height: 100%;
-      background: linear-gradient(90deg, #f5b942, #ffdd79);
-      transition: width 0.4s ease;
+      background: linear-gradient(90deg, #f0a900, #ffe083);
+      transition: width 0.35s ease;
     }
 
     .board-shell {
-      flex: 1;
       min-height: 0;
       overflow: hidden;
-      border: 1px solid #32435e;
-      border-radius: 10px;
-      background: #0d1829;
-      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--panel-border);
+      border-radius: 9px;
+      background: var(--panel-bg);
+      box-shadow: 0 7px 24px rgba(0, 0, 0, 0.36);
     }
 
     .draft-board {
-      display: grid;
-      grid-template-columns: repeat(10, minmax(0, 1fr));
       width: 100%;
       height: 100%;
-    }
-
-    .team-column {
-      min-width: 0;
       display: grid;
-      grid-template-rows: 42px repeat(20, minmax(25px, 1fr));
-      border-right: 1px solid #36445a;
+      grid-template-columns: var(--round-width) repeat(10, minmax(0, 1fr));
+      grid-template-rows: var(--team-header-height) repeat(20, minmax(0, 1fr));
+      gap: var(--gap);
+      padding: var(--gap);
+      background: #07101c;
     }
 
-    .team-column:last-child {
-      border-right: none;
+    .corner-header,
+    .team-header,
+    .round-label,
+    .pick-card {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .corner-header {
+      display: grid;
+      place-items: center;
+      border-radius: 5px;
+      background: #13243a;
+      color: #8fa0b7;
+      font-size: 9px;
+      font-weight: 1000;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
     }
 
     .team-header {
+      position: relative;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 4px;
-      background: linear-gradient(180deg, #f6a800, #db7f00);
-      border-bottom: 2px solid #06101f;
-      color: #111111;
-      font-size: clamp(10px, 0.82vw, 16px);
-      font-weight: 900;
+      padding: 3px 4px;
+      border-radius: 5px 5px 3px 3px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.18), transparent 38%),
+        linear-gradient(180deg, #ffb20b, #d97a00);
+      color: #121212;
       text-align: center;
-      line-height: 1.05;
+      line-height: 1;
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25);
+    }
+
+    .team-name {
+      width: 100%;
       overflow: hidden;
+      font-size: clamp(10px, 0.83vw, 15px);
+      font-weight: 1000;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .team-count {
+      margin-top: 3px;
+      font-size: clamp(7px, 0.52vw, 9px);
+      font-weight: 900;
+      opacity: 0.72;
+      text-transform: uppercase;
+    }
+
+    .round-label {
+      display: grid;
+      place-items: center;
+      border-radius: 4px;
+      background: linear-gradient(180deg, #172a43, #101d30);
+      color: #e7eef8;
+      font-size: clamp(10px, 0.72vw, 13px);
+      font-weight: 1000;
+      line-height: 1;
+      box-shadow: inset -2px 0 0 rgba(245,185,66,0.42);
     }
 
     .pick-card {
       position: relative;
-      min-width: 0;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 2px 4px 2px 17px;
-      border-bottom: 1px solid rgba(7, 16, 31, 0.75);
+      padding: 2px 4px 2px 19px;
+      border-radius: 4px;
       background: #dbe2ea;
       color: #111111;
       line-height: 1;
-      overflow: hidden;
-    }
-
-    .pick-card:last-child {
-      border-bottom: none;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.36),
+        inset 0 -1px 0 rgba(0,0,0,0.14);
     }
 
     .pick-number {
@@ -162,150 +271,158 @@
       left: 3px;
       top: 50%;
       transform: translateY(-50%);
-      color: rgba(0, 0, 0, 0.48);
-      font-size: clamp(7px, 0.53vw, 10px);
-      font-weight: 800;
+      color: rgba(0, 0, 0, 0.52);
+      font-size: clamp(7px, 0.49vw, 9px);
+      font-weight: 1000;
+      letter-spacing: -0.3px;
     }
 
     .player-name {
+      display: block;
       width: 100%;
       overflow: hidden;
-      font-size: clamp(8px, 0.72vw, 14px);
-      font-weight: 900;
+      font-size: clamp(10px, 0.91vw, 16px);
+      font-weight: 1000;
+      letter-spacing: -0.12px;
+      line-height: 1.02;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .player-details {
+      display: block;
       width: 100%;
-      margin-top: 2px;
+      margin-top: 3px;
       overflow: hidden;
-      color: rgba(0, 0, 0, 0.68);
-      font-size: clamp(7px, 0.5vw, 10px);
-      font-weight: 800;
+      color: rgba(0, 0, 0, 0.72);
+      font-size: clamp(7px, 0.56vw, 10px);
+      font-weight: 1000;
+      letter-spacing: 0.15px;
+      line-height: 1;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .pick-empty {
       background:
-        linear-gradient(
-          135deg,
-          rgba(255, 255, 255, 0.035),
-          rgba(255, 255, 255, 0.015)
-        );
-      color: #65758c;
+        linear-gradient(135deg, rgba(255,255,255,0.045), rgba(255,255,255,0.014));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.025);
+    }
+
+    .pick-empty .pick-number {
+      color: #40516a;
     }
 
     .pick-empty .player-name {
-      color: #56667c;
+      color: #344760;
     }
 
-    .position-qb {
-      background: #43a6e8;
+    .latest-pick {
+      z-index: 3;
+      outline: 3px solid #ffe45f;
+      box-shadow:
+        0 0 0 2px rgba(255, 188, 0, 0.28),
+        0 0 18px rgba(255, 211, 58, 0.82),
+        inset 0 1px 0 rgba(255,255,255,0.5);
+      animation: latestPulse 1.5s ease-in-out 3;
     }
 
-    .position-rb {
-      background: #55cf62;
+    @keyframes latestPulse {
+      0%, 100% {
+        transform: scale(1);
+        filter: brightness(1);
+      }
+      50% {
+        transform: scale(1.035);
+        filter: brightness(1.18);
+      }
     }
 
-    .position-wr {
-      background: #59d8e8;
-    }
-
-    .position-te {
-      background: #cb9bea;
-    }
-
-    .position-k {
-      background: #f2f3f5;
-    }
+    .position-qb { background: #4da9e8; }
+    .position-rb { background: #60d66d; }
+    .position-wr { background: #62d9e8; }
+    .position-te { background: #c9a0eb; }
+    .position-k  { background: #f1f3f6; }
 
     .position-dl,
     .position-de,
-    .position-dt {
-      background: #e78576;
-    }
+    .position-dt { background: #e98978; }
 
-    .position-lb {
-      background: #f2df38;
-    }
+    .position-lb { background: #f1dc3c; }
 
     .position-db,
     .position-cb,
-    .position-s {
-      background: #f05ae5;
-    }
+    .position-s { background: #ef6ae5; }
 
-    .position-default {
-      background: #cfd7e1;
-    }
-
-    .footer {
-      min-height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-      color: #9dadc3;
-      font-size: clamp(8px, 0.62vw, 11px);
-    }
-
-    .legend {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      font-weight: 800;
-    }
-
-    .legend-color {
-      width: 10px;
-      height: 10px;
-      border-radius: 2px;
-    }
+    .position-default { background: #ccd5e0; }
 
     .error-banner {
+      position: fixed;
+      left: 50%;
+      top: 68px;
+      z-index: 50;
       display: none;
-      padding: 7px 12px;
+      transform: translateX(-50%);
+      width: min(720px, calc(100vw - 30px));
+      padding: 9px 14px;
+      border: 1px solid rgba(255,255,255,0.2);
       border-radius: 7px;
       background: #a52121;
-      color: white;
+      color: #ffffff;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
       text-align: center;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45);
     }
 
-    @media (max-width: 1100px) {
+    @media (max-width: 1180px) {
+      :root {
+        --round-width: 34px;
+        --header-height: 48px;
+        --team-header-height: 39px;
+        --gap: 2px;
+      }
+
       body {
-        padding: 4px;
+        padding: 3px;
       }
 
       .page {
-        min-height: calc(100vh - 8px);
+        height: calc(100vh - 6px);
+        gap: 3px;
       }
 
       .top-bar {
-        min-height: 48px;
-        padding: 5px 9px;
+        padding: 4px 8px;
       }
 
-      .team-column {
-        grid-template-rows: 34px repeat(20, minmax(22px, 1fr));
+      .league-mark,
+      .league-subtitle {
+        display: none;
       }
 
       .pick-card {
-        padding-left: 13px;
+        padding-left: 14px;
       }
 
-      .footer {
-        display: none;
+      .pick-number {
+        left: 2px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      html,
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        width: 1450px;
+        height: 100vh;
+      }
+
+      .draft-board {
+        min-width: 1450px;
       }
     }
   </style>
@@ -314,18 +431,25 @@
 <body>
   <main class="page">
     <header class="top-bar">
-      <div class="league-title">
-        <span>LFL</span> 2026 LIVE DRAFT
+      <div class="brand">
+        <div class="league-mark">LFL</div>
+
+        <div>
+          <div class="league-title">
+            <span>LFL</span> 2026 LIVE DRAFT
+          </div>
+          <div class="league-subtitle">Official league draft board</div>
+        </div>
       </div>
 
       <div class="draft-status">
-        <strong id="draftProgress">0 of 200 Picks</strong>
-        <small id="currentStatus">Waiting for the draft to begin</small>
+        <strong id="draftProgress">0 / 200 Picks</strong>
+        <small id="currentStatus">Connecting</small>
       </div>
 
       <div class="last-updated">
-        <div>LIVE PUBLIC BOARD</div>
-        <div id="updatedTime">Connecting…</div>
+        <div class="live-line">● LIVE PUBLIC BOARD</div>
+        <div class="updated-time" id="updatedTime">Connecting…</div>
       </div>
     </header>
 
@@ -338,53 +462,11 @@
     <section class="board-shell">
       <div class="draft-board" id="draftBoard"></div>
     </section>
-
-    <footer class="footer">
-      <div class="legend">
-        <span class="legend-item">
-          <span class="legend-color position-qb"></span>QB
-        </span>
-
-        <span class="legend-item">
-          <span class="legend-color position-rb"></span>RB
-        </span>
-
-        <span class="legend-item">
-          <span class="legend-color position-wr"></span>WR
-        </span>
-
-        <span class="legend-item">
-          <span class="legend-color position-te"></span>TE
-        </span>
-
-        <span class="legend-item">
-          <span class="legend-color position-lb"></span>LB
-        </span>
-
-        <span class="legend-item">
-          <span class="legend-color position-dl"></span>DL
-        </span>
-
-        <span class="legend-item">
-          <span class="legend-color position-db"></span>DB
-        </span>
-
-        <span class="legend-item">
-          <span class="legend-color position-k"></span>K
-        </span>
-      </div>
-
-      <div>Automatically refreshes every 30 seconds</div>
-    </footer>
   </main>
 
   <script>
-    /*
-      Replace the text between the quotation marks with the Apps Script
-      web-app URL that ends in /exec.
-    */
-
-    const DRAFT_FEED_URL = "https://script.google.com/macros/s/AKfycbw0cu3nAnqe4x44C3bwJvnQq5wgRrXgMLh23lWZ8_vDbipWocHlx6wP-PuK0DBexWgpKw/exec";
+    const DRAFT_FEED_URL =
+      "https://script.google.com/macros/s/AKfycbw0cu3nAnqe4x44C3bwJvnQq5wgRrXgMLh23lWZ8_vDbipWocHlx6wP-PuK0DBexWgpKw/exec";
 
     const TEAM_ORDER = [
       "Jungle",
@@ -420,7 +502,7 @@
     }
 
     function escapeHtml(value) {
-      return String(value || "")
+      return String(value ?? "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
@@ -428,38 +510,52 @@
         .replaceAll("'", "&#039;");
     }
 
-    function createEmptyBoard() {
+    function createBoardStructure() {
       const board = document.getElementById("draftBoard");
       board.innerHTML = "";
 
-      TEAM_ORDER.forEach(teamName => {
-        const column = document.createElement("section");
-        column.className = "team-column";
-        column.dataset.team = normalizeTeamName(teamName);
+      const corner = document.createElement("div");
+      corner.className = "corner-header";
+      corner.textContent = "Round";
+      board.appendChild(corner);
 
+      TEAM_ORDER.forEach(teamName => {
         const header = document.createElement("div");
         header.className = "team-header";
-        header.textContent = teamName;
-        column.appendChild(header);
+        header.dataset.team = normalizeTeamName(teamName);
 
-        for (let row = 1; row <= PICKS_PER_TEAM; row++) {
+        header.innerHTML = `
+          <span class="team-name">${escapeHtml(teamName)}</span>
+          <span class="team-count" data-count-team="${normalizeTeamName(teamName)}">0 picks</span>
+        `;
+
+        board.appendChild(header);
+      });
+
+      for (let round = 1; round <= PICKS_PER_TEAM; round++) {
+        const roundLabel = document.createElement("div");
+        roundLabel.className = "round-label";
+        roundLabel.textContent = `R${round}`;
+        board.appendChild(roundLabel);
+
+        TEAM_ORDER.forEach(teamName => {
           const card = document.createElement("div");
           card.className = "pick-card pick-empty";
+          card.dataset.team = normalizeTeamName(teamName);
+          card.dataset.round = String(round);
 
           card.innerHTML = `
-            <span class="pick-number">${row}</span>
+            <span class="pick-number">${round}</span>
             <span class="player-name">—</span>
           `;
 
-          column.appendChild(card);
-        }
-
-        board.appendChild(column);
-      });
+          board.appendChild(card);
+        });
+      }
     }
 
     function renderBoard(data) {
-      createEmptyBoard();
+      createBoardStructure();
 
       const picksByTeam = {};
 
@@ -468,44 +564,73 @@
       });
 
       const sortedPicks = [...(data.picks || [])].sort(
-        (a, b) => Number(a.overallPick || 999) - Number(b.overallPick || 999)
+        (a, b) => Number(a.overallPick || 9999) - Number(b.overallPick || 9999)
       );
 
       sortedPicks.forEach(pick => {
         const teamKey = normalizeTeamName(pick.fantasyTeam);
 
-        if (!picksByTeam[teamKey]) {
-          return;
+        if (picksByTeam[teamKey]) {
+          picksByTeam[teamKey].push(pick);
         }
-
-        picksByTeam[teamKey].push(pick);
       });
 
-      document.querySelectorAll(".team-column").forEach(column => {
-        const teamKey = column.dataset.team;
+      const latestOverallPick = sortedPicks.length
+        ? Math.max(...sortedPicks.map(pick => Number(pick.overallPick || 0)))
+        : 0;
+
+      TEAM_ORDER.forEach(teamName => {
+        const teamKey = normalizeTeamName(teamName);
         const teamPicks = picksByTeam[teamKey] || [];
-        const cards = column.querySelectorAll(".pick-card");
+        const countLabel = document.querySelector(
+          `[data-count-team="${teamKey}"]`
+        );
+
+        if (countLabel) {
+          countLabel.textContent =
+            `${teamPicks.length} ${teamPicks.length === 1 ? "pick" : "picks"}`;
+        }
 
         teamPicks.slice(0, PICKS_PER_TEAM).forEach((pick, index) => {
-          const card = cards[index];
-          const positionClass = normalizePosition(pick.position);
+          const roundNumber = index + 1;
+          const card = document.querySelector(
+            `.pick-card[data-team="${teamKey}"][data-round="${roundNumber}"]`
+          );
 
-          card.className = `pick-card position-${positionClass}`;
+          if (!card) {
+            return;
+          }
+
+          const positionClass = normalizePosition(pick.position);
+          const isLatest =
+            Number(pick.overallPick || 0) === latestOverallPick;
+
+          card.className =
+            `pick-card position-${positionClass}` +
+            (isLatest ? " latest-pick" : "");
 
           const details = [
-            pick.nflTeam,
-            pick.position
+            pick.position,
+            pick.nflTeam
           ].filter(Boolean).join(" • ");
 
+          card.title = [
+            pick.player,
+            details,
+            pick.overallPick ? `Overall pick #${pick.overallPick}` : ""
+          ].filter(Boolean).join(" — ");
+
           card.innerHTML = `
-            <span class="pick-number">${escapeHtml(pick.overallPick || index + 1)}</span>
+            <span class="pick-number">#${escapeHtml(
+              pick.overallPick || roundNumber
+            )}</span>
             <span class="player-name">${escapeHtml(pick.player)}</span>
             <span class="player-details">${escapeHtml(details)}</span>
           `;
         });
       });
 
-      const completedPicks = Number(data.completedPicks || 0);
+      const completedPicks = Number(data.completedPicks || sortedPicks.length || 0);
       const totalPicks = Number(data.totalPicks || 200);
       const percentage = Math.min(
         100,
@@ -513,20 +638,20 @@
       );
 
       document.getElementById("draftProgress").textContent =
-        `${completedPicks} of ${totalPicks} Picks`;
+        `${completedPicks} / ${totalPicks} Picks`;
 
       document.getElementById("progressBar").style.width =
         `${percentage}%`;
 
       if (completedPicks === 0) {
         document.getElementById("currentStatus").textContent =
-          "Waiting for the draft to begin";
+          "Waiting for draft";
       } else if (completedPicks >= totalPicks) {
         document.getElementById("currentStatus").textContent =
           "Draft complete";
       } else {
         document.getElementById("currentStatus").textContent =
-          `Next selection: Pick ${completedPicks + 1}`;
+          `Next: Pick ${completedPicks + 1}`;
       }
 
       const updatedDate = new Date(data.updatedAt || Date.now());
@@ -577,7 +702,9 @@
         const data = await response.json();
 
         if (!data.success) {
-          throw new Error(data.error || "The draft feed returned an error.");
+          throw new Error(
+            data.error || "The draft feed returned an error."
+          );
         }
 
         renderBoard(data);
@@ -590,9 +717,8 @@
       }
     }
 
-    createEmptyBoard();
+    createBoardStructure();
     loadDraftData();
-
     setInterval(loadDraftData, REFRESH_INTERVAL);
   </script>
 </body>
