@@ -224,7 +224,8 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 0 2px 0 14px;
+      align-items: flex-start;
+      padding: 2px 2px 2px 15px;
       border-radius: 4px;
       background: #dbe2ea;
       color: #111111;
@@ -257,17 +258,25 @@
       line-height: 0.88;
     }
 
-    .player-first-name {
-      font-size: clamp(10px, 0.80vw, 15px);
-      line-height: 0.88;
-    }
+    .player-first-name{
+    font-size:clamp(12px,1.0vw,18px);
+    font-weight:700;
+    line-height:.95;
+}
 
-    .player-last-name {
-      margin-top: 1px;
-      font-size: clamp(11px, 0.89vw, 17px);
-      line-height: 0.94;
-    }
+.player-last-name{
+    font-size:clamp(14px,1.18vw,22px);
+    font-weight:900;
+    line-height:.95;
+}
 
+.player-first-name,
+.player-last-name{
+    display:flex;
+    align-items:center;
+    flex:1;
+    width:100%;
+}    
     .pick-empty {
       background:
         linear-gradient(135deg, rgba(255,255,255,0.045), rgba(255,255,255,0.014));
