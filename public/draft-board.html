@@ -224,11 +224,11 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 1px 3px 1px 17px;
+      padding: 0 2px 0 14px;
       border-radius: 4px;
       background: #dbe2ea;
       color: #111111;
-      line-height: 0.94;
+      line-height: 0.9;
       box-shadow:
         inset 0 1px 0 rgba(255,255,255,0.36),
         inset 0 -1px 0 rgba(0,0,0,0.14);
@@ -236,15 +236,15 @@
 
     .position-badge {
       position: absolute;
-      left: 2px;
+      left: 1px;
       top: 50%;
       transform: translateY(-50%);
-      width: 13px;
+      width: 11px;
       overflow: hidden;
-      color: rgba(0, 0, 0, 0.68);
-      font-size: clamp(7px, 0.42vw, 8px);
+      color: rgba(0, 0, 0, 0.65);
+      font-size: clamp(6px, 0.36vw, 7px);
       font-weight: 1000;
-      letter-spacing: -0.35px;
+      letter-spacing: -0.45px;
       line-height: 1;
       text-align: center;
       white-space: nowrap;
@@ -252,19 +252,14 @@
 
     .player-first-name,
     .player-last-name {
-      display: block;
-      width: 100%;
-      overflow: hidden;
-      color: #090909;
-      font-weight: 1000;
-      letter-spacing: -0.25px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      margin-top: 0;
+      font-size: clamp(13px, 1.03vw, 19px);
+      line-height: 0.88;
     }
 
     .player-first-name {
-      font-size: clamp(9px, 0.69vw, 13px);
-      line-height: 0.95;
+      font-size: clamp(10px, 0.80vw, 15px);
+      line-height: 0.88;
     }
 
     .player-last-name {
@@ -367,13 +362,13 @@
       }
 
       .pick-card {
-        padding-left: 15px;
+        padding-left: 12px;
       }
 
       .position-badge {
-        left: 1px;
-        width: 12px;
-        font-size: 7px;
+        left: 0;
+        width: 10px;
+        font-size: 6px;
       }
     }
 
@@ -577,7 +572,6 @@
 
         header.innerHTML = `
           <span class="team-name">${escapeHtml(teamName)}</span>
-          <span class="team-count" data-count-team="${normalizeTeamName(teamName)}">0 picks</span>
         `;
 
         board.appendChild(header);
@@ -634,16 +628,7 @@
       TEAM_ORDER.forEach(teamName => {
         const teamKey = normalizeTeamName(teamName);
         const teamPicks = picksByTeam[teamKey] || [];
-        const countLabel = document.querySelector(
-          `[data-count-team="${teamKey}"]`
-        );
-
-        if (countLabel) {
-          countLabel.textContent =
-            `${teamPicks.length} ${teamPicks.length === 1 ? "pick" : "picks"}`;
-        }
-
-        teamPicks.slice(0, PICKS_PER_TEAM).forEach((pick, index) => {
+teamPicks.slice(0, PICKS_PER_TEAM).forEach((pick, index) => {
           const roundNumber = index + 1;
           const card = document.querySelector(
             `.pick-card[data-team="${teamKey}"][data-round="${roundNumber}"]`
