@@ -42,9 +42,14 @@ export default async () => {
   });
 
   const uptimeText = (await uptimeRes.text()).trim();
-  const lower = uptimeText.toLowerCase();
-  const isLive = !lower.includes("offline");
+    const uptimeSeconds = parseUptimeToSeconds(uptimeText);
+const isLive =
+  uptimeRes.ok &&
+  uptimeSeconds > 0 &&
+  /(\d+)\s*(day|days|hour|hours|minute|minutes|second|seconds)/i.test(uptimeText);
 
+
+  
   if (!isLive) {
   return new Response(JSON.stringify({
     ok: true,
@@ -56,7 +61,7 @@ export default async () => {
   });
 }
 
-  const uptimeSeconds = parseUptimeToSeconds(uptimeText);
+  
   const startedAtMs = Date.now() - (uptimeSeconds * 1000);
   const idempotencyKey = makeSessionUuid(CHANNEL, startedAtMs);
 
