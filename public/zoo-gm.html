@@ -120,13 +120,6 @@
       font-weight: 800;
     }
 
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1.55fr .85fr;
-      gap: 20px;
-      align-items: start;
-    }
-
     .panel {
       background: rgba(17, 22, 29, .96);
       border: 1px solid var(--border);
@@ -151,6 +144,131 @@
 
     .panel-body {
       padding: 16px;
+    }
+
+    /* ZOO GM BRIEF */
+
+    .brief-panel {
+      border-color: #315b49;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(66, 211, 146, .08),
+          rgba(17, 22, 29, .97) 42%
+        );
+    }
+
+    .brief-header-note {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .gm-recommendation {
+      margin-bottom: 16px;
+      padding: 16px 18px;
+      border: 1px solid #315b49;
+      border-radius: 10px;
+      background: rgba(66, 211, 146, .08);
+    }
+
+    .gm-recommendation-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .gm-recommendation-value {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--green);
+    }
+
+    .brief-stats {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 9px;
+      margin-bottom: 18px;
+    }
+
+    .brief-stat {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px;
+    }
+
+    .brief-stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 20px;
+    }
+
+    .brief-items {
+      display: grid;
+      gap: 10px;
+    }
+
+    .brief-item {
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 13px 14px;
+      background: rgba(8, 11, 15, .45);
+    }
+
+    .brief-item.ACT-NOW {
+      border-color: rgba(255, 92, 92, .5);
+      background: rgba(255, 92, 92, .06);
+    }
+
+    .brief-item.MONITOR {
+      border-color: rgba(255, 209, 102, .35);
+    }
+
+    .brief-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 7px;
+    }
+
+    .brief-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .brief-text {
+      line-height: 1.45;
+      color: #e6ebf0;
+    }
+
+    .brief-text a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .brief-text a:hover {
+      text-decoration: underline;
+    }
+
+    .brief-action {
+      margin-top: 9px;
+      font-size: 12px;
+      color: var(--green);
+      font-weight: bold;
+    }
+
+    /* MAIN LAYOUT */
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.55fr .85fr;
+      gap: 20px;
+      align-items: start;
     }
 
     .filters {
@@ -211,6 +329,54 @@
 
     .news-text a:hover {
       text-decoration: underline;
+    }
+
+    .intelligence-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .action-tier,
+    .category-badge,
+    .recommendation-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .action-tier.ACT-NOW {
+      background: rgba(255, 92, 92, .18);
+      color: var(--red);
+    }
+
+    .action-tier.MONITOR {
+      background: rgba(255, 209, 102, .15);
+      color: var(--yellow);
+    }
+
+    .action-tier.FYI {
+      background: rgba(89, 168, 255, .14);
+      color: var(--blue);
+    }
+
+    .action-tier.NOISE {
+      background: #222b35;
+      color: var(--muted);
+    }
+
+    .category-badge {
+      background: #222b35;
+      color: #dce4ec;
+    }
+
+    .recommendation-badge {
+      background: rgba(66, 211, 146, .12);
+      color: var(--green);
     }
 
     .tags {
@@ -355,8 +521,18 @@
       color: var(--red);
     }
 
+    .feed-note {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
     @media (max-width: 1050px) {
       .summary-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .brief-stats {
         grid-template-columns: repeat(3, 1fr);
       }
 
@@ -383,12 +559,20 @@
         grid-template-columns: repeat(2, 1fr);
       }
 
+      .brief-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
       .brand h1 {
         font-size: 26px;
       }
 
       .table-wrap {
         overflow-x: auto;
+      }
+
+      .brief-item-top {
+        flex-direction: column;
       }
     }
   </style>
@@ -399,6 +583,7 @@
 <div class="page">
 
   <div class="topbar">
+
     <div class="brand">
       <h1>🦁 ZOO GM</h1>
       <p>LFL Fantasy Football Command Center</p>
@@ -408,11 +593,14 @@
       <button onclick="loadZooGM()">Refresh Intelligence</button>
       <span id="lastRefresh">Waiting for data...</span>
     </div>
+
   </div>
 
   <div id="status" class="status">
     Connecting to Zoo GM intelligence...
   </div>
+
+  <!-- TOP SUMMARY -->
 
   <div class="summary-grid">
 
@@ -432,21 +620,99 @@
     </div>
 
     <div class="summary-card">
-      <div class="summary-label">Zoo News</div>
-      <div class="summary-number" id="zooNewsCount">—</div>
+      <div class="summary-label">Relevant</div>
+      <div class="summary-number" id="relevantCount">—</div>
     </div>
 
     <div class="summary-card">
-      <div class="summary-label">Available News</div>
-      <div class="summary-number" id="availableNewsCount">—</div>
+      <div class="summary-label">Noise Hidden</div>
+      <div class="summary-number" id="noiseCount">—</div>
     </div>
 
     <div class="summary-card">
-      <div class="summary-label">Urgent</div>
-      <div class="summary-number" id="urgentCount">—</div>
+      <div class="summary-label">Act Now</div>
+      <div class="summary-number" id="actNowCount">—</div>
     </div>
 
   </div>
+
+  <!-- ZOO GM BRIEF -->
+
+  <section class="panel brief-panel">
+
+    <div class="panel-header">
+
+      <div>
+        <h2>Zoo GM Brief</h2>
+        <div class="brief-header-note">
+          Most important fantasy developments ranked for Zoo
+        </div>
+      </div>
+
+      <div id="briefGenerated" class="news-time">
+        Waiting for intelligence...
+      </div>
+
+    </div>
+
+    <div class="panel-body">
+
+      <div class="gm-recommendation">
+
+        <div class="gm-recommendation-label">
+          GM Recommendation
+        </div>
+
+        <div
+          class="gm-recommendation-value"
+          id="gmRecommendation"
+        >
+          —
+        </div>
+
+      </div>
+
+      <div class="brief-stats">
+
+        <div class="brief-stat">
+          <div class="summary-label">Relevant</div>
+          <strong id="briefRelevant">—</strong>
+        </div>
+
+        <div class="brief-stat">
+          <div class="summary-label">Act Now</div>
+          <strong id="briefActNow">—</strong>
+        </div>
+
+        <div class="brief-stat">
+          <div class="summary-label">Zoo Impact</div>
+          <strong id="briefZoo">—</strong>
+        </div>
+
+        <div class="brief-stat">
+          <div class="summary-label">Available</div>
+          <strong id="briefAvailable">—</strong>
+        </div>
+
+        <div class="brief-stat">
+          <div class="summary-label">Watch List</div>
+          <strong id="briefWatch">—</strong>
+        </div>
+
+        <div class="brief-stat">
+          <div class="summary-label">Opponent</div>
+          <strong id="briefOpponent">—</strong>
+        </div>
+
+      </div>
+
+      <div id="briefItems" class="brief-items">
+        <div class="empty">Building Zoo GM Brief...</div>
+      </div>
+
+    </div>
+
+  </section>
 
   <div class="main-grid">
 
@@ -455,15 +721,44 @@
       <section class="panel">
 
         <div class="panel-header">
-          <h2>Live Intelligence</h2>
+
+          <div>
+            <h2>Live Intelligence</h2>
+            <div class="feed-note">
+              Newest first · low-value noise hidden by default
+            </div>
+          </div>
 
           <div class="filters">
-            <button class="filter active" data-filter="all">All</button>
-            <button class="filter" data-filter="zoo">Zoo</button>
-            <button class="filter" data-filter="available">Available</button>
-            <button class="filter" data-filter="watch">Watch List</button>
-            <button class="filter" data-filter="opponent">Opponent</button>
+            <button class="filter active" data-filter="relevant">
+              Relevant
+            </button>
+
+            <button class="filter" data-filter="act">
+              Act Now
+            </button>
+
+            <button class="filter" data-filter="zoo">
+              Zoo
+            </button>
+
+            <button class="filter" data-filter="available">
+              Available
+            </button>
+
+            <button class="filter" data-filter="watch">
+              Watch List
+            </button>
+
+            <button class="filter" data-filter="opponent">
+              Opponent
+            </button>
+
+            <button class="filter" data-filter="all">
+              All
+            </button>
           </div>
+
         </div>
 
         <div class="panel-body" id="newsFeed">
@@ -483,9 +778,11 @@
         </div>
 
         <div class="panel-body">
+
           <div id="matchup" class="empty">
             Loading matchup...
           </div>
+
         </div>
 
       </section>
@@ -499,6 +796,7 @@
         <div class="panel-body table-wrap">
 
           <table>
+
             <thead>
               <tr>
                 <th>Player</th>
@@ -528,6 +826,7 @@
         <div class="panel-body table-wrap">
 
           <table>
+
             <thead>
               <tr>
                 <th>Player</th>
@@ -553,13 +852,29 @@
   </div>
 
 </div>
+
 <script>
-  const ESPN_URL = "/.netlify/functions/zoo-gm-espn?zoo-gm-live=1";
-const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
+
+  /*
+    Cache-key version is intentionally different from
+    the previous dashboard version because Safari's
+    service worker previously served stale API data.
+  */
+
+  const ESPN_URL =
+    "/.netlify/functions/zoo-gm-espn?zoo-gm-live=1";
+
+  const X_URL =
+    "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=3";
 
   let espnData = null;
   let xData = null;
-  let activeFilter = "all";
+
+  /*
+    Relevant is the default view.
+    It hides posts classified as NOISE.
+  */
+  let activeFilter = "relevant";
 
   function esc(value) {
     return String(value ?? "")
@@ -622,13 +937,19 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
       )
     ) {
       return {
-        label: player.rosterStatus || player.lineupSlot || "Starter",
+        label:
+          player.rosterStatus ||
+          player.lineupSlot ||
+          "Starter",
         className: "starter"
       };
     }
 
     return {
-      label: player.rosterStatus || player.lineupSlot || "Bench",
+      label:
+        player.rosterStatus ||
+        player.lineupSlot ||
+        "Bench",
       className: "bench"
     };
   }
@@ -643,41 +964,288 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
       espnData?.zoo?.teamId
     );
 
-    const zooTeam = (espnData?.teams || []).find(
-      team => Number(team.teamId) === zooId
-    );
+    const zooTeam =
+      (espnData?.teams || []).find(
+        team => Number(team.teamId) === zooId
+      );
 
     return zooTeam?.roster || [];
   }
 
+  /*
+    TOP SUMMARY
+  */
+
   function renderSummary() {
     const summary = xData?.summary || {};
+    const brief = xData?.brief || {};
 
-    document.getElementById("zooRosterCount").textContent =
+    document.getElementById(
+      "zooRosterCount"
+    ).textContent =
       espnData?.zooRosterSize ??
       getZooRoster().length ??
       "—";
 
-    document.getElementById("availableCount").textContent =
+    document.getElementById(
+      "availableCount"
+    ).textContent =
       espnData?.availablePlayerCount ??
       espnData?.availablePlayers?.length ??
       "—";
 
-    document.getElementById("postsCount").textContent =
+    document.getElementById(
+      "postsCount"
+    ).textContent =
       summary.postsReviewed ?? "—";
 
-    document.getElementById("zooNewsCount").textContent =
-      summary.zooRelevant ?? "—";
+    document.getElementById(
+      "relevantCount"
+    ).textContent =
+      summary.relevantPosts ??
+      brief.relevantPosts ??
+      "—";
 
-    document.getElementById("availableNewsCount").textContent =
-      summary.availablePlayerRelevant ?? "—";
+    document.getElementById(
+      "noiseCount"
+    ).textContent =
+      summary.noisePosts ??
+      brief.noisePosts ??
+      "—";
 
-    document.getElementById("urgentCount").textContent =
-      summary.urgent ?? "—";
+    document.getElementById(
+      "actNowCount"
+    ).textContent =
+      summary.actNow ??
+      brief.actNowCount ??
+      "—";
   }
+
+  /*
+    ZOO GM BRIEF
+  */
+
+  function briefTierClass(value = "") {
+    return String(value)
+      .toUpperCase()
+      .replace(/\s+/g, "-");
+  }
+
+  function renderBrief() {
+    const brief = xData?.brief || {};
+
+    document.getElementById(
+      "gmRecommendation"
+    ).textContent =
+      brief.recommendation || "HOLD";
+
+    document.getElementById(
+      "briefRelevant"
+    ).textContent =
+      brief.relevantPosts ?? 0;
+
+    document.getElementById(
+      "briefActNow"
+    ).textContent =
+      brief.actNowCount ?? 0;
+
+    document.getElementById(
+      "briefZoo"
+    ).textContent =
+      brief.zooImpactCount ?? 0;
+
+    document.getElementById(
+      "briefAvailable"
+    ).textContent =
+      brief.availableOpportunityCount ?? 0;
+
+    document.getElementById(
+      "briefWatch"
+    ).textContent =
+      brief.watchListCount ?? 0;
+
+    document.getElementById(
+      "briefOpponent"
+    ).textContent =
+      brief.opponentCount ?? 0;
+
+    document.getElementById(
+      "briefGenerated"
+    ).textContent =
+      `${Number(
+        xData?.summary?.postsReviewed || 0
+      )} X posts analyzed`;
+
+    const container =
+      document.getElementById("briefItems");
+
+    const items =
+      Array.isArray(brief.topItems)
+        ? brief.topItems
+        : [];
+
+    if (!items.length) {
+      container.innerHTML = `
+        <div class="empty">
+          No meaningful fantasy developments right now.
+          Zoo GM recommendation: HOLD.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML =
+      items.map(item => {
+
+        const tier =
+          item.actionTier || "FYI";
+
+        const category =
+          item.primaryCategory ||
+          "AROUND THE NFL";
+
+        const recommendation =
+          item.recommendation ||
+          "HOLD";
+
+        const tierClass =
+          briefTierClass(tier);
+
+        const linkStart = item.link
+          ? `<a href="${esc(item.link)}"
+                target="_blank"
+                rel="noopener">`
+          : "";
+
+        const linkEnd =
+          item.link ? "</a>" : "";
+
+        const playerTags =
+          (item.players || [])
+            .slice(0, 5)
+            .map(player => {
+
+              let className = "";
+
+              if (
+                player.ownershipStatus === "ZOO"
+              ) {
+                className = "zoo";
+              } else if (
+                player.onWatchList
+              ) {
+                className = "watch";
+              } else if (
+                player.opponentThisWeek
+              ) {
+                className = "opponent";
+              } else if (
+                player.ownershipStatus ===
+                "AVAILABLE"
+              ) {
+                className = "available";
+              }
+
+              let status =
+                player.classification ||
+                player.ownershipStatus ||
+                "";
+
+              if (
+                player.ownershipStatus ===
+                "LFL OWNED" &&
+                player.lflTeam
+              ) {
+                status = player.lflTeam;
+              }
+
+              return `
+                <span class="tag ${className}">
+                  ${esc(player.name)}
+                  ${status
+                    ? ` · ${esc(status)}`
+                    : ""
+                  }
+                </span>
+              `;
+            })
+            .join("");
+
+        return `
+          <article
+            class="brief-item ${esc(tierClass)}"
+          >
+
+            <div class="brief-item-top">
+
+              <div class="brief-badges">
+
+                <span
+                  class="action-tier ${esc(tierClass)}"
+                >
+                  ${esc(tier)}
+                </span>
+
+                <span class="category-badge">
+                  ${esc(category)}
+                </span>
+
+                <span class="alert ${
+                  Number(item.maxRelevance || 0) >= 90
+                    ? "URGENT"
+                    : Number(item.maxRelevance || 0) >= 75
+                      ? "IMPORTANT"
+                      : "WATCH"
+                }">
+                  ${Number(item.maxRelevance || 0)}
+                </span>
+
+              </div>
+
+              <div class="news-time">
+                ${esc(formatTime(item.publishedAt))}
+              </div>
+
+            </div>
+
+            <div class="news-author">
+              ${esc(item.author || "X Source")}
+            </div>
+
+            <div class="brief-text">
+              ${linkStart}
+                ${esc(item.text || "Fantasy update")}
+              ${linkEnd}
+            </div>
+
+            ${playerTags
+              ? `<div class="tags">${playerTags}</div>`
+              : ""
+            }
+
+            <div class="brief-action">
+              ZOO GM: ${esc(recommendation)}
+            </div>
+
+          </article>
+        `;
+      }).join("");
+  }
+
+  /*
+    LIVE INTELLIGENCE FILTERS
+  */
 
   function postMatchesFilter(post) {
     const i = post.intelligence || {};
+
+    if (activeFilter === "relevant") {
+      return i.actionTier !== "NOISE";
+    }
+
+    if (activeFilter === "act") {
+      return i.actionTier === "ACT NOW";
+    }
 
     if (activeFilter === "zoo") {
       return i.directZooImpact;
@@ -695,15 +1263,24 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
       return i.opponentImpact;
     }
 
+    /*
+      ALL intentionally includes NOISE.
+    */
     return true;
   }
 
   function renderNews() {
-    const container = document.getElementById("newsFeed");
+    const container =
+      document.getElementById("newsFeed");
 
-    const posts = (xData?.posts || [])
-      .filter(postMatchesFilter)
-      .slice(0, 60);
+    /*
+      The backend already sorts the live feed
+      newest -> oldest. We preserve that order.
+    */
+    const posts =
+      (xData?.posts || [])
+        .filter(postMatchesFilter)
+        .slice(0, 100);
 
     if (!posts.length) {
       container.innerHTML =
@@ -711,108 +1288,224 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
       return;
     }
 
-    container.innerHTML = posts.map(post => {
-      const i = post.intelligence || {};
-      const alertLevel = i.alertLevel || "STORE";
+    container.innerHTML =
+      posts.map(post => {
 
-      const tags = [];
+        const i =
+          post.intelligence || {};
 
-      (i.zooPlayers || []).forEach(name => {
-        tags.push(
-          `<span class="tag zoo">${esc(name)} · ZOO</span>`
-        );
-      });
+        const alertLevel =
+          i.alertLevel || "STORE";
 
-      (i.availablePlayers || []).forEach(name => {
-        tags.push(
-          `<span class="tag available">${esc(name)} · AVAILABLE</span>`
-        );
-      });
+        const actionTier =
+          i.actionTier || "FYI";
 
-      (i.watchPlayers || []).forEach(name => {
-        tags.push(
-          `<span class="tag watch">${esc(name)} · WATCH LIST</span>`
-        );
-      });
+        const category =
+          i.primaryCategory ||
+          "AROUND THE NFL";
 
-      (i.opponentPlayers || []).forEach(name => {
-        tags.push(
-          `<span class="tag opponent">${esc(name)} · OPPONENT</span>`
-        );
-      });
+        const recommendation =
+          i.recommendation || "HOLD";
 
-      (i.lflOwnedPlayers || []).forEach(player => {
-        tags.push(
-          `<span class="tag">${esc(player.name)} · ${esc(player.lflTeam || "LFL OWNED")}</span>`
-        );
-      });
+        const tierClass =
+          briefTierClass(actionTier);
 
-      const linkStart = post.link
-        ? `<a href="${esc(post.link)}" target="_blank" rel="noopener">`
-        : "";
+        const tags = [];
 
-      const linkEnd = post.link ? "</a>" : "";
+        (i.zooPlayers || [])
+          .forEach(name => {
+            tags.push(
+              `<span class="tag zoo">
+                ${esc(name)} · ZOO
+              </span>`
+            );
+          });
 
-      return `
-        <article class="news-card">
+        (i.availablePlayers || [])
+          .forEach(name => {
+            tags.push(
+              `<span class="tag available">
+                ${esc(name)} · AVAILABLE
+              </span>`
+            );
+          });
 
-          <div class="news-top">
-            <div class="news-author">
-              ${esc(post.author || "X Source")}
+        (i.watchPlayers || [])
+          .forEach(name => {
+            tags.push(
+              `<span class="tag watch">
+                ${esc(name)} · WATCH LIST
+              </span>`
+            );
+          });
+
+        (i.opponentPlayers || [])
+          .forEach(name => {
+            tags.push(
+              `<span class="tag opponent">
+                ${esc(name)} · OPPONENT
+              </span>`
+            );
+          });
+
+        (i.lflOwnedPlayers || [])
+          .forEach(player => {
+            tags.push(
+              `<span class="tag">
+                ${esc(player.name)} ·
+                ${esc(
+                  player.lflTeam ||
+                  "LFL OWNED"
+                )}
+              </span>`
+            );
+          });
+
+        const linkStart =
+          post.link
+            ? `<a href="${esc(post.link)}"
+                  target="_blank"
+                  rel="noopener">`
+            : "";
+
+        const linkEnd =
+          post.link ? "</a>" : "";
+
+        return `
+          <article class="news-card">
+
+            <div class="news-top">
+
+              <div class="news-author">
+                ${esc(
+                  post.author ||
+                  "X Source"
+                )}
+              </div>
+
+              <div class="news-time">
+                ${esc(
+                  formatTime(
+                    post.publishedAt
+                  )
+                )}
+              </div>
+
             </div>
 
-            <div class="news-time">
-              ${esc(formatTime(post.publishedAt))}
+            <div class="news-text">
+
+              ${linkStart}
+
+                ${esc(
+                  post.text ||
+                  post.title ||
+                  "X update"
+                )}
+
+              ${linkEnd}
+
             </div>
-          </div>
 
-          <div class="news-text">
-            ${linkStart}
-              ${esc(post.text || post.title || "X update")}
-            ${linkEnd}
-          </div>
+            <div class="intelligence-line">
 
-          ${tags.length
-            ? `<div class="tags">${tags.join("")}</div>`
-            : ""
-          }
+              <span
+                class="action-tier ${esc(tierClass)}"
+              >
+                ${esc(actionTier)}
+              </span>
 
-          <div class="meter-row">
+              <span class="category-badge">
+                ${esc(category)}
+              </span>
 
-            <span class="alert ${esc(alertLevel)}">
-              ${esc(alertLevel)} · ${maxRelevance(post)}
-            </span>
+              <span class="recommendation-badge">
+                ZOO GM: ${esc(recommendation)}
+              </span>
 
-            <span class="meter">
-              Fantasy <strong>${Number(i.fantasyRelevance || 0)}</strong>
-            </span>
+            </div>
 
-            <span class="meter">
-              Zoo <strong>${Number(i.zooRelevance || 0)}</strong>
-            </span>
+            ${tags.length
+              ? `
+                <div class="tags">
+                  ${tags.join("")}
+                </div>
+              `
+              : ""
+            }
 
-            <span class="meter">
-              Available <strong>${Number(i.availableRelevance || 0)}</strong>
-            </span>
+            <div class="meter-row">
 
-            <span class="meter">
-              Watch <strong>${Number(i.watchRelevance || 0)}</strong>
-            </span>
+              <span
+                class="alert ${esc(alertLevel)}"
+              >
+                ${esc(alertLevel)}
+                ·
+                ${maxRelevance(post)}
+              </span>
 
-            <span class="meter">
-              Opponent <strong>${Number(i.opponentRelevance || 0)}</strong>
-            </span>
+              <span class="meter">
+                Fantasy
+                <strong>
+                  ${Number(
+                    i.fantasyRelevance || 0
+                  )}
+                </strong>
+              </span>
 
-          </div>
+              <span class="meter">
+                Zoo
+                <strong>
+                  ${Number(
+                    i.zooRelevance || 0
+                  )}
+                </strong>
+              </span>
 
-        </article>
-      `;
-    }).join("");
+              <span class="meter">
+                Available
+                <strong>
+                  ${Number(
+                    i.availableRelevance || 0
+                  )}
+                </strong>
+              </span>
+
+              <span class="meter">
+                Watch
+                <strong>
+                  ${Number(
+                    i.watchRelevance || 0
+                  )}
+                </strong>
+              </span>
+
+              <span class="meter">
+                Opponent
+                <strong>
+                  ${Number(
+                    i.opponentRelevance || 0
+                  )}
+                </strong>
+              </span>
+
+            </div>
+
+          </article>
+        `;
+      }).join("");
   }
 
+  /*
+    ZOO ROSTER
+  */
+
   function renderRoster() {
-    const body = document.getElementById("rosterBody");
-    const roster = getZooRoster();
+    const body =
+      document.getElementById("rosterBody");
+
+    const roster =
+      getZooRoster();
 
     if (!roster.length) {
       body.innerHTML =
@@ -820,30 +1513,44 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
       return;
     }
 
-    body.innerHTML = roster.map(player => {
-      const status = rosterStatus(player);
+    body.innerHTML =
+      roster.map(player => {
 
-      return `
-        <tr>
-          <td>
-            <strong>${esc(player.name)}</strong>
-          </td>
+        const status =
+          rosterStatus(player);
 
-          <td>
-            ${esc(player.position)}
-          </td>
+        return `
+          <tr>
 
-          <td class="${status.className}">
-            ${esc(status.label)}
-          </td>
-        </tr>
-      `;
-    }).join("");
+            <td>
+              <strong>
+                ${esc(player.name)}
+              </strong>
+            </td>
+
+            <td>
+              ${esc(player.position)}
+            </td>
+
+            <td class="${status.className}">
+              ${esc(status.label)}
+            </td>
+
+          </tr>
+        `;
+      }).join("");
   }
 
+  /*
+    ESPN WATCH LIST
+  */
+
   function renderWatchList() {
-    const body = document.getElementById("watchBody");
-    const watchList = xData?.watchList || [];
+    const body =
+      document.getElementById("watchBody");
+
+    const watchList =
+      xData?.watchList || [];
 
     if (!watchList.length) {
       body.innerHTML =
@@ -851,24 +1558,33 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
       return;
     }
 
-    body.innerHTML = watchList.map(player => `
-      <tr>
+    body.innerHTML =
+      watchList.map(player => `
+        <tr>
 
-        <td>
-          <strong>${esc(player.name)}</strong>
-        </td>
+          <td>
+            <strong>
+              ${esc(player.name)}
+            </strong>
+          </td>
 
-        <td>
-          ${esc(player.position)}
-        </td>
+          <td>
+            ${esc(player.position)}
+          </td>
 
-        <td>
-          ${esc(player.priority || "—")}
-        </td>
+          <td>
+            ${esc(
+              player.priority || "—"
+            )}
+          </td>
 
-      </tr>
-    `).join("");
+        </tr>
+      `).join("");
   }
+
+  /*
+    WEEKLY MATCHUP
+  */
 
   function findCurrentMatchup() {
     const zooId = Number(
@@ -876,9 +1592,19 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
       espnData?.zoo?.teamId
     );
 
-    return (espnData?.matchups || []).find(matchup => {
-      const homeId = Number(matchup.home?.teamId);
-      const awayId = Number(matchup.away?.teamId);
+    return (
+      espnData?.matchups || []
+    ).find(matchup => {
+
+      const homeId =
+        Number(
+          matchup.home?.teamId
+        );
+
+      const awayId =
+        Number(
+          matchup.away?.teamId
+        );
 
       return (
         homeId === zooId ||
@@ -888,8 +1614,11 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
   }
 
   function renderMatchup() {
-    const container = document.getElementById("matchup");
-    const matchup = findCurrentMatchup();
+    const container =
+      document.getElementById("matchup");
+
+    const matchup =
+      findCurrentMatchup();
 
     if (!matchup) {
       container.className = "empty";
@@ -898,10 +1627,14 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
       return;
     }
 
-    const home = matchup.home || {};
-    const away = matchup.away || {};
+    const home =
+      matchup.home || {};
 
-    container.className = "matchup";
+    const away =
+      matchup.away || {};
+
+    container.className =
+      "matchup";
 
     container.innerHTML = `
 
@@ -916,7 +1649,11 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
         </div>
 
         <div class="news-time">
-          ${esc(home.totalPoints ?? home.score ?? 0)} pts
+          ${esc(
+            home.totalPoints ??
+            home.score ??
+            0
+          )} pts
         </div>
 
       </div>
@@ -936,25 +1673,43 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
         </div>
 
         <div class="news-time">
-          ${esc(away.totalPoints ?? away.score ?? 0)} pts
+          ${esc(
+            away.totalPoints ??
+            away.score ??
+            0
+          )} pts
         </div>
 
       </div>
+
     `;
   }
 
+  /*
+    RENDER EVERYTHING
+  */
+
   function renderAll() {
     renderSummary();
+    renderBrief();
     renderNews();
     renderRoster();
     renderWatchList();
     renderMatchup();
   }
 
+  /*
+    LOAD LIVE DATA
+  */
+
   async function loadZooGM() {
-    const status = document.getElementById("status");
+    const status =
+      document.getElementById("status");
+
     const refreshButton =
-      document.querySelector(".refresh-area button");
+      document.querySelector(
+        ".refresh-area button"
+      );
 
     status.textContent =
       "Refreshing ESPN and X intelligence...";
@@ -962,8 +1717,10 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
     refreshButton.disabled = true;
 
     try {
+
       const [espnResponse, xResponse] =
         await Promise.all([
+
           fetch(ESPN_URL, {
             cache: "no-store"
           }),
@@ -971,6 +1728,7 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
           fetch(X_URL, {
             cache: "no-store"
           })
+
         ]);
 
       const [espn, x] =
@@ -979,14 +1737,20 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
           xResponse.json()
         ]);
 
-      if (!espnResponse.ok || !espn.ok) {
+      if (
+        !espnResponse.ok ||
+        !espn.ok
+      ) {
         throw new Error(
           espn.error ||
           `ESPN request failed (${espnResponse.status})`
         );
       }
 
-      if (!xResponse.ok || !x.ok) {
+      if (
+        !xResponse.ok ||
+        !x.ok
+      ) {
         throw new Error(
           x.detail ||
           x.error ||
@@ -999,48 +1763,112 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
 
       renderAll();
 
-      status.innerHTML =
-        `🟢 Zoo GM Live · ${esc(
+      const relevant =
+        x.brief?.relevantPosts ??
+        x.summary?.relevantPosts ??
+        0;
+
+      const noise =
+        x.brief?.noisePosts ??
+        x.summary?.noisePosts ??
+        0;
+
+      status.innerHTML = `
+        🟢 Zoo GM Live ·
+        ${esc(
           espn.league ||
           espn.leagueName ||
           "LFL"
-        )} · ${esc(
+        )}
+        ·
+        ${esc(
           x.summary?.postsReviewed ?? 0
-        )} X posts analyzed`;
+        )} X posts analyzed
+        ·
+        ${esc(relevant)} relevant
+        ·
+        ${esc(noise)} noise hidden
+      `;
 
-      document.getElementById("lastRefresh").textContent =
-        `Last refreshed ${new Date().toLocaleTimeString()}`;
+      document.getElementById(
+        "lastRefresh"
+      ).textContent =
+        `Last refreshed ${
+          new Date().toLocaleTimeString()
+        }`;
 
     } catch (error) {
+
       console.error(error);
 
-      status.innerHTML =
-        `<span class="error">Zoo GM connection error: ${esc(error.message)}</span>`;
+      status.innerHTML = `
+        <span class="error">
+          Zoo GM connection error:
+          ${esc(error.message)}
+        </span>
+      `;
 
-      document.getElementById("newsFeed").innerHTML =
-        `<div class="error">Unable to load intelligence: ${esc(error.message)}</div>`;
+      document.getElementById(
+        "newsFeed"
+      ).innerHTML = `
+        <div class="error">
+          Unable to load intelligence:
+          ${esc(error.message)}
+        </div>
+      `;
+
+      document.getElementById(
+        "briefItems"
+      ).innerHTML = `
+        <div class="error">
+          Unable to build Zoo GM Brief.
+        </div>
+      `;
 
     } finally {
+
       refreshButton.disabled = false;
+
     }
   }
 
-  document.querySelectorAll(".filter").forEach(button => {
-    button.addEventListener("click", () => {
+  /*
+    FILTER BUTTONS
+  */
 
-      document.querySelectorAll(".filter")
-        .forEach(item =>
-          item.classList.remove("active")
-        );
+  document
+    .querySelectorAll(".filter")
+    .forEach(button => {
 
-      button.classList.add("active");
+      button.addEventListener(
+        "click",
+        () => {
 
-      activeFilter =
-        button.dataset.filter || "all";
+          document
+            .querySelectorAll(".filter")
+            .forEach(item =>
+              item.classList.remove(
+                "active"
+              )
+            );
 
-      renderNews();
+          button.classList.add(
+            "active"
+          );
+
+          activeFilter =
+            button.dataset.filter ||
+            "relevant";
+
+          renderNews();
+        }
+      );
+
     });
-  });
+
+  /*
+    INITIAL LOAD + 5 MINUTE REFRESH
+  */
 
   loadZooGM();
 
@@ -1048,6 +1876,7 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=1";
     loadZooGM,
     5 * 60 * 1000
   );
+
 </script>
 
 </body>
