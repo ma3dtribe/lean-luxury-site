@@ -1,3277 +1,2670 @@
-const RSS_FEED_URL = "https://rss.app/feeds/MN6OehHIKqSDETrP.xml";
-const ESPN_ENDPOINT = "https://ma3dtribe.com/.netlify/functions/zoo-gm-espn";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+  <meta
+    name="robots"
+    content="noindex,nofollow"
+  >
 
-const URGENT_KEYWORDS = [
-  "ruled out", "did not practice", "limited practice", "full practice",
-  "injured reserve", "inactive", "injured", "injury", "questionable",
-  "doubtful", "waived", "released", "cut", "traded", "trade",
-  "suspended", "starter", "starting", "benched", "depth chart",
-  "snap", "snaps", "role", "workload"
-];
+  <title>Zoo GM | LFL Command Center</title>
 
-const FANTASY_KEYWORDS = [
-  "fantasy", "injury", "practice", "inactive", "starter", "starting",
-  "depth chart", "snap", "snaps", "target", "targets", "carry",
-  "carries", "touches", "routes", "route participation", "red zone",
-  "goal line", "waiver", "waivers", "free agent", "trade", "traded",
-  "released", "waived", "rb", "wr", "qb", "te", "lb", "dl", "cb",
-  "safety", "idp"
-];
+  <style>
+    :root {
+      --bg: #080b10;
+      --panel: #10151d;
+      --panel2: #151c26;
+      --border: #263142;
+      --text: #f4f7fb;
+      --muted: #93a0b2;
+      --green: #55d187;
+      --yellow: #ffd166;
+      --red: #ff6b6b;
+      --blue: #66aaff;
+      --purple: #bd93f9;
+    }
 
-const EVENT_RULES = [
-  [
-    "INACTIVE",
-    [
-      "inactive",
-      "will not play",
-      "ruled out",
-      "not expected to play"
-    ]
-  ],
-  [
-    "INJURY",
-    [
-      "injury",
-      "injured",
-      "injured reserve",
-      "ir",
-      "concussion",
-      "hamstring",
-      "ankle",
-      "knee",
-      "shoulder",
-      "groin",
-      "foot",
-      "calf",
-      "back injury"
-    ]
-  ],
-  [
-    "PRACTICE",
-    [
-      "did not practice",
-      "limited practice",
-      "full practice",
-      "practice participation",
-      "returned to practice",
-      "missed practice"
-    ]
-  ],
-  [
-    "TRANSACTION",
-    [
-      "waived",
-      "released",
-      "cut",
-      "traded",
-      "trade",
-      "signed",
-      "signing",
-      "claimed",
-      "activated",
-      "elevated",
-      "suspended"
-    ]
-  ],
-  [
-    "DEPTH_CHART",
-    [
-      "depth chart",
-      "starter",
-      "starting",
-      "benched",
-      "backup",
-      "rb1",
-      "rb2",
-      "wr1",
-      "wr2",
-      "wr3",
-      "te1",
-      "qb1",
-      "first team",
-      "second team"
-    ]
-  ],
-  [
-    "ROLE_WORKLOAD",
-    [
-      "snap",
-      "snaps",
-      "role",
-      "workload",
-      "touches",
-      "carries",
-      "targets",
-      "routes",
-      "route participation",
-      "goal line",
-      "red zone",
-      "third down",
-      "two minute",
-      "committee",
-      "hot hand",
-      "split",
-      "featured",
-      "every down"
-    ]
-  ],
-  [
-    "PERFORMANCE_ANALYSIS",
-    [
-      "film",
-      "breakdown",
-      "analysis",
-      "efficiency",
-      "yards per route",
-      "yards after contact",
-      "pressure rate",
-      "target share",
-      "air yards",
-      "usage"
-    ]
-  ],
-  [
-    "FANTASY_STRATEGY",
-    [
-      "draft a",
-      "mock draft",
-      "draft strategy",
-      "best ball",
-      "adp",
-      "ranking",
-      "rankings",
-      "sleepers",
-      "start sit",
-      "start/sit"
-    ]
-  ],
-  [
-    "PROMO_NOISE",
-    [
-      "new episode",
-      "live tonight",
-      "subscribe",
-      "podcast",
-      "giveaway",
-      "merch",
-      "tickets",
-      "watch live",
-      "join me",
-      "sponsor"
-    ]
-  ]
-];
+    * {
+      box-sizing: border-box;
+    }
 
-const ACTIONABLE_EVENTS = new Set([
-  "INACTIVE",
-  "INJURY",
-  "PRACTICE",
-  "TRANSACTION",
-  "DEPTH_CHART",
-  "ROLE_WORKLOAD"
-]);
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
 
-const SOURCE_TIER_1 = new Set([
-  "rapsheet",
-  "adamschefter",
-  "tompelissero",
-  "jfwlerespn",
-  "jowlerespn",
-  "mysportsupdate",
-  "schultz_report"
-]);
+    button,
+    select {
+      font: inherit;
+    }
 
-const SOURCE_TIER_2 = new Set([
-  "aaronwilson_nfl",
-  "john_keim",
-  "toddarcher",
-  "davbirkett",
-  "davebirkett",
-  "nick_underhill",
-  "jourdanrodrigue",
-  "victafur",
-  "mikeklis9news",
-  "danielrpopper",
-  "bynatetaylor",
-  "miaobrientv",
-  "holderstephen",
-  "richcimini",
-  "mikereiss",
-  "adamjahns",
-  "josephperson",
-  "joebuscaglia",
-  "jeffzrebiec",
-  "joshtheathletic",
-  "andyhermannfl",
-  "colton_pouncy",
-  "nickkosmider",
-  "jonmachota",
-  "marykaycabot",
-  "pauldehnerjr",
-  "john_shipley",
-  "romeovillekid",
-  "paulkuharskynfl",
-  "salsports",
-  "dorlandoled",
-  "cardschatter",
-  "zbrem",
-  "zberm",
-  "gerrydulac",
-  "mattbarrows",
-  "mikedugar",
-  "gregauman",
-  "scott7news",
-  "gbellseattle"
-]);
+    button {
+      cursor: pointer;
+    }
 
-const SOURCE_TIER_FANTASY = new Set([
-  "fantasypts",
-  "fantasypros",
-  "fantasyproshub",
-  "establishtherun",
-  "scottbarrettdfb",
-  "mikeclaynfl",
-  "lateroundqb",
-  "dwainmcfarland",
-  "pff_fantasy",
-  "mbfantasylife",
-  "underdognfl",
-  "footballguys",
-  "football_guys",
-  "michael_fabiano",
-  "michaelfabiano",
-  "drjessemorse",
-  "jmthrivept",
-  "lordreebs"
-]);
+    .page {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 24px;
+    }
 
-const SOURCE_TIER_IDP = new Set([
-  "idp_macri",
-  "idpgodfather",
-  "theidptipster",
-  "downwithidp",
-  "idpnation",
-  "theidpshow",
-  "idp_plus",
-  "idphunter",
-  "realidphunter",
-  "hitstick",
-  "dhananizain",
-  "mike_woellert",
-  "johnpnorton"
-]);
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
 
-const NFL_TEAM_ALIASES = {
-  ARI: ["arizona cardinals", "cardinals"],
-  ATL: ["atlanta falcons", "falcons"],
-  BAL: ["baltimore ravens", "ravens"],
-  BUF: ["buffalo bills", "bills"],
-  CAR: ["carolina panthers", "panthers"],
-  CHI: ["chicago bears", "bears"],
-  CIN: ["cincinnati bengals", "bengals"],
-  CLE: ["cleveland browns", "browns"],
-  DAL: ["dallas cowboys", "cowboys"],
-  DEN: ["denver broncos", "broncos"],
-  DET: ["detroit lions", "lions"],
-  GB: ["green bay packers", "packers"],
-  HOU: ["houston texans", "texans"],
-  IND: ["indianapolis colts", "colts"],
-  JAC: ["jacksonville jaguars", "jaguars", "jags"],
-  JAX: ["jacksonville jaguars", "jaguars", "jags"],
-  KC: ["kansas city chiefs", "chiefs"],
-  LV: ["las vegas raiders", "raiders"],
-  LAC: ["los angeles chargers", "chargers"],
-  LAR: ["los angeles rams", "rams"],
-  MIA: ["miami dolphins", "dolphins"],
-  MIN: ["minnesota vikings", "vikings"],
-  NE: ["new england patriots", "patriots", "pats"],
-  NO: ["new orleans saints", "saints"],
-  NYG: ["new york giants", "giants"],
-  NYJ: ["new york jets", "jets"],
-  PHI: ["philadelphia eagles", "eagles"],
-  PIT: ["pittsburgh steelers", "steelers"],
-  SEA: ["seattle seahawks", "seahawks"],
-  SF: ["san francisco 49ers", "49ers", "niners"],
-  TB: ["tampa bay buccaneers", "buccaneers", "bucs"],
-  TEN: ["tennessee titans", "titans"],
-  WAS: ["washington commanders", "commanders"]
-};
+    .brand h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1;
+    }
 
-const POSITION_ALIASES = {
-  QB: [" qb ", "qb1", "qb2", "quarterback"],
-  RB: [" rb ", "rb1", "rb2", "rb3", "running back", "backfield"],
-  WR: [
-    " wr ",
-    "wr1",
-    "wr2",
-    "wr3",
-    "wide receiver",
-    "receiver room"
-  ],
-  TE: [" te ", "te1", "te2", "tight end"],
-  LB: [" lb ", "linebacker"],
-  DL: [" dl ", "defensive line", "edge rusher", "edge"],
-  CB: [" cb ", "cornerback", "nickel"],
-  S: [" safety ", " saf ", "free safety", "strong safety"]
-};
+    .brand p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
 
-function decodeXml(text = "") {
-  return String(text)
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&#x27;/g, "'")
-    .replace(/&#x2F;/g, "/");
-}
+    .refresh-area {
+      text-align: right;
+    }
 
-function stripHtml(text = "") {
-  return decodeXml(text)
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+\n/g, "\n")
-    .replace(/\n\s+/g, "\n")
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
+    .refresh-area button {
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 800;
+    }
 
-function getTag(block, tag) {
-  const match = String(block).match(
-    new RegExp(
-      `<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`,
-      "i"
+    .refresh-area button:hover {
+      border-color: var(--green);
+    }
+
+    .refresh-area button:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
+
+    #lastRefresh {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .status {
+      padding: 11px 13px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .error {
+      color: var(--red);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .summary-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .summary-number {
+      margin-top: 5px;
+      font-size: 25px;
+      font-weight: 900;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .panel-header,
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-header h2,
+    .panel-head h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .panel-body {
+      padding: 15px;
+    }
+
+    .news-time {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .brief-panel {
+      border-color: #34445b;
+    }
+
+    .brief-headline {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .brief-recommendation {
+      margin-top: 4px;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .brief-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .brief-stat {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .brief-stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 19px;
+    }
+
+    .brief-items {
+      display: grid;
+      gap: 9px;
+    }
+
+    .brief-item {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px;
+    }
+
+    .brief-item-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .brief-category {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .4px;
+    }
+
+    .brief-text {
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .brief-meta {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(330px, .8fr);
+      gap: 18px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .stack .panel {
+      margin-bottom: 0;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .filter {
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .filter.active {
+      color: var(--text);
+      border-color: var(--green);
+    }
+
+    .news-feed {
+      display: grid;
+      gap: 11px;
+    }
+
+    .news-card {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 13px;
+    }
+
+    .news-card.act-now {
+      border-color: var(--red);
+    }
+
+    .news-card.monitor {
+      border-color: #806d31;
+    }
+
+    .news-card.zoo-impact {
+      box-shadow: inset 3px 0 0 var(--green);
+    }
+
+    .news-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .news-author {
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .news-text {
+      line-height: 1.5;
+      font-size: 13px;
+      white-space: pre-line;
+    }
+
+    .news-text a {
+      color: var(--blue);
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 9px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 7px;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .badge.event {
+      border-color: #58677b;
+      color: #dce6f5;
+    }
+
+    .badge.source {
+      border-color: #55466d;
+      color: var(--purple);
+    }
+
+    .badge.zoo {
+      border-color: #2f7650;
+      color: var(--green);
+    }
+
+    .badge.available {
+      border-color: #806d31;
+      color: var(--yellow);
+    }
+
+    .badge.watch {
+      border-color: #4c6996;
+      color: var(--blue);
+    }
+
+    .badge.opponent {
+      border-color: #805151;
+      color: #ff9999;
+    }
+
+    .badge.indirect {
+      border-color: #6c5f86;
+      color: #d6b8ff;
+    }
+
+    .recommendation {
+      margin-top: 9px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .meters {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .meter {
+      min-width: 0;
+    }
+
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 9px;
+      margin-bottom: 3px;
+    }
+
+    .meter-track {
+      height: 5px;
+      background: #242d39;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0;
+      background: currentColor;
+    }
+
+    .meter.overall {
+      color: var(--text);
+    }
+
+    .meter.fantasy {
+      color: var(--purple);
+    }
+
+    .meter.zoo {
+      color: var(--green);
+    }
+
+    .meter.available {
+      color: var(--yellow);
+    }
+
+    .meter.watch {
+      color: var(--blue);
+    }
+
+    .meter.opponent {
+      color: var(--red);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th,
+    td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .starter {
+      color: var(--green);
+    }
+
+    .bench {
+      color: var(--muted);
+    }
+
+    .ir {
+      color: var(--red);
+    }
+
+    .matchup {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .team-name {
+      font-weight: 900;
+      font-size: 15px;
+    }
+
+    .vs {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 12px;
+      padding: 8px 0;
+    }
+
+    .commish-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .commish-controls select {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+    }
+
+    .commish-status {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .commish-awards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .commish-award {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 13px;
+    }
+
+    .commish-award-title {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 7px;
+    }
+
+    .commish-award-name {
+      font-size: 17px;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .commish-award-detail {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .commish-note {
+      color: var(--yellow);
+      font-size: 12px;
+      margin-bottom: 14px;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 4px 0 20px;
+    }
+
+    @media (max-width: 1050px) {
+      .summary-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .brief-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .commish-awards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 650px) {
+      .page {
+        padding: 14px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .refresh-area {
+        text-align: left;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .brief-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .commish-awards {
+        grid-template-columns: 1fr;
+      }
+
+      .brand h1 {
+        font-size: 26px;
+      }
+
+      .meters {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .brief-headline {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="page">
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>🦁 ZOO GM</h1>
+      <p>LFL Fantasy Football Command Center</p>
+    </div>
+
+    <div class="refresh-area">
+      <button onclick="loadZooGM()">
+        Refresh Intelligence
+      </button>
+
+      <span id="lastRefresh">
+        Waiting for data...
+      </span>
+    </div>
+  </div>
+
+  <div id="status" class="status">
+    Connecting to Zoo GM intelligence...
+  </div>
+
+  <div class="summary-grid">
+
+    <div class="summary-card">
+      <div class="summary-label">Zoo Players</div>
+      <div class="summary-number" id="zooRosterCount">—</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-label">Relevant</div>
+      <div class="summary-number" id="availableCount">—</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-label">X Posts</div>
+      <div class="summary-number" id="postsCount">—</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-label">Noise Hidden</div>
+      <div class="summary-number" id="zooNewsCount">—</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-label">Available Opps</div>
+      <div class="summary-number" id="availableNewsCount">—</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-label">Act Now</div>
+      <div class="summary-number" id="urgentCount">—</div>
+    </div>
+
+  </div>
+
+  <section class="panel brief-panel">
+
+    <div class="panel-header">
+      <h2>Zoo GM Brief</h2>
+      <span class="news-time">Relevance first</span>
+    </div>
+
+    <div class="panel-body">
+
+      <div class="brief-headline">
+        <div>
+          <div class="summary-label">GM Recommendation</div>
+          <div class="brief-recommendation" id="gmRecommendation">
+            Loading...
+          </div>
+        </div>
+
+        <div class="news-time" id="briefLine">
+          Analyzing the latest fantasy activity...
+        </div>
+      </div>
+
+      <div class="brief-grid">
+
+        <div class="brief-stat">
+          <div class="summary-label">Relevant</div>
+          <strong id="briefRelevant">—</strong>
+        </div>
+
+        <div class="brief-stat">
+          <div class="summary-label">Noise Hidden</div>
+          <strong id="briefNoise">—</strong>
+        </div>
+
+        <div class="brief-stat">
+          <div class="summary-label">Act Now</div>
+          <strong id="briefActNow">—</strong>
+        </div>
+
+        <div class="brief-stat">
+          <div class="summary-label">Available Opps</div>
+          <strong id="briefAvailable">—</strong>
+        </div>
+
+        <div class="brief-stat">
+          <div class="summary-label">Zoo Impact</div>
+          <strong id="briefZoo">—</strong>
+        </div>
+
+      </div>
+
+      <div class="brief-items" id="briefItems">
+        <div class="empty">Building Zoo GM Brief...</div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <div class="main-grid">
+
+    <main>
+
+      <section class="panel">
+
+        <div class="panel-header">
+          <h2>Live Intelligence</h2>
+
+          <div class="filters">
+
+            <button
+              class="filter active"
+              data-filter="relevant"
+            >
+              Relevant
+            </button>
+
+            <button
+              class="filter"
+              data-filter="act"
+            >
+              Act Now
+            </button>
+
+            <button
+              class="filter"
+              data-filter="zoo"
+            >
+              Zoo
+            </button>
+
+            <button
+              class="filter"
+              data-filter="available"
+            >
+              Available
+            </button>
+
+            <button
+              class="filter"
+              data-filter="watch"
+            >
+              Watch List
+            </button>
+
+            <button
+              class="filter"
+              data-filter="opponent"
+            >
+              Opponent
+            </button>
+
+            <button
+              class="filter"
+              data-filter="all"
+            >
+              All
+            </button>
+
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="news-feed" id="newsFeed">
+            <div class="empty">
+              Loading intelligence...
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <aside class="stack">
+
+      <section class="panel">
+
+        <div class="panel-head">
+          <h2>This Week</h2>
+          <span id="matchupPeriod">Current matchup</span>
+        </div>
+
+        <div class="panel-body">
+          <div id="matchupBox">
+            <div class="empty">
+              Loading matchup...
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <section class="panel">
+
+        <div class="panel-head">
+          <h2>Zoo Roster</h2>
+          <span>Live from ESPN</span>
+        </div>
+
+        <div class="panel-body table-wrap">
+
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Pos</th>
+                <th>NFL</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody id="rosterBody">
+              <tr>
+                <td colspan="4">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+
+        </div>
+
+      </section>
+
+      <section class="panel">
+
+        <div class="panel-head">
+          <h2>Watch List</h2>
+          <span id="watchCount">—</span>
+        </div>
+
+        <div class="panel-body table-wrap">
+
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Pos</th>
+                <th>Priority</th>
+              </tr>
+            </thead>
+
+            <tbody id="watchBody">
+              <tr>
+                <td colspan="3">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+
+        </div>
+
+      </section>
+
+    </aside>
+
+  </div>
+
+  <!-- COMMISH REPORT MOVED TO BOTTOM -->
+
+  <section class="panel" style="margin-top:18px;">
+
+    <div class="panel-header">
+      <h2>Commish Report</h2>
+
+      <div class="commish-controls">
+        <label
+          for="commishWeek"
+          class="news-time"
+        >
+          Week
+        </label>
+
+        <select
+          id="commishWeek"
+          aria-label="Commish Report Week"
+        ></select>
+
+        <span
+          id="commishStatus"
+          class="commish-status"
+        >
+          Loading...
+        </span>
+      </div>
+    </div>
+
+    <div class="panel-body">
+
+      <div
+        id="commishNote"
+        class="commish-note"
+        style="display:none;"
+      ></div>
+
+      <div class="commish-awards">
+
+        <div class="commish-award">
+          <div class="commish-award-title">
+            🏆 Offensive Player of the Week
+          </div>
+
+          <div
+            class="commish-award-name"
+            id="offensivePOTW"
+          >
+            —
+          </div>
+
+          <div
+            class="commish-award-detail"
+            id="offensivePOTWDetail"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="commish-award">
+          <div class="commish-award-title">
+            🛡️ Defensive Player of the Week
+          </div>
+
+          <div
+            class="commish-award-name"
+            id="defensivePOTW"
+          >
+            —
+          </div>
+
+          <div
+            class="commish-award-detail"
+            id="defensivePOTWDetail"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="commish-award">
+          <div class="commish-award-title">
+            💰 Cash Money Team
+          </div>
+
+          <div
+            class="commish-award-name"
+            id="cashMoneyTeam"
+          >
+            —
+          </div>
+
+          <div
+            class="commish-award-detail"
+            id="cashMoneyDetail"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="commish-award">
+          <div class="commish-award-title">
+            🗑️ Garbage Team
+          </div>
+
+          <div
+            class="commish-award-name"
+            id="garbageTeam"
+          >
+            —
+          </div>
+
+          <div
+            class="commish-award-detail"
+            id="garbageDetail"
+          >
+            —
+          </div>
+        </div>
+
+      </div>
+
+      <div
+        class="summary-label"
+        style="margin-bottom:8px;"
+      >
+        Power Rankings · Wins, then Points For
+      </div>
+
+      <div class="table-wrap">
+
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Team</th>
+              <th>Record</th>
+              <th>PF</th>
+            </tr>
+          </thead>
+
+          <tbody id="powerRankingsBody">
+            <tr>
+              <td colspan="4">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <div class="footer" id="updatedAt">
+    Zoo GM
+  </div>
+
+</div>
+
+<script>
+  const ESPN_URL =
+    "/.netlify/functions/zoo-gm-espn";
+
+  const X_URL =
+    "/.netlify/functions/zoo-gm-x-feed";
+
+  let espnData = null;
+  let xData = null;
+
+  let activeFilter =
+    "relevant";
+
+  let selectedReportWeek =
+    1;
+
+  const esc = value =>
+    String(
+      value ?? ""
     )
-  );
-
-  return match
-    ? match[1].trim()
-    : "";
-}
-
-function getAuthorFromTitle(title = "") {
-  const parts =
-    String(title).split(":");
-
-  if (parts.length < 2) {
-    return "";
-  }
-
-  return parts.shift().trim();
-}
-
-function normalize(text = "") {
-  return String(text)
-    .toLowerCase()
-    .replace(/[’']/g, "")
-    .replace(/[^a-z0-9\s.-]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function escapeRegExp(text = "") {
-  return String(text).replace(
-    /[.*+?^${}()|[\]\\]/g,
-    "\\$&"
-  );
-}
-
-function hasKeyword(
-  text = "",
-  keyword = ""
-) {
-  const normalizedText =
-    normalize(text);
-
-  const normalizedKeyword =
-    normalize(keyword);
-
-  if (!normalizedKeyword) {
-    return false;
-  }
-
-  const pattern =
-    new RegExp(
-      `(^|\\s)${escapeRegExp(
-        normalizedKeyword
-      )}(?=\\s|$|[.-])`,
-      "i"
-    );
-
-  return pattern.test(
-    normalizedText
-  );
-}
-
-function findKeywords(
-  text = "",
-  keywordList = []
-) {
-  return keywordList.filter(
-    keyword =>
-      hasKeyword(
-        text,
-        keyword
+      .replace(
+        /&/g,
+        "&amp;"
       )
-  );
-}
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
 
-async function fetchText(
-  url,
-  label,
-  options = {}
-) {
-  const response =
-    await fetch(
-      url,
+  function cacheBust(
+    url
+  ) {
+    const separator =
+      url.includes("?")
+        ? "&"
+        : "?";
+
+    return (
+      `${url}${separator}` +
+      `_zgm=${Date.now()}`
+    );
+  }
+
+  function getEspnUrl() {
+    return cacheBust(
+      `${ESPN_URL}?reportWeek=${encodeURIComponent(
+        selectedReportWeek
+      )}`
+    );
+  }
+
+  function getXUrl() {
+    return cacheBust(
+      X_URL
+    );
+  }
+
+  function fmtDate(
+    value
+  ) {
+    if (!value) {
+      return "";
+    }
+
+    const date =
+      new Date(
+        value
+      );
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return value;
+    }
+
+    return date.toLocaleString(
+      [],
       {
-        method:
-          options.method ||
-          "GET",
+        month:
+          "short",
 
-        headers: {
-          "User-Agent":
-            "Zoo-GM/1.0",
+        day:
+          "numeric",
 
-          ...(
-            options.headers ||
-            {}
+        hour:
+          "numeric",
+
+        minute:
+          "2-digit"
+      }
+    );
+  }
+
+  function maxScore(
+    post
+  ) {
+    const intelligence =
+      post.intelligence ||
+      {};
+
+    return Math.max(
+      Number(
+        intelligence
+          .fantasyRelevance ||
+        0
+      ),
+
+      Number(
+        intelligence
+          .zooRelevance ||
+        0
+      ),
+
+      Number(
+        intelligence
+          .watchRelevance ||
+        0
+      ),
+
+      Number(
+        intelligence
+          .availableRelevance ||
+        0
+      ),
+
+      Number(
+        intelligence
+          .opponentRelevance ||
+        0
+      )
+    );
+  }
+
+  function meter(
+    label,
+    value,
+    className
+  ) {
+    const score =
+      Math.max(
+        0,
+        Math.min(
+          100,
+          Number(
+            value ||
+            0
           )
-        }
-      }
-    );
-
-  if (!response.ok) {
-    throw new Error(
-      `${label} request failed: ${response.status}`
-    );
-  }
-
-  return response.text();
-}
-
-async function fetchJson(
-  url,
-  label,
-  options = {}
-) {
-  const text =
-    await fetchText(
-      url,
-      label,
-      options
-    );
-
-  try {
-    return JSON.parse(
-      text
-    );
-  } catch (error) {
-    throw new Error(
-      `${label} returned invalid JSON`
-    );
-  }
-}
-
-function buildPlayerAliases(
-  playerName = ""
-) {
-  const aliases =
-    new Set();
-
-  const original =
-    String(
-      playerName
-    ).trim();
-
-  if (!original) {
-    return [];
-  }
-
-  aliases.add(
-    original
-  );
-
-  const cleaned =
-    original
-      .replace(
-        /\b(Jr\.?|Sr\.?|II|III|IV|V)\b/gi,
-        ""
-      )
-      .replace(
-        /[-–—]/g,
-        " "
-      )
-      .replace(
-        /\s+/g,
-        " "
-      )
-      .trim();
-
-  if (cleaned) {
-    aliases.add(
-      cleaned
-    );
-  }
-
-  return [
-    ...aliases
-  ];
-}
-
-function textContainsPlayer(
-  text = "",
-  playerName = ""
-) {
-  const normalizedText =
-    ` ${normalize(text)} `;
-
-  return buildPlayerAliases(
-    playerName
-  ).some(
-    alias => {
-      const normalizedAlias =
-        normalize(
-          alias
-        );
-
-      if (
-        !normalizedAlias ||
-        normalizedAlias.length < 4
-      ) {
-        return false;
-      }
-
-      return normalizedText.includes(
-        ` ${normalizedAlias} `
-      );
-    }
-  );
-}
-
-function clamp(
-  value,
-  min = 0,
-  max = 100
-) {
-  return Math.max(
-    min,
-    Math.min(
-      max,
-      value
-    )
-  );
-}
-
-function priorityScore(
-  priority = ""
-) {
-  const value =
-    String(
-      priority
-    ).toLowerCase();
-
-  if (
-    value === "high"
-  ) {
-    return 18;
-  }
-
-  if (
-    value === "medium"
-  ) {
-    return 10;
-  }
-
-  if (
-    value === "low"
-  ) {
-    return 5;
-  }
-
-  return 8;
-}
-
-function getZooTeamId(
-  espnData = {}
-) {
-  if (
-    espnData.zooTeamId != null
-  ) {
-    return Number(
-      espnData.zooTeamId
-    );
-  }
-
-  if (
-    espnData.zoo &&
-    espnData.zoo.teamId != null
-  ) {
-    return Number(
-      espnData.zoo.teamId
-    );
-  }
-
-  return null;
-}
-
-function getOpponentTeamId(
-  espnData = {}
-) {
-  const zooTeamId =
-    getZooTeamId(
-      espnData
-    );
-
-  if (
-    zooTeamId == null
-  ) {
-    return null;
-  }
-
-  for (
-    const matchup
-    of espnData.matchups || []
-  ) {
-    const homeId =
-      matchup.home &&
-      Number(
-        matchup.home.teamId
+        )
       );
 
-    const awayId =
-      matchup.away &&
-      Number(
-        matchup.away.teamId
+    return `
+      <div class="meter ${esc(className)}">
+
+        <div class="meter-label">
+          <span>${esc(label)}</span>
+          <span>${score}</span>
+        </div>
+
+        <div class="meter-track">
+          <div
+            class="meter-fill"
+            style="width:${score}%"
+          ></div>
+        </div>
+
+      </div>
+    `;
+  }
+
+  function renderSummary() {
+    const summary =
+      xData?.summary ||
+      {};
+
+    const brief =
+      xData?.brief ||
+      {};
+
+    document.getElementById(
+      "zooRosterCount"
+    ).textContent =
+      summary.zooRosterLoaded ??
+      espnData?.zooRosterSize ??
+      "—";
+
+    document.getElementById(
+      "availableCount"
+    ).textContent =
+      summary.relevantPosts ??
+      brief.relevantPosts ??
+      "—";
+
+    document.getElementById(
+      "postsCount"
+    ).textContent =
+      summary.postsReviewed ??
+      "—";
+
+    document.getElementById(
+      "zooNewsCount"
+    ).textContent =
+      summary.noisePosts ??
+      brief.noisePosts ??
+      "—";
+
+    document.getElementById(
+      "availableNewsCount"
+    ).textContent =
+      brief.availableOpportunityCount ??
+      summary.availablePlayerRelevant ??
+      "—";
+
+    document.getElementById(
+      "urgentCount"
+    ).textContent =
+      summary.actNow ??
+      brief.actNowCount ??
+      "—";
+  }
+
+  function renderBrief() {
+    const brief =
+      xData?.brief ||
+      {};
+
+    document.getElementById(
+      "gmRecommendation"
+    ).textContent =
+      brief.recommendation ||
+      "HOLD";
+
+    document.getElementById(
+      "briefRelevant"
+    ).textContent =
+      brief.relevantPosts ??
+      "—";
+
+    document.getElementById(
+      "briefNoise"
+    ).textContent =
+      brief.noisePosts ??
+      "—";
+
+    document.getElementById(
+      "briefActNow"
+    ).textContent =
+      brief.actNowCount ??
+      "—";
+
+    document.getElementById(
+      "briefAvailable"
+    ).textContent =
+      brief.availableOpportunityCount ??
+      "—";
+
+    document.getElementById(
+      "briefZoo"
+    ).textContent =
+      brief.zooImpactCount ??
+      "—";
+
+    document.getElementById(
+      "briefLine"
+    ).textContent =
+      "Best actionable intelligence from the latest X feed.";
+
+    const items =
+      brief.topItems ||
+      [];
+
+    const container =
+      document.getElementById(
+        "briefItems"
       );
 
     if (
-      homeId === zooTeamId &&
-      Number.isFinite(
-        awayId
-      )
+      !items.length
     ) {
-      return awayId;
-    }
+      container.innerHTML =
+        `<div class="empty">
+          No actionable intelligence right now.
+        </div>`;
 
-    if (
-      awayId === zooTeamId &&
-      Number.isFinite(
-        homeId
-      )
-    ) {
-      return homeId;
-    }
-  }
-
-  return null;
-}
-
-function buildLeaguePlayerCatalog(
-  espnData = {},
-  watchList = []
-) {
-  const catalog =
-    new Map();
-
-  const zooTeamId =
-    getZooTeamId(
-      espnData
-    );
-
-  const opponentTeamId =
-    getOpponentTeamId(
-      espnData
-    );
-
-  function upsert(
-    player,
-    context = {}
-  ) {
-    if (
-      !player ||
-      !player.name
-    ) {
       return;
     }
 
-    const playerId =
-      player.playerId != null
-        ? String(
-            player.playerId
-          )
-        : "";
-
-    const key =
-      playerId
-        ? `id:${playerId}`
-        : `name:${normalize(
-            player.name
-          )}`;
-
-    const current =
-      catalog.get(
-        key
-      ) || {
-        name:
-          player.name,
-
-        playerId,
-
-        position:
-          player.position ||
-          "",
-
-        nflTeam:
-          player.nflTeam ||
-          "",
-
-        ownershipStatus:
-          "UNKNOWN",
-
-        classification:
-          "UNKNOWN",
-
-        lflTeam:
-          "",
-
-        lflTeamId:
-          null,
-
-        lineupStatus:
-          "",
-
-        opponentThisWeek:
-          false,
-
-        onWatchList:
-          false,
-
-        watchPriority:
-          "",
-
-        watchReason:
-          "",
-
-        watchTrigger:
-          ""
-      };
-
-    const next = {
-      ...current,
-      ...context
-    };
-
-    next.name =
-      current.name ||
-      player.name;
-
-    next.playerId =
-      current.playerId ||
-      playerId;
-
-    next.position =
-      current.position ||
-      player.position ||
-      "";
-
-    next.nflTeam =
-      current.nflTeam ||
-      player.nflTeam ||
-      "";
-
-    catalog.set(
-      key,
-      next
-    );
-  }
-
-  for (
-    const team
-    of espnData.teams || []
-  ) {
-    const teamId =
-      Number(
-        team.teamId
-      );
-
-    const isZoo =
-      teamId ===
-      zooTeamId;
-
-    const isOpponent =
-      teamId ===
-      opponentTeamId;
-
-    for (
-      const player
-      of team.roster || []
-    ) {
-      upsert(
-        player,
-        {
-          ownershipStatus:
-            isZoo
-              ? "ZOO"
-              : "LFL OWNED",
-
-          classification:
-            isZoo
-              ? "ZOO"
-              : "LFL OWNED",
-
-          lflTeam:
-            team.name ||
-            "",
-
-          lflTeamId:
-            team.teamId ??
-            null,
-
-          lineupStatus:
-            player.rosterStatus ||
-            player.lineupSlot ||
-            "",
-
-          opponentThisWeek:
-            isOpponent
-        }
-      );
-    }
-  }
-
-  for (
-    const player
-    of espnData.availablePlayers ||
-    []
-  ) {
-    upsert(
-      player,
-      {
-        ownershipStatus:
-          "AVAILABLE",
-
-        classification:
-          "AVAILABLE",
-
-        lflTeam:
-          "",
-
-        lflTeamId:
-          null,
-
-        lineupStatus:
-          "",
-
-        opponentThisWeek:
-          false
-      }
-    );
-  }
-
-  const players = [
-    ...catalog.values()
-  ];
-
-  for (
-    const watchPlayer
-    of watchList
-  ) {
-    const match =
-      players.find(
-        player =>
-          normalize(
-            player.name
-          ) ===
-          normalize(
-            watchPlayer.name
-          )
-      );
-
-    if (match) {
-      match.onWatchList =
-        true;
-
-      match.classification =
-        "WATCH LIST";
-
-      match.watchPriority =
-        watchPlayer.priority ||
-        "";
-
-      match.watchReason =
-        watchPlayer.reason ||
-        "";
-
-      match.watchTrigger =
-        watchPlayer.trigger ||
-        "";
-
-    } else {
-      catalog.set(
-        `watch:${normalize(
-          watchPlayer.name
-        )}`,
-        {
-          name:
-            watchPlayer.name,
-
-          playerId:
-            "",
-
-          position:
-            watchPlayer.position ||
-            "",
-
-          nflTeam:
-            watchPlayer.nflTeam ||
-            "",
-
-          ownershipStatus:
-            "UNKNOWN",
-
-          classification:
-            "WATCH LIST",
-
-          lflTeam:
-            "",
-
-          lflTeamId:
-            null,
-
-          lineupStatus:
-            "",
-
-          opponentThisWeek:
-            false,
-
-          onWatchList:
-            true,
-
-          watchPriority:
-            watchPlayer.priority ||
-            "",
-
-          watchReason:
-            watchPlayer.reason ||
-            "",
-
-          watchTrigger:
-            watchPlayer.trigger ||
-            ""
-        }
-      );
-    }
-  }
-
-  return [
-    ...catalog.values()
-  ];
-}
-
-function findMatchingLeaguePlayers(
-  text = "",
-  playerCatalog = []
-) {
-  return playerCatalog.filter(
-    player =>
-      textContainsPlayer(
-        text,
-        player.name
-      )
-  );
-}
-
-function normalizeHandle(
-  handle = "",
-  author = ""
-) {
-  return String(
-    handle ||
-    author ||
-    ""
-  )
-    .toLowerCase()
-    .replace(/^@/, "")
-    .replace(
-      /[^a-z0-9_]/g,
-      ""
-    );
-}
-
-function getSourceAuthority(
-  handle = "",
-  author = ""
-) {
-  const key =
-    normalizeHandle(
-      handle,
-      author
-    );
-
-  if (
-    SOURCE_TIER_1.has(
-      key
-    )
-  ) {
-    return {
-      tier:
-        "TIER 1 NEWS",
-
-      score:
-        95,
-
-      boost:
-        10
-    };
-  }
-
-  if (
-    SOURCE_TIER_2.has(
-      key
-    )
-  ) {
-    return {
-      tier:
-        "BEAT / REPORTER",
-
-      score:
-        85,
-
-      boost:
-        8
-    };
-  }
-
-  if (
-    SOURCE_TIER_IDP.has(
-      key
-    )
-  ) {
-    return {
-      tier:
-        "IDP EXPERT",
-
-      score:
-        85,
-
-      boost:
-        8
-    };
-  }
-
-  if (
-    SOURCE_TIER_FANTASY.has(
-      key
-    )
-  ) {
-    return {
-      tier:
-        "FANTASY EXPERT",
-
-      score:
-        80,
-
-      boost:
-        6
-    };
-  }
-
-  return {
-    tier:
-      "CURATED SOURCE",
-
-    score:
-      65,
-
-    boost:
-      3
-  };
-}
-
-function detectEventTypes(
-  text = ""
-) {
-  const matches =
-    [];
-
-  for (
-    const [
-      eventType,
-      keywords
-    ]
-    of EVENT_RULES
-  ) {
-    if (
-      keywords.some(
-        keyword =>
-          hasKeyword(
-            text,
-            keyword
-          ) ||
-          normalize(
-            text
-          ).includes(
-            normalize(
-              keyword
-            )
-          )
-      )
-    ) {
-      matches.push(
-        eventType
-      );
-    }
-  }
-
-  if (
-    !matches.length
-  ) {
-    matches.push(
-      "GENERAL_NEWS"
-    );
-  }
-
-  return matches;
-}
-
-function getPrimaryEvent(
-  eventTypes = []
-) {
-  const priority = [
-    "INACTIVE",
-    "INJURY",
-    "PRACTICE",
-    "TRANSACTION",
-    "DEPTH_CHART",
-    "ROLE_WORKLOAD",
-    "PERFORMANCE_ANALYSIS",
-    "FANTASY_STRATEGY",
-    "PROMO_NOISE",
-    "GENERAL_NEWS"
-  ];
-
-  return (
-    priority.find(
-      type =>
-        eventTypes.includes(
-          type
-        )
-    ) ||
-    "GENERAL_NEWS"
-  );
-}
-
-function hasActionableEvent(
-  eventTypes = []
-) {
-  return eventTypes.some(
-    type =>
-      ACTIONABLE_EVENTS.has(
-        type
-      )
-  );
-}
-
-function findMentionedNFLTeams(
-  text = ""
-) {
-  const n =
-    ` ${normalize(text)} `;
-
-  const teams =
-    new Set();
-
-  for (
-    const [
-      team,
-      aliases
-    ]
-    of Object.entries(
-      NFL_TEAM_ALIASES
-    )
-  ) {
-    if (
-      aliases.some(
-        alias =>
-          n.includes(
-            ` ${normalize(
-              alias
-            )} `
-          )
-      )
-    ) {
-      teams.add(
-        team === "JAX"
-          ? "JAC"
-          : team
-      );
-    }
-  }
-
-  return teams;
-}
-
-function findMentionedPositions(
-  text = ""
-) {
-  const n =
-    ` ${normalize(text)} `;
-
-  const positions =
-    new Set();
-
-  for (
-    const [
-      position,
-      aliases
-    ]
-    of Object.entries(
-      POSITION_ALIASES
-    )
-  ) {
-    if (
-      aliases.some(
-        alias =>
-          n.includes(
-            normalize(
-              alias
-            ).startsWith(
-              " "
-            )
-              ? normalize(
-                  alias
-                )
-              : ` ${normalize(
-                  alias
-                )} `
-          )
-      )
-    ) {
-      positions.add(
-        position
-      );
-    }
-  }
-
-  return positions;
-}
-
-function normalizeNflTeam(
-  team = ""
-) {
-  const value =
-    String(
-      team ||
-      ""
-    ).toUpperCase();
-
-  return value === "JAX"
-    ? "JAC"
-    : value;
-}
-
-function isRelevantContextCandidate(
-  player = {}
-) {
-  return (
-    player.ownershipStatus ===
-      "ZOO" ||
-    player.onWatchList ||
-    player.opponentThisWeek
-  );
-}
-
-function directPositionsForTeam(
-  playerMatches = [],
-  nflTeam = ""
-) {
-  const team =
-    normalizeNflTeam(
-      nflTeam
-    );
-
-  return new Set(
-    playerMatches
-      .filter(
-        player =>
-          normalizeNflTeam(
-            player.nflTeam
-          ) ===
-          team
-      )
-      .map(
-        player =>
-          String(
-            player.position ||
-            ""
-          ).toUpperCase()
-      )
-      .filter(
-        Boolean
-      )
-  );
-}
-
-function positionsAreRelated(
-  candidatePosition = "",
-  directPositions =
-    new Set(),
-  eventTypes = []
-) {
-  const candidate =
-    String(
-      candidatePosition ||
-      ""
-    ).toUpperCase();
-
-  if (!candidate) {
-    return false;
-  }
-
-  if (
-    directPositions.has(
-      candidate
-    )
-  ) {
-    return true;
-  }
-
-  const severeAvailabilityEvent =
-    eventTypes.some(
-      type =>
-        [
-          "INACTIVE",
-          "INJURY",
-          "PRACTICE"
-        ].includes(
-          type
-        )
-    );
-
-  if (
-    !severeAvailabilityEvent
-  ) {
-    return false;
-  }
-
-  if (
-    directPositions.has(
-      "QB"
-    ) &&
-    [
-      "RB",
-      "WR",
-      "TE"
-    ].includes(
-      candidate
-    )
-  ) {
-    return true;
-  }
-
-  if (
-    candidate === "QB" &&
-    [
-      ...directPositions
-    ].some(
-      pos =>
-        [
-          "WR",
-          "TE"
-        ].includes(
-          pos
-        )
-    )
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function buildContextImpact(
-  text = "",
-  playerMatches = [],
-  playerCatalog = [],
-  eventTypes = []
-) {
-  if (
-    !hasActionableEvent(
-      eventTypes
-    )
-  ) {
-    return [];
-  }
-
-  const mentionedTeams =
-    findMentionedNFLTeams(
-      text
-    );
-
-  const mentionedPositions =
-    findMentionedPositions(
-      text
-    );
-
-  for (
-    const player
-    of playerMatches
-  ) {
-    if (
-      player.nflTeam
-    ) {
-      mentionedTeams.add(
-        normalizeNflTeam(
-          player.nflTeam
-        )
-      );
-    }
-  }
-
-  if (
-    !mentionedTeams.size
-  ) {
-    return [];
-  }
-
-  const directKeys =
-    new Set(
-      playerMatches.map(
-        player =>
-          player.playerId
-            ? `id:${player.playerId}`
-            : `name:${normalize(
-                player.name
-              )}`
-      )
-    );
-
-  const context =
-    [];
-
-  for (
-    const candidate
-    of playerCatalog
-  ) {
-    if (
-      !candidate?.name ||
-      !candidate.nflTeam ||
-      !isRelevantContextCandidate(
-        candidate
-      )
-    ) {
-      continue;
-    }
-
-    const candidateKey =
-      candidate.playerId
-        ? `id:${candidate.playerId}`
-        : `name:${normalize(
-            candidate.name
-          )}`;
-
-    if (
-      directKeys.has(
-        candidateKey
-      )
-    ) {
-      continue;
-    }
-
-    const team =
-      normalizeNflTeam(
-        candidate.nflTeam
-      );
-
-    if (
-      !mentionedTeams.has(
-        team
-      )
-    ) {
-      continue;
-    }
-
-    const candidatePosition =
-      String(
-        candidate.position ||
-        ""
-      ).toUpperCase();
-
-    const directPositions =
-      directPositionsForTeam(
-        playerMatches,
-        team
-      );
-
-    let reason =
-      "";
-
-    if (
-      mentionedPositions.size &&
-      mentionedPositions.has(
-        candidatePosition
-      )
-    ) {
-      reason =
-        "TEAM + POSITION CONTEXT";
-
-    } else if (
-      directPositions.size &&
-      positionsAreRelated(
-        candidatePosition,
-        directPositions,
-        eventTypes
-      )
-    ) {
-      reason =
-        "TEAMMATE / ROLE CONTEXT";
-
-    } else if (
-      !mentionedPositions.size &&
-      directPositions.has(
-        candidatePosition
-      )
-    ) {
-      reason =
-        "POSITION COMPETITION";
-    }
-
-    if (
-      !reason
-    ) {
-      continue;
-    }
-
-    context.push({
-      ...candidate,
-      contextReason:
-        reason
-    });
-  }
-
-  return context;
-}
-
-function scoreFantasyRelevance(
-  text = "",
-  playerMatches = [],
-  eventTypes = [],
-  source = {}
-) {
-  const fantasyMatches =
-    findKeywords(
-      text,
-      FANTASY_KEYWORDS
-    );
-
-  const urgentMatches =
-    findKeywords(
-      text,
-      URGENT_KEYWORDS
-    );
-
-  const actionable =
-    hasActionableEvent(
-      eventTypes
-    );
-
-  const primaryEvent =
-    getPrimaryEvent(
-      eventTypes
-    );
-
-  let score =
-    primaryEvent ===
-    "PROMO_NOISE"
-      ? 4
-      : 10;
-
-  score += Math.min(
-    fantasyMatches.length *
-      6,
-    36
-  );
-
-  score += Math.min(
-    urgentMatches.length *
-      7,
-    28
-  );
-
-  if (
-    actionable
-  ) {
-    score += 18;
-  }
-
-  if (
-    primaryEvent ===
-    "PERFORMANCE_ANALYSIS"
-  ) {
-    score += 10;
-  }
-
-  if (
-    primaryEvent ===
-    "FANTASY_STRATEGY"
-  ) {
-    score =
-      Math.min(
-        score,
-        42
-      );
-  }
-
-  if (
-    primaryEvent ===
-    "PROMO_NOISE"
-  ) {
-    score =
-      Math.min(
-        score,
-        20
-      );
-  }
-
-  if (
-    playerMatches.some(
-      player =>
-        player.ownershipStatus ===
-        "ZOO"
-    )
-  ) {
-    score += 15;
-  }
-
-  if (
-    playerMatches.some(
-      player =>
-        player.onWatchList
-    )
-  ) {
-    score += 10;
-  }
-
-  score +=
-    Number(
-      source.boost ||
-      0
-    );
-
-  return clamp(
-    score
-  );
-}
-
-function scoreZooRelevance(
-  text = "",
-  directMatches = [],
-  contextMatches = [],
-  eventTypes = [],
-  source = {}
-) {
-  const direct =
-    directMatches.filter(
-      player =>
-        player.ownershipStatus ===
-        "ZOO"
-    );
-
-  const indirect =
-    contextMatches.filter(
-      player =>
-        player.ownershipStatus ===
-        "ZOO"
-    );
-
-  if (
-    !direct.length &&
-    !indirect.length
-  ) {
-    return 0;
-  }
-
-  const urgentMatches =
-    findKeywords(
-      text,
-      URGENT_KEYWORDS
-    );
-
-  const actionable =
-    hasActionableEvent(
-      eventTypes
-    );
-
-  let score =
-    direct.length
-      ? 62
-      : 48;
-
-  if (
-    actionable
-  ) {
-    score +=
-      direct.length
-        ? 14
-        : 18;
-  }
-
-  score += Math.min(
-    urgentMatches.length *
-      5,
-    15
-  );
-
-  score += Math.min(
-    (
-      direct.length +
-      indirect.length
-    ) * 5,
-    10
-  );
-
-  score +=
-    Number(
-      source.boost ||
-      0
-    );
-
-  return clamp(
-    score
-  );
-}
-
-function scoreWatchRelevance(
-  text = "",
-  directMatches = [],
-  contextMatches = [],
-  eventTypes = [],
-  source = {}
-) {
-  const matches = [
-    ...directMatches,
-    ...contextMatches
-  ].filter(
-    player =>
-      player.onWatchList
-  );
-
-  if (
-    !matches.length
-  ) {
-    return 0;
-  }
-
-  const bestPriority =
-    Math.max(
-      ...matches.map(
-        player =>
-          priorityScore(
-            player.watchPriority
-          )
-      )
-    );
-
-  const actionable =
-    hasActionableEvent(
-      eventTypes
-    );
-
-  let score =
-    45 +
-    bestPriority +
-    (
-      actionable
-        ? 15
-        : 0
-    ) +
-    Number(
-      source.boost ||
-      0
-    );
-
-  return clamp(
-    score
-  );
-}
-
-function scoreAvailableRelevance(
-  text = "",
-  directMatches = [],
-  eventTypes = [],
-  source = {}
-) {
-  const available =
-    directMatches.filter(
-      player =>
-        player.ownershipStatus ===
-        "AVAILABLE"
-    );
-
-  if (
-    !available.length
-  ) {
-    return 0;
-  }
-
-  const actionable =
-    hasActionableEvent(
-      eventTypes
-    );
-
-  const primaryEvent =
-    getPrimaryEvent(
-      eventTypes
-    );
-
-  if (
-    !actionable
-  ) {
-    if (
-      primaryEvent ===
-        "FANTASY_STRATEGY" ||
-      primaryEvent ===
-        "PROMO_NOISE"
-    ) {
-      return 10;
-    }
-
-    return Math.min(
-      30 +
-      Number(
-        source.boost ||
-        0
-      ),
-      40
-    );
-  }
-
-  const urgentMatches =
-    findKeywords(
-      text,
-      URGENT_KEYWORDS
-    );
-
-  let score =
-    52 +
-    Math.min(
-      urgentMatches.length *
-        6,
-      18
-    ) +
-    Number(
-      source.boost ||
-      0
-    );
-
-  if (
-    available.some(
-      player =>
-        player.onWatchList
-    )
-  ) {
-    score += 15;
-  }
-
-  return clamp(
-    score
-  );
-}
-
-function scoreOpponentRelevance(
-  text = "",
-  directMatches = [],
-  contextMatches = [],
-  eventTypes = [],
-  source = {}
-) {
-  const matches = [
-    ...directMatches,
-    ...contextMatches
-  ].filter(
-    player =>
-      player.opponentThisWeek
-  );
-
-  if (
-    !matches.length
-  ) {
-    return 0;
-  }
-
-  const actionable =
-    hasActionableEvent(
-      eventTypes
-    );
-
-  let score =
-    directMatches.some(
-      player =>
-        player.opponentThisWeek
-    )
-      ? 50
-      : 42;
-
-  if (
-    actionable
-  ) {
-    score += 18;
-  }
-
-  score +=
-    Number(
-      source.boost ||
-      0
-    );
-
-  return clamp(
-    score
-  );
-}
-
-function getAlertLevel(
-  ...scores
-) {
-  const score =
-    Math.max(
-      ...scores
-    );
-
-  if (
-    score >= 90
-  ) {
-    return "URGENT";
-  }
-
-  if (
-    score >= 75
-  ) {
-    return "IMPORTANT";
-  }
-
-  if (
-    score >= 60
-  ) {
-    return "WATCH";
-  }
-
-  return "STORE";
-}
-
-function getPostAgeHours(
-  publishedAt = ""
-) {
-  const published =
-    new Date(
-      publishedAt
-    ).getTime();
-
-  if (
-    !Number.isFinite(
-      published
-    )
-  ) {
-    return 999;
-  }
-
-  return Math.max(
-    0,
-    (
-      Date.now() -
-      published
-    ) /
-    (
-      1000 *
-      60 *
-      60
-    )
-  );
-}
-
-function getActionTier({
-  fantasyRelevance,
-  zooRelevance,
-  watchRelevance,
-  availableRelevance,
-  opponentRelevance,
-  urgentKeywords = [],
-  zooPlayers = [],
-  watchPlayers = [],
-  availablePlayers = [],
-  opponentPlayers = [],
-  eventTypes = []
-}) {
-  const maxScore =
-    Math.max(
-      fantasyRelevance,
-      zooRelevance,
-      watchRelevance,
-      availableRelevance,
-      opponentRelevance
-    );
-
-  const actionable =
-    hasActionableEvent(
-      eventTypes
-    );
-
-  const criticalEvent =
-    eventTypes.some(
-      type =>
-        [
-          "INACTIVE",
-          "INJURY",
-          "PRACTICE",
-          "TRANSACTION"
-        ].includes(
-          type
-        )
-    );
-
-  const hasUrgentSignal =
-    urgentKeywords.length >
-    0;
-
-  const directImpact =
-    zooPlayers.length > 0 ||
-    watchPlayers.length > 0 ||
-    opponentPlayers.length >
-      0;
-
-  if (
-    criticalEvent &&
-    hasUrgentSignal &&
-    (
-      zooPlayers.length > 0 ||
-      availablePlayers.length >
-        0 ||
-      watchPlayers.length > 0
-    ) &&
-    maxScore >= 78
-  ) {
-    return "ACT NOW";
-  }
-
-  if (
-    directImpact ||
-    (
-      actionable &&
-      availableRelevance >=
-        60
-    ) ||
-    maxScore >= 75
-  ) {
-    return "MONITOR";
-  }
-
-  if (
-    fantasyRelevance >= 48 ||
-    (
-      actionable &&
-      availableRelevance >=
-        55
-    )
-  ) {
-    return "FYI";
-  }
-
-  return "NOISE";
-}
-
-function getPrimaryCategory({
-  actionTier,
-  zooPlayers = [],
-  watchPlayers = [],
-  availablePlayers = [],
-  opponentPlayers = [],
-  fantasyRelevance = 0,
-  primaryEvent =
-    "GENERAL_NEWS"
-}) {
-  if (
-    actionTier === "NOISE"
-  ) {
-    return "NOISE";
-  }
-
-  if (
-    zooPlayers.length > 0
-  ) {
-    return "ZOO IMPACT";
-  }
-
-  if (
-    availablePlayers.length >
-      0 &&
-    watchPlayers.length > 0
-  ) {
-    return "WATCH LIST";
-  }
-
-  if (
-    availablePlayers.length >
-      0 &&
-    ACTIONABLE_EVENTS.has(
-      primaryEvent
-    )
-  ) {
-    return "AVAILABLE OPPORTUNITY";
-  }
-
-  if (
-    watchPlayers.length > 0
-  ) {
-    return "WATCH LIST";
-  }
-
-  if (
-    opponentPlayers.length > 0
-  ) {
-    return "OPPONENT";
-  }
-
-  if (
-    primaryEvent ===
-      "PERFORMANCE_ANALYSIS" ||
-    fantasyRelevance >= 60
-  ) {
-    return "FANTASY TREND";
-  }
-
-  return "AROUND THE NFL";
-}
-
-function getRecommendation({
-  actionTier,
-  zooPlayers = [],
-  watchPlayers = [],
-  availablePlayers = [],
-  opponentPlayers = [],
-  urgentKeywords = [],
-  eventTypes = []
-}) {
-  const urgent =
-    urgentKeywords.length >
-    0;
-
-  const actionable =
-    hasActionableEvent(
-      eventTypes
-    );
-
-  if (
-    actionTier ===
-      "ACT NOW" &&
-    zooPlayers.length &&
-    urgent
-  ) {
-    return "CHECK ZOO LINEUP";
-  }
-
-  if (
-    actionTier ===
-      "ACT NOW" &&
-    availablePlayers.length &&
-    actionable
-  ) {
-    return "REVIEW WAIVERS";
-  }
-
-  if (
-    availablePlayers.length &&
-    watchPlayers.length &&
-    actionable
-  ) {
-    return "MONITOR FOR ADD";
-  }
-
-  if (
-    availablePlayers.length &&
-    actionable
-  ) {
-    return "REVIEW AVAILABLE PLAYER";
-  }
-
-  if (
-    zooPlayers.length
-  ) {
-    return "MONITOR ZOO PLAYER";
-  }
-
-  if (
-    opponentPlayers.length
-  ) {
-    return "MONITOR OPPONENT";
-  }
-
-  if (
-    watchPlayers.length
-  ) {
-    return "MONITOR WATCH LIST";
-  }
-
-  return "HOLD";
-}
-
-function getPriorityScore(
-  post
-) {
-  const i =
-    post.intelligence ||
-    {};
-
-  const tierWeight =
-    {
-      "ACT NOW": 400,
-      "MONITOR": 300,
-      "FYI": 200,
-      "NOISE": 100
-    }[
-      i.actionTier
-    ] || 0;
-
-  const maxScore =
-    Math.max(
-      Number(
-        i.fantasyRelevance ||
-        0
-      ),
-      Number(
-        i.zooRelevance ||
-        0
-      ),
-      Number(
-        i.watchRelevance ||
-        0
-      ),
-      Number(
-        i.availableRelevance ||
-        0
-      ),
-      Number(
-        i.opponentRelevance ||
-        0
-      )
-    );
-
-  const agePenalty =
-    Math.min(
-      getPostAgeHours(
-        post.publishedAt
-      ),
-      72
-    );
-
-  return (
-    tierWeight +
-    maxScore -
-    agePenalty
-  );
-}
-
-function buildBrief(
-  posts = []
-) {
-  const meaningful =
-    posts
-      .filter(
-        post =>
-          post.intelligence
-            ?.actionTier !==
-          "NOISE"
-      )
-      .sort(
-        (a, b) =>
-          getPriorityScore(
-            b
-          ) -
-          getPriorityScore(
-            a
-          )
-      );
-
-  const actNow =
-    meaningful.filter(
-      post =>
-        post.intelligence
-          ?.actionTier ===
-        "ACT NOW"
-    );
-
-  const zoo =
-    meaningful.filter(
-      post =>
-        post.intelligence
-          ?.zooImpact
-    );
-
-  const available =
-    meaningful.filter(
-      post =>
-        post.intelligence
-          ?.availablePlayerImpact
-    );
-
-  const watch =
-    meaningful.filter(
-      post =>
-        post.intelligence
-          ?.watchListImpact
-    );
-
-  const opponent =
-    meaningful.filter(
-      post =>
-        post.intelligence
-          ?.opponentImpact
-    );
-
-  let recommendation =
-    "HOLD";
-
-  if (
-    actNow.some(
-      post =>
-        post.intelligence
-          ?.recommendation ===
-        "CHECK ZOO LINEUP"
-    )
-  ) {
-    recommendation =
-      "CHECK ZOO LINEUP";
-
-  } else if (
-    actNow.some(
-      post =>
-        post.intelligence
-          ?.recommendation ===
-        "REVIEW WAIVERS"
-    )
-  ) {
-    recommendation =
-      "REVIEW WAIVERS";
-
-  } else if (
-    available.some(
-      post =>
-        post.intelligence
-          ?.watchListImpact
-    )
-  ) {
-    recommendation =
-      "MONITOR WAIVERS";
-
-  } else if (
-    zoo.length
-  ) {
-    recommendation =
-      "MONITOR ZOO";
-  }
-
-  return {
-    recommendation,
-
-    relevantPosts:
-      meaningful.length,
-
-    noisePosts:
-      posts.length -
-      meaningful.length,
-
-    actNowCount:
-      actNow.length,
-
-    zooImpactCount:
-      zoo.length,
-
-    availableOpportunityCount:
-      available.length,
-
-    watchListCount:
-      watch.length,
-
-    opponentCount:
-      opponent.length,
-
-    topItems:
-      meaningful
+    container.innerHTML =
+      items
         .slice(
           0,
           8
         )
         .map(
-          post => ({
-            author:
-              post.author,
+          item => {
+            const event =
+              item.primaryEvent ||
+              "";
 
-            handle:
-              post.handle,
+            const source =
+              item.sourceAuthority
+                ?.tier ||
+              "";
 
-            text:
-              post.text,
+            const context =
+              (
+                item.contextImpact ||
+                []
+              )
+                .map(
+                  player =>
+                    player.name
+                )
+                .filter(
+                  Boolean
+                );
 
-            link:
-              post.link,
+            return `
+              <div class="brief-item">
 
-            publishedAt:
-              post.publishedAt,
+                <div class="brief-item-top">
 
-            actionTier:
-              post.intelligence
-                .actionTier,
+                  <span class="brief-category">
+                    ${esc(
+                      item.primaryCategory ||
+                      item.actionTier ||
+                      "INTELLIGENCE"
+                    )}
+                  </span>
 
-            primaryCategory:
-              post.intelligence
-                .primaryCategory,
+                  <span class="news-time">
+                    ${esc(
+                      fmtDate(
+                        item.publishedAt
+                      )
+                    )}
+                  </span>
 
-            recommendation:
-              post.intelligence
-                .recommendation,
+                </div>
 
-            primaryEvent:
-              post.intelligence
-                .primaryEvent,
+                <div class="brief-text">
+                  ${esc(
+                    item.text ||
+                    ""
+                  )}
+                </div>
 
-            eventTypes:
-              post.intelligence
-                .eventTypes,
+                <div class="brief-meta">
 
-            sourceAuthority:
-              post.intelligence
-                .sourceAuthority,
+                  ${esc(
+                    item.author ||
+                    ""
+                  )}
 
-            contextImpact:
-              post.intelligence
-                .contextImpact,
+                  ${
+                    event
+                      ? ` · ${esc(event)}`
+                      : ""
+                  }
 
-            maxRelevance:
-              Math.max(
-                post.intelligence
-                  .fantasyRelevance,
+                  ${
+                    source
+                      ? ` · ${esc(source)}`
+                      : ""
+                  }
 
-                post.intelligence
-                  .zooRelevance,
+                  ${
+                    context.length
+                      ? ` · Context: ${esc(
+                          context.join(
+                            ", "
+                          )
+                        )}`
+                      : ""
+                  }
 
-                post.intelligence
-                  .watchRelevance,
+                  ${
+                    item.recommendation
+                      ? ` · ${esc(
+                          item.recommendation
+                        )}`
+                      : ""
+                  }
 
-                post.intelligence
-                  .availableRelevance,
+                  · Score ${esc(
+                    item.maxRelevance ??
+                    0
+                  )}
 
-                post.intelligence
-                  .opponentRelevance
-              ),
+                </div>
 
-            players:
-              post.intelligence
-                .impactPlayers ||
-              post.intelligence
-                .players
-          })
+              </div>
+            `;
+          }
         )
-  };
-}
-
-function buildPostIntelligence(
-  post,
-  playerCatalog
-) {
-  const combinedText =
-    `${post.title} ${post.text}`;
-
-  const playerMatches =
-    findMatchingLeaguePlayers(
-      combinedText,
-      playerCatalog
-    );
-
-  const eventTypes =
-    detectEventTypes(
-      combinedText
-    );
-
-  const primaryEvent =
-    getPrimaryEvent(
-      eventTypes
-    );
-
-  const sourceAuthority =
-    getSourceAuthority(
-      post.handle,
-      post.author
-    );
-
-  const contextImpact =
-    buildContextImpact(
-      combinedText,
-      playerMatches,
-      playerCatalog,
-      eventTypes
-    );
-
-  const fantasyKeywords =
-    findKeywords(
-      combinedText,
-      FANTASY_KEYWORDS
-    );
-
-  const urgentKeywords =
-    findKeywords(
-      combinedText,
-      URGENT_KEYWORDS
-    );
-
-  const fantasyRelevance =
-    scoreFantasyRelevance(
-      combinedText,
-      playerMatches,
-      eventTypes,
-      sourceAuthority
-    );
-
-  const zooRelevance =
-    scoreZooRelevance(
-      combinedText,
-      playerMatches,
-      contextImpact,
-      eventTypes,
-      sourceAuthority
-    );
-
-  const watchRelevance =
-    scoreWatchRelevance(
-      combinedText,
-      playerMatches,
-      contextImpact,
-      eventTypes,
-      sourceAuthority
-    );
-
-  const availableRelevance =
-    scoreAvailableRelevance(
-      combinedText,
-      playerMatches,
-      eventTypes,
-      sourceAuthority
-    );
-
-  const opponentRelevance =
-    scoreOpponentRelevance(
-      combinedText,
-      playerMatches,
-      contextImpact,
-      eventTypes,
-      sourceAuthority
-    );
-
-  const uniqueNames =
-    (
-      items = []
-    ) => [
-      ...new Set(
-        items.filter(
-          Boolean
-        )
-      )
-    ];
-
-  const directZooPlayers =
-    playerMatches
-      .filter(
-        player =>
-          player.ownershipStatus ===
-          "ZOO"
-      )
-      .map(
-        player =>
-          player.name
-      );
-
-  const contextZooPlayers =
-    contextImpact
-      .filter(
-        player =>
-          player.ownershipStatus ===
-          "ZOO"
-      )
-      .map(
-        player =>
-          player.name
-      );
-
-  const zooPlayers =
-    uniqueNames(
-      [
-        ...directZooPlayers,
-        ...contextZooPlayers
-      ]
-    );
-
-  const directWatchPlayers =
-    playerMatches
-      .filter(
-        player =>
-          player.onWatchList
-      )
-      .map(
-        player =>
-          player.name
-      );
-
-  const contextWatchPlayers =
-    contextImpact
-      .filter(
-        player =>
-          player.onWatchList
-      )
-      .map(
-        player =>
-          player.name
-      );
-
-  const watchPlayers =
-    uniqueNames(
-      [
-        ...directWatchPlayers,
-        ...contextWatchPlayers
-      ]
-    );
-
-  const availablePlayers =
-    playerMatches
-      .filter(
-        player =>
-          player.ownershipStatus ===
-          "AVAILABLE"
-      )
-      .map(
-        player =>
-          player.name
-      );
-
-  const lflOwnedPlayers =
-    playerMatches
-      .filter(
-        player =>
-          player.ownershipStatus ===
-          "LFL OWNED"
-      )
-      .map(
-        player => ({
-          name:
-            player.name,
-
-          lflTeam:
-            player.lflTeam
-        })
-      );
-
-  const directOpponentPlayers =
-    playerMatches
-      .filter(
-        player =>
-          player.opponentThisWeek
-      )
-      .map(
-        player =>
-          player.name
-      );
-
-  const contextOpponentPlayers =
-    contextImpact
-      .filter(
-        player =>
-          player.opponentThisWeek
-      )
-      .map(
-        player =>
-          player.name
-      );
-
-  const opponentPlayers =
-    uniqueNames(
-      [
-        ...directOpponentPlayers,
-        ...contextOpponentPlayers
-      ]
-    );
-
-  const actionableAvailablePlayers =
-    hasActionableEvent(
-      eventTypes
-    ) &&
-    availableRelevance >= 55
-      ? availablePlayers
-      : [];
-
-  const actionTier =
-    getActionTier({
-      fantasyRelevance,
-      zooRelevance,
-      watchRelevance,
-      availableRelevance,
-      opponentRelevance,
-      urgentKeywords,
-      zooPlayers,
-      watchPlayers,
-
-      availablePlayers:
-        actionableAvailablePlayers,
-
-      opponentPlayers,
-      eventTypes
-    });
-
-  const primaryCategory =
-    getPrimaryCategory({
-      actionTier,
-      zooPlayers,
-      watchPlayers,
-
-      availablePlayers:
-        actionableAvailablePlayers,
-
-      opponentPlayers,
-      fantasyRelevance,
-      primaryEvent
-    });
-
-  const recommendation =
-    getRecommendation({
-      actionTier,
-      zooPlayers,
-      watchPlayers,
-
-      availablePlayers:
-        actionableAvailablePlayers,
-
-      opponentPlayers,
-      urgentKeywords,
-      eventTypes
-    });
-
-  const serializePlayer =
-    (
-      player,
-      indirect = false
-    ) => ({
-      name:
-        player.name,
-
-      position:
-        player.position,
-
-      nflTeam:
-        player.nflTeam,
-
-      classification:
-        player.classification,
-
-      ownershipStatus:
-        player.ownershipStatus,
-
-      lflTeam:
-        player.lflTeam,
-
-      lineupStatus:
-        player.lineupStatus,
-
-      opponentThisWeek:
-        player.opponentThisWeek,
-
-      onWatchList:
-        player.onWatchList,
-
-      watchPriority:
-        player.watchPriority,
-
-      indirect,
-
-      contextReason:
-        player.contextReason ||
-        ""
-    });
-
-  const directSerialized =
-    playerMatches.map(
-      player =>
-        serializePlayer(
-          player,
-          false
-        )
-    );
-
-  const contextSerialized =
-    contextImpact.map(
-      player =>
-        serializePlayer(
-          player,
-          true
-        )
-    );
-
-  return {
-    ...post,
-
-    intelligence: {
-      players:
-        directSerialized,
-
-      contextImpact:
-        contextSerialized,
-
-      impactPlayers: [
-        ...directSerialized,
-        ...contextSerialized
-      ],
-
-      directZooPlayers,
-      contextZooPlayers,
-      zooPlayers,
-      watchPlayers,
-      availablePlayers,
-      actionableAvailablePlayers,
-      lflOwnedPlayers,
-      opponentPlayers,
-
-      fantasyKeywords,
-      urgentKeywords,
-      eventTypes,
-      primaryEvent,
-      sourceAuthority,
-
-      fantasyRelevance,
-      zooRelevance,
-      watchRelevance,
-      availableRelevance,
-      opponentRelevance,
-
-      actionTier,
-      primaryCategory,
-      recommendation,
-
-      ageHours:
-        Math.round(
-          getPostAgeHours(
-            post.publishedAt
-          ) *
-          10
-        ) /
-        10,
-
-      alertLevel:
-        getAlertLevel(
-          fantasyRelevance,
-          zooRelevance,
-          watchRelevance,
-          availableRelevance,
-          opponentRelevance
-        ),
-
-      directZooImpact:
-        directZooPlayers.length >
-        0,
-
-      indirectZooImpact:
-        contextZooPlayers.length >
-        0,
-
-      zooImpact:
-        zooPlayers.length >
-        0,
-
-      watchListImpact:
-        watchPlayers.length >
-        0,
-
-      availablePlayerImpact:
-        actionableAvailablePlayers.length >
-        0,
-
-      opponentImpact:
-        opponentPlayers.length >
-        0,
-
-      hasActionableEvent:
-        hasActionableEvent(
-          eventTypes
-        )
-    }
-  };
-}
-
-exports.handler =
-async function () {
-  try {
-    const [
-      xml,
-      espnData
-    ] =
-      await Promise.all([
-        fetchText(
-          RSS_FEED_URL,
-          "RSS feed"
-        ),
-
-        fetchJson(
-          ESPN_ENDPOINT,
-          "Zoo GM ESPN"
-        )
-      ]);
+        .join("");
+  }
+
+  function postPassesFilter(
+    post
+  ) {
+    const i =
+      post.intelligence ||
+      {};
 
     if (
-      !espnData ||
-      !espnData.ok
+      activeFilter ===
+      "all"
     ) {
-      throw new Error(
-        espnData &&
-        espnData.error
-          ? espnData.error
-          : "Zoo GM ESPN data unavailable"
+      return true;
+    }
+
+    if (
+      activeFilter ===
+      "relevant"
+    ) {
+      return (
+        i.actionTier !==
+        "NOISE"
       );
     }
 
-    const watchList =
-      Array.isArray(
-        espnData.watchList
-      )
-        ? espnData.watchList.filter(
-            player =>
-              player &&
-              player.name
-          )
-        : [];
-
-    const playerCatalog =
-      buildLeaguePlayerCatalog(
-        espnData,
-        watchList
+    if (
+      activeFilter ===
+      "act"
+    ) {
+      return (
+        i.actionTier ===
+        "ACT NOW"
       );
+    }
 
-    const rawPosts = [
-      ...xml.matchAll(
-        /<item>([\s\S]*?)<\/item>/gi
-      )
-    ].map(
-      match => {
-        const item =
-          match[1];
+    if (
+      activeFilter ===
+      "zoo"
+    ) {
+      return Boolean(
+        i.zooImpact
+      );
+    }
 
-        const rawTitle =
-          getTag(
-            item,
-            "title"
-          );
+    if (
+      activeFilter ===
+      "available"
+    ) {
+      return Boolean(
+        i.availablePlayerImpact
+      );
+    }
 
-        const rawDescription =
-          getTag(
-            item,
-            "description"
-          );
+    if (
+      activeFilter ===
+      "watch"
+    ) {
+      return Boolean(
+        i.watchListImpact
+      );
+    }
 
-        return {
-          author:
-            getAuthorFromTitle(
-              stripHtml(
-                rawTitle
-              )
-            ),
+    if (
+      activeFilter ===
+      "opponent"
+    ) {
+      return Boolean(
+        i.opponentImpact
+      );
+    }
 
-          handle:
-            stripHtml(
-              getTag(
-                item,
-                "dc:creator"
-              )
-            ),
+    return true;
+  }
 
-          text:
-            stripHtml(
-              rawDescription
-            ),
-
-          title:
-            stripHtml(
-              rawTitle
-            ),
-
-          link:
-            stripHtml(
-              getTag(
-                item,
-                "link"
-              )
-            ),
-
-          publishedAt:
-            stripHtml(
-              getTag(
-                item,
-                "pubDate"
-              )
-            ),
-
-          guid:
-            stripHtml(
-              getTag(
-                item,
-                "guid"
-              )
-            )
-        };
-      }
-    );
-
+  function renderNews() {
     const posts =
-      rawPosts
-        .map(
-          post =>
-            buildPostIntelligence(
-              post,
-              playerCatalog
-            )
+      [
+        ...(
+          xData?.posts ||
+          []
         )
+      ]
         .sort(
           (
             a,
             b
-          ) => {
-            const aTime =
-              new Date(
-                a.publishedAt
-              ).getTime() ||
-              0;
-
-            const bTime =
+          ) =>
+            (
               new Date(
                 b.publishedAt
               ).getTime() ||
-              0;
-
-            return (
-              bTime -
-              aTime
-            );
-          }
+              0
+            ) -
+            (
+              new Date(
+                a.publishedAt
+              ).getTime() ||
+              0
+            )
+        )
+        .filter(
+          postPassesFilter
         );
 
-    const brief =
-      buildBrief(
-        posts
+    const container =
+      document.getElementById(
+        "newsFeed"
       );
 
-    const summary = {
-      postsReviewed:
-        posts.length,
+    if (
+      !posts.length
+    ) {
+      container.innerHTML =
+        `<div class="empty">
+          No posts match this filter.
+        </div>`;
 
-      relevantPosts:
-        brief.relevantPosts,
+      return;
+    }
 
-      noisePosts:
-        brief.noisePosts,
+    container.innerHTML =
+      posts
+        .map(
+          post => {
+            const i =
+              post.intelligence ||
+              {};
 
-      actNow:
-        brief.actNowCount,
+            const score =
+              maxScore(
+                post
+              );
 
-      monitor:
-        posts.filter(
-          post =>
-            post.intelligence
-              .actionTier ===
-            "MONITOR"
-        ).length,
+            const classes = [
+              "news-card"
+            ];
 
-      fyi:
-        posts.filter(
-          post =>
-            post.intelligence
-              .actionTier ===
-            "FYI"
-        ).length,
+            if (
+              i.actionTier ===
+              "ACT NOW"
+            ) {
+              classes.push(
+                "act-now"
+              );
+            }
 
-      fantasyRelevant:
-        posts.filter(
-          post =>
-            post.intelligence
-              .fantasyRelevance >=
-            60
-        ).length,
+            if (
+              i.actionTier ===
+              "MONITOR"
+            ) {
+              classes.push(
+                "monitor"
+              );
+            }
 
-      zooRelevant:
-        posts.filter(
-          post =>
-            post.intelligence
-              .zooRelevance >=
-            60
-        ).length,
+            if (
+              i.zooImpact
+            ) {
+              classes.push(
+                "zoo-impact"
+              );
+            }
 
-      watchListRelevant:
-        posts.filter(
-          post =>
-            post.intelligence
-              .watchRelevance >=
-            60
-        ).length,
+            const badges =
+              [];
 
-      availablePlayerRelevant:
-        posts.filter(
-          post =>
-            post.intelligence
-              .availableRelevance >=
-            60
-        ).length,
+            if (
+              i.primaryEvent &&
+              i.primaryEvent !==
+                "GENERAL_NEWS"
+            ) {
+              badges.push(
+                `<span class="badge event">
+                  ${esc(
+                    i.primaryEvent
+                  )}
+                </span>`
+              );
+            }
 
-      opponentRelevant:
-        posts.filter(
-          post =>
-            post.intelligence
-              .opponentRelevance >=
-            60
-        ).length,
+            if (
+              i.sourceAuthority
+                ?.tier
+            ) {
+              badges.push(
+                `<span class="badge source">
+                  ${esc(
+                    i.sourceAuthority
+                      .tier
+                  )}
+                </span>`
+              );
+            }
 
-      indirectZooImpact:
-        posts.filter(
-          post =>
-            post.intelligence
-              .indirectZooImpact
-        ).length,
+            if (
+              i.zooImpact
+            ) {
+              badges.push(
+                `<span class="badge zoo">
+                  ZOO
+                </span>`
+              );
+            }
 
-      actionableEvents:
-        posts.filter(
-          post =>
-            post.intelligence
-              .hasActionableEvent
-        ).length,
+            if (
+              i.indirectZooImpact
+            ) {
+              badges.push(
+                `<span class="badge indirect">
+                  INDIRECT ZOO IMPACT
+                </span>`
+              );
+            }
 
-      urgent:
-        posts.filter(
-          post =>
-            post.intelligence
-              .alertLevel ===
-            "URGENT"
-        ).length,
+            if (
+              i.availablePlayerImpact
+            ) {
+              badges.push(
+                `<span class="badge available">
+                  AVAILABLE
+                </span>`
+              );
+            }
 
-      important:
-        posts.filter(
-          post =>
-            post.intelligence
-              .alertLevel ===
-            "IMPORTANT"
-        ).length,
+            if (
+              i.watchListImpact
+            ) {
+              badges.push(
+                `<span class="badge watch">
+                  WATCH LIST
+                </span>`
+              );
+            }
 
-      zooRosterLoaded:
-        espnData.zooRosterSize ??
-        (
-          espnData.zoo &&
-          espnData.zoo.roster
-            ? espnData.zoo
-                .roster.length
-            : 0
-        ),
+            if (
+              i.opponentImpact
+            ) {
+              badges.push(
+                `<span class="badge opponent">
+                  OPPONENT
+                </span>`
+              );
+            }
 
-      lflTeamsLoaded:
-        espnData.teamCount ??
-        (
-          espnData.teams ||
-          []
-        ).length,
+            const directPlayers =
+              (
+                i.players ||
+                []
+              )
+                .map(
+                  player =>
+                    player.name
+                )
+                .filter(
+                  Boolean
+                );
 
-      rosteredPlayersLoaded:
-        espnData
-          .rosteredPlayerCount ??
-        0,
+            const contextPlayers =
+              (
+                i.contextImpact ||
+                []
+              )
+                .map(
+                  player =>
+                    `${player.name}${
+                      player.contextReason
+                        ? ` (${player.contextReason})`
+                        : ""
+                    }`
+                )
+                .filter(
+                  Boolean
+                );
 
-      availablePlayersLoaded:
-        espnData
-          .availablePlayerCount ??
-        (
-          espnData
-            .availablePlayers ||
-          []
-        ).length,
+            return `
+              <article class="${classes.join(" ")}">
 
-      watchListLoaded:
-        watchList.length,
+                <div class="news-top">
 
-      playerCatalogLoaded:
-        playerCatalog.length
-    };
+                  <div>
+                    <div class="news-author">
+                      ${esc(
+                        post.author ||
+                        post.handle ||
+                        "X"
+                      )}
+                    </div>
 
-    return {
-      statusCode:
-        200,
+                    <div class="news-time">
+                      ${esc(
+                        fmtDate(
+                          post.publishedAt
+                        )
+                      )}
+                    </div>
+                  </div>
 
-      headers: {
-        "Content-Type":
-          "application/json",
+                  <div class="news-time">
+                    ${esc(
+                      i.primaryCategory ||
+                      ""
+                    )}
+                    · ${score}
+                  </div>
 
-        "Cache-Control":
-          "no-store"
-      },
+                </div>
 
-      body:
-        JSON.stringify({
-          ok:
-            true,
+                <div class="news-text">
+                  ${esc(
+                    post.text ||
+                    post.title ||
+                    ""
+                  )}
+                </div>
 
-          source:
-            "Zoo GM Fantasy X List",
+                ${
+                  badges.length
+                    ? `
+                      <div class="badges">
+                        ${badges.join("")}
+                      </div>
+                    `
+                    : ""
+                }
 
-          dataSources: {
-            xFeed:
-              "RSS.app",
+                ${
+                  directPlayers.length
+                    ? `
+                      <div class="brief-meta">
+                        Direct: ${esc(
+                          directPlayers.join(
+                            ", "
+                          )
+                        )}
+                      </div>
+                    `
+                    : ""
+                }
 
-            espnLeague:
-              "Live Zoo GM ESPN Sync",
+                ${
+                  contextPlayers.length
+                    ? `
+                      <div class="brief-meta">
+                        Context impact: ${esc(
+                          contextPlayers.join(
+                            ", "
+                          )
+                        )}
+                      </div>
+                    `
+                    : ""
+                }
 
-            watchList:
-              "ESPN Watch List"
-          },
+                <div class="recommendation">
+                  ${esc(
+                    i.actionTier ||
+                    "NOISE"
+                  )}
+                  ·
+                  ${esc(
+                    i.recommendation ||
+                    "HOLD"
+                  )}
+                </div>
 
-          summary,
-          brief,
-          watchList,
-          posts
-        })
-    };
+                <div class="meters">
 
-  } catch (
-    error
+                  ${meter(
+                    "Overall",
+                    score,
+                    "overall"
+                  )}
+
+                  ${meter(
+                    "Fantasy",
+                    i.fantasyRelevance,
+                    "fantasy"
+                  )}
+
+                  ${meter(
+                    "Zoo",
+                    i.zooRelevance,
+                    "zoo"
+                  )}
+
+                  ${meter(
+                    "Available",
+                    i.availableRelevance,
+                    "available"
+                  )}
+
+                  ${meter(
+                    "Watch",
+                    i.watchRelevance,
+                    "watch"
+                  )}
+
+                  ${meter(
+                    "Opponent",
+                    i.opponentRelevance,
+                    "opponent"
+                  )}
+
+                </div>
+
+              </article>
+            `;
+          }
+        )
+        .join("");
+  }
+
+  function rosterStatusClass(
+    status
   ) {
-    console.error(
-      "Zoo GM X Feed Error:",
+    const value =
+      String(
+        status ||
+        ""
+      ).toUpperCase();
+
+    if (
+      value.includes(
+        "START"
+      )
+    ) {
+      return "starter";
+    }
+
+    if (
+      value.includes(
+        "IR"
+      )
+    ) {
+      return "ir";
+    }
+
+    return "bench";
+  }
+
+  function renderRoster() {
+    const roster =
+      espnData?.zoo?.roster ||
+      espnData?.zooRoster ||
+      [];
+
+    const body =
+      document.getElementById(
+        "rosterBody"
+      );
+
+    if (
+      !roster.length
+    ) {
+      body.innerHTML =
+        `<tr>
+          <td colspan="4">
+            No Zoo roster data.
+          </td>
+        </tr>`;
+
+      return;
+    }
+
+    body.innerHTML =
+      roster
+        .map(
+          player => {
+            const status =
+              player.rosterStatus ||
+              player.lineupStatus ||
+              player.lineupSlot ||
+              "";
+
+            return `
+              <tr>
+
+                <td>
+                  <strong>
+                    ${esc(
+                      player.name
+                    )}
+                  </strong>
+                </td>
+
+                <td>
+                  ${esc(
+                    player.position ||
+                    ""
+                  )}
+                </td>
+
+                <td>
+                  ${esc(
+                    player.nflTeam ||
+                    ""
+                  )}
+                </td>
+
+                <td class="${rosterStatusClass(status)}">
+                  ${esc(
+                    status
+                  )}
+                </td>
+
+              </tr>
+            `;
+          }
+        )
+        .join("");
+  }
+
+  function renderWatchList() {
+    const watchList =
+      xData?.watchList ||
+      espnData?.watchList ||
+      [];
+
+    document.getElementById(
+      "watchCount"
+    ).textContent =
+      watchList.length;
+
+    const body =
+      document.getElementById(
+        "watchBody"
+      );
+
+    if (
+      !watchList.length
+    ) {
+      body.innerHTML =
+        `<tr>
+          <td colspan="3">
+            No Watch List players.
+          </td>
+        </tr>`;
+
+      return;
+    }
+
+    body.innerHTML =
+      watchList
+        .map(
+          player => `
+            <tr>
+
+              <td>
+                <strong>
+                  ${esc(
+                    player.name
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${esc(
+                  player.position ||
+                  ""
+                )}
+              </td>
+
+              <td>
+                ${esc(
+                  player.priority ||
+                  ""
+                )}
+              </td>
+
+            </tr>
+          `
+        )
+        .join("");
+  }
+
+  function renderMatchup() {
+    const zooId =
+      Number(
+        espnData?.zooTeamId ??
+        espnData?.zoo?.teamId
+      );
+
+    let current =
+      null;
+
+    for (
+      const matchup
+      of espnData?.matchups ||
+      []
+    ) {
+      const homeId =
+        Number(
+          matchup.home?.teamId
+        );
+
+      const awayId =
+        Number(
+          matchup.away?.teamId
+        );
+
+      if (
+        homeId === zooId ||
+        awayId === zooId
+      ) {
+        current =
+          matchup;
+
+        break;
+      }
+    }
+
+    document.getElementById(
+      "matchupPeriod"
+    ).textContent =
+      espnData?.matchupPeriodId
+        ? `Matchup ${espnData.matchupPeriodId}`
+        : "Current matchup";
+
+    const container =
+      document.getElementById(
+        "matchupBox"
+      );
+
+    if (
+      !current
+    ) {
+      container.innerHTML =
+        `<div class="empty">
+          No current matchup found.
+        </div>`;
+
+      return;
+    }
+
+    const home =
+      current.home ||
+      {};
+
+    const away =
+      current.away ||
+      {};
+
+    container.innerHTML = `
+
+      <div class="matchup">
+
+        <div>
+
+          <div class="team-name">
+            ${esc(
+              home.teamName ||
+              home.name ||
+              "Home"
+            )}
+          </div>
+
+          <div class="news-time">
+            ${esc(
+              home.totalPoints ??
+              home.score ??
+              0
+            )} pts
+          </div>
+
+        </div>
+
+        <div class="vs">
+          VS
+        </div>
+
+        <div>
+
+          <div class="team-name">
+            ${esc(
+              away.teamName ||
+              away.name ||
+              "Away"
+            )}
+          </div>
+
+          <div class="news-time">
+            ${esc(
+              away.totalPoints ??
+              away.score ??
+              0
+            )} pts
+          </div>
+
+        </div>
+
+      </div>
+    `;
+  }
+
+  function populateCommishWeeks() {
+    const select =
+      document.getElementById(
+        "commishWeek"
+      );
+
+    const currentWeek =
+      Math.max(
+        1,
+        Number(
+          espnData?.matchupPeriodId ||
+          espnData?.scoringPeriodId ||
+          1
+        )
+      );
+
+    if (
+      selectedReportWeek >
+      currentWeek
+    ) {
+      selectedReportWeek =
+        currentWeek;
+    }
+
+    const options =
+      [];
+
+    for (
+      let week = 1;
+      week <= currentWeek;
+      week += 1
+    ) {
+      options.push(
+        `<option
+          value="${week}"
+          ${
+            week ===
+            selectedReportWeek
+              ? "selected"
+              : ""
+          }
+        >
+          Week ${week}
+        </option>`
+      );
+    }
+
+    select.innerHTML =
+      options.join("");
+  }
+
+  function renderCommishReport() {
+    populateCommishWeeks();
+
+    const report =
+      espnData?.commishReport ||
+      {};
+
+    const status =
+      report.status ||
+      espnData?.commishReportStatus ||
+      "NO_DATA";
+
+    document.getElementById(
+      "commishStatus"
+    ).textContent =
+      status.replace(
+        /_/g,
+        " "
+      );
+
+    const note =
+      document.getElementById(
+        "commishNote"
+      );
+
+    if (
+      status !== "FINAL"
+    ) {
+      note.style.display =
+        "block";
+
+      note.textContent =
+        status ===
+        "NO_DATA"
+          ? "Awaiting Week results."
+          : "Week is still in progress. Results below are provisional.";
+    } else {
+      note.style.display =
+        "none";
+
+      note.textContent =
+        "";
+    }
+
+    const offense =
+      report.offensivePlayerOfWeek ||
+      null;
+
+    const defense =
+      report.defensivePlayerOfWeek ||
+      null;
+
+    document.getElementById(
+      "offensivePOTW"
+    ).textContent =
+      offense?.name ||
+      "—";
+
+    document.getElementById(
+      "offensivePOTWDetail"
+    ).textContent =
+      offense
+        ? `${offense.position || ""} · ${
+            offense.lflTeam ||
+            offense.teamName ||
+            ""
+          } · ${Number(
+            offense.points ||
+            offense.score ||
+            0
+          ).toFixed(2)} pts`
+        : "No qualifying player yet";
+
+    document.getElementById(
+      "defensivePOTW"
+    ).textContent =
+      defense?.name ||
+      "—";
+
+    document.getElementById(
+      "defensivePOTWDetail"
+    ).textContent =
+      defense
+        ? `${defense.position || ""} · ${
+            defense.lflTeam ||
+            defense.teamName ||
+            ""
+          } · ${Number(
+            defense.points ||
+            defense.score ||
+            0
+          ).toFixed(2)} pts`
+        : "No qualifying player yet";
+
+    const cash =
+      report.cashMoneyTeam ||
+      null;
+
+    const garbage =
+      report.garbageTeam ||
+      null;
+
+    document.getElementById(
+      "cashMoneyTeam"
+    ).textContent =
+      cash?.teamName ||
+      cash?.name ||
+      "—";
+
+    document.getElementById(
+      "cashMoneyDetail"
+    ).textContent =
+      cash
+        ? `${Number(
+            cash.points ??
+            cash.score ??
+            0
+          ).toFixed(2)} pts`
+        : "Awaiting scores";
+
+    document.getElementById(
+      "garbageTeam"
+    ).textContent =
+      garbage?.teamName ||
+      garbage?.name ||
+      "—";
+
+    document.getElementById(
+      "garbageDetail"
+    ).textContent =
+      garbage
+        ? `${Number(
+            garbage.points ??
+            garbage.score ??
+            0
+          ).toFixed(2)} pts`
+        : "Awaiting scores";
+
+    const rankings =
+      report.powerRankings ||
+      [];
+
+    const body =
+      document.getElementById(
+        "powerRankingsBody"
+      );
+
+    if (
+      !rankings.length
+    ) {
+      body.innerHTML =
+        `<tr>
+          <td colspan="4">
+            No rankings available.
+          </td>
+        </tr>`;
+
+      return;
+    }
+
+    body.innerHTML =
+      rankings
+        .map(
+          (
+            team,
+            index
+          ) => {
+            const wins =
+              team.wins ??
+              team.record?.wins ??
+              0;
+
+            const losses =
+              team.losses ??
+              team.record?.losses ??
+              0;
+
+            const ties =
+              team.ties ??
+              team.record?.ties ??
+              0;
+
+            const record =
+              ties
+                ? `${wins}-${losses}-${ties}`
+                : `${wins}-${losses}`;
+
+            return `
+              <tr>
+
+                <td>
+                  ${esc(
+                    team.rank ??
+                    index + 1
+                  )}
+                </td>
+
+                <td>
+                  <strong>
+                    ${esc(
+                      team.teamName ||
+                      team.name ||
+                      ""
+                    )}
+                  </strong>
+                </td>
+
+                <td>
+                  ${esc(record)}
+                </td>
+
+                <td>
+                  ${Number(
+                    team.pointsFor ??
+                    team.pf ??
+                    0
+                  ).toFixed(2)}
+                </td>
+
+              </tr>
+            `;
+          }
+        )
+        .join("");
+  }
+
+  function renderAll() {
+    renderSummary();
+    renderBrief();
+    renderNews();
+    renderRoster();
+    renderWatchList();
+    renderMatchup();
+    renderCommishReport();
+
+    document.getElementById(
+      "updatedAt"
+    ).textContent =
+      `Last refreshed ${new Date().toLocaleString()}`;
+  }
+
+  async function loadZooGM() {
+    const status =
+      document.getElementById(
+        "status"
+      );
+
+    const refreshButton =
+      document.querySelector(
+        ".refresh-area button"
+      );
+
+    status.textContent =
+      "Refreshing ESPN and X intelligence...";
+
+    refreshButton.disabled =
+      true;
+
+    try {
+      const [
+        espnResponse,
+        xResponse
+      ] =
+        await Promise.all([
+          fetch(
+            getEspnUrl(),
+            {
+              cache:
+                "no-store",
+
+              headers: {
+                "Cache-Control":
+                  "no-cache"
+              }
+            }
+          ),
+
+          fetch(
+            getXUrl(),
+            {
+              cache:
+                "no-store",
+
+              headers: {
+                "Cache-Control":
+                  "no-cache"
+              }
+            }
+          )
+        ]);
+
+      const [
+        espn,
+        x
+      ] =
+        await Promise.all([
+          espnResponse.json(),
+          xResponse.json()
+        ]);
+
+      if (
+        !espnResponse.ok ||
+        !espn.ok
+      ) {
+        throw new Error(
+          espn.error ||
+          `ESPN request failed (${espnResponse.status})`
+        );
+      }
+
+      if (
+        !xResponse.ok ||
+        !x.ok
+      ) {
+        throw new Error(
+          x.detail ||
+          x.error ||
+          `X feed request failed (${xResponse.status})`
+        );
+      }
+
+      espnData =
+        espn;
+
+      xData =
+        x;
+
+      renderAll();
+
+      status.innerHTML =
+        `🟢 Zoo GM Live · ${esc(
+          espn.league ||
+          espn.leagueName ||
+          "LFL"
+        )} · ${esc(
+          x.summary?.postsReviewed ??
+          0
+        )} X posts analyzed`;
+
+      document.getElementById(
+        "lastRefresh"
+      ).textContent =
+        `Last refreshed ${new Date().toLocaleTimeString()}`;
+
+    } catch (
       error
+    ) {
+      console.error(
+        error
+      );
+
+      status.innerHTML =
+        `<span class="error">
+          Zoo GM connection error:
+          ${esc(error.message)}
+        </span>`;
+
+      document.getElementById(
+        "newsFeed"
+      ).innerHTML =
+        `<div class="error">
+          Unable to load intelligence:
+          ${esc(error.message)}
+        </div>`;
+
+    } finally {
+      refreshButton.disabled =
+        false;
+    }
+  }
+
+  document
+    .getElementById(
+      "commishWeek"
+    )
+    .addEventListener(
+      "change",
+      event => {
+        selectedReportWeek =
+          Number(
+            event.target.value ||
+            1
+          );
+
+        loadZooGM();
+      }
     );
 
-    return {
-      statusCode:
-        500,
+  document
+    .querySelectorAll(
+      ".filter"
+    )
+    .forEach(
+      button => {
+        button.addEventListener(
+          "click",
+          () => {
+            document
+              .querySelectorAll(
+                ".filter"
+              )
+              .forEach(
+                item =>
+                  item.classList.remove(
+                    "active"
+                  )
+              );
 
-      headers: {
-        "Content-Type":
-          "application/json",
+            button.classList.add(
+              "active"
+            );
 
-        "Cache-Control":
-          "no-store"
-      },
+            activeFilter =
+              button.dataset.filter ||
+              "all";
 
-      body:
-        JSON.stringify({
-          ok:
-            false,
+            renderNews();
+          }
+        );
+      }
+    );
 
-          error:
-            "Unable to retrieve or analyze Zoo GM X feed.",
+  loadZooGM();
 
-          detail:
-            error.message
-        })
-    };
-  }
-};
+  setInterval(
+    loadZooGM,
+    5 * 60 * 1000
+  );
+</script>
+
+</body>
+</html>
