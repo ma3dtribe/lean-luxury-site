@@ -687,7 +687,136 @@
         overflow-x: auto;
       }
     }
-  </style>
+  
+
+    /* Zoo GM usability update */
+    .summary-grid, .brief-panel { display:none !important; }
+
+    .intelligence-control-panel {
+      border-color:#244a3c;
+    }
+
+    .intelligence-control-body {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+
+    .intelligence-control-body .filter {
+      min-width:112px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      font-size:13px;
+      padding:11px 13px;
+    }
+
+    .filter-count {
+      display:inline-flex;
+      min-width:24px;
+      height:24px;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      background:#202b35;
+      color:#dbe4ec;
+      font-size:12px;
+      font-weight:800;
+      padding:0 7px;
+    }
+
+    .filter.active .filter-count {
+      background:#071711;
+      color:#54e0aa;
+    }
+
+    .news-card .tags.player-context {
+      margin:0 0 9px;
+    }
+
+    .news-card .news-time {
+      font-size:13px;
+      font-weight:700;
+      color:#c9d4de;
+    }
+
+    .news-card .news-author {
+      font-size:15px;
+    }
+
+    .zoo-updates-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .zoo-update-card {
+      border:1px solid #273543;
+      background:#10171f;
+      border-radius:10px;
+      padding:13px;
+    }
+
+    .zoo-update-player {
+      font-size:15px;
+      font-weight:800;
+      color:#55e0aa;
+      margin-bottom:5px;
+    }
+
+    .zoo-update-source {
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      color:#aebac6;
+      margin-bottom:7px;
+    }
+
+    .zoo-update-text {
+      font-size:13px;
+      line-height:1.45;
+      color:#e6edf3;
+    }
+
+    .watch-scroll {
+      max-height:780px;
+      overflow:auto;
+    }
+
+    .roster-section-row td {
+      background:#0c1319;
+      color:#92a2b0;
+      font-size:11px;
+      letter-spacing:.08em;
+      font-weight:800;
+      text-transform:uppercase;
+      border-top:1px solid #2b3944;
+      padding-top:12px;
+      padding-bottom:7px;
+    }
+
+    .roster-slot {
+      color:#91a0ad;
+      font-size:11px;
+      font-weight:800;
+      width:52px;
+    }
+
+    .roster-player-meta {
+      color:#8fa0ad;
+      font-size:11px;
+      margin-top:2px;
+    }
+
+    @media (max-width: 900px) {
+      .zoo-updates-grid { grid-template-columns:1fr; }
+      .intelligence-control-body .filter { min-width:calc(50% - 5px); }
+    }
+
+</style>
 </head>
 
 <body>
@@ -710,95 +839,21 @@
     Connecting to Zoo GM intelligence...
   </div>
 
-  <div class="summary-grid">
-
-    <div class="summary-card">
-      <div class="summary-label">Zoo Players</div>
-      <div class="summary-number" id="zooRosterCount">—</div>
-    </div>
-
-    <div class="summary-card">
-      <div class="summary-label">Relevant</div>
-      <div class="summary-number" id="availableCount">—</div>
-    </div>
-
-    <div class="summary-card">
-      <div class="summary-label">X Posts</div>
-      <div class="summary-number" id="postsCount">—</div>
-    </div>
-
-    <div class="summary-card">
-      <div class="summary-label">Noise Hidden</div>
-      <div class="summary-number" id="zooNewsCount">—</div>
-    </div>
-
-    <div class="summary-card">
-      <div class="summary-label">Available Opps</div>
-      <div class="summary-number" id="availableNewsCount">—</div>
-    </div>
-
-    <div class="summary-card">
-      <div class="summary-label">Act Now</div>
-      <div class="summary-number" id="urgentCount">—</div>
-    </div>
-
-  </div>
-
-
-  <section class="panel brief-panel">
-
+  <section class="panel intelligence-control-panel">
     <div class="panel-header">
-      <h2>Zoo GM Brief</h2>
-      <span class="news-time">Relevance first</span>
+      <h2>Live Intelligence</h2>
+      <span class="news-time" id="intelligenceLine">Choose what you want Zoo GM to surface</span>
     </div>
-
-    <div class="panel-body">
-
-      <div class="brief-headline">
-        <div>
-          <div class="summary-label">GM Recommendation</div>
-          <div class="brief-recommendation" id="gmRecommendation">Loading...</div>
-        </div>
-
-        <div class="news-time" id="briefLine">Analyzing the latest fantasy activity...</div>
-      </div>
-
-      <div class="brief-grid">
-        <div class="brief-stat">
-          <div class="summary-label">Relevant</div>
-          <strong id="briefRelevant">—</strong>
-        </div>
-
-        <div class="brief-stat">
-          <div class="summary-label">Noise Hidden</div>
-          <strong id="briefNoise">—</strong>
-        </div>
-
-        <div class="brief-stat">
-          <div class="summary-label">Act Now</div>
-          <strong id="briefActNow">—</strong>
-        </div>
-
-        <div class="brief-stat">
-          <div class="summary-label">Available Opps</div>
-          <strong id="briefAvailable">—</strong>
-        </div>
-
-        <div class="brief-stat">
-          <div class="summary-label">Zoo Impact</div>
-          <strong id="briefZoo">—</strong>
-        </div>
-      </div>
-
-      <div class="brief-items" id="briefItems">
-        <div class="empty">Building Zoo GM Brief...</div>
-      </div>
-
+    <div class="panel-body intelligence-control-body">
+      <button class="filter active" data-filter="relevant"><span>Relevant</span><span class="filter-count" data-count="relevant">—</span></button>
+      <button class="filter" data-filter="act"><span>Act Now</span><span class="filter-count" data-count="act">—</span></button>
+      <button class="filter" data-filter="zoo"><span>Zoo</span><span class="filter-count" data-count="zoo">—</span></button>
+      <button class="filter" data-filter="available"><span>Available</span><span class="filter-count" data-count="available">—</span></button>
+      <button class="filter" data-filter="watch"><span>Watch List</span><span class="filter-count" data-count="watch">—</span></button>
+      <button class="filter" data-filter="opponent"><span>Opponent</span><span class="filter-count" data-count="opponent">—</span></button>
+      <button class="filter" data-filter="all"><span>All</span><span class="filter-count" data-count="all">—</span></button>
     </div>
-
   </section>
-
-
 
   <section class="panel decision-panel">
 
@@ -824,15 +879,7 @@
         <div class="panel-header">
           <h2>Live Intelligence</h2>
 
-          <div class="filters">
-            <button class="filter active" data-filter="relevant">Relevant</button>
-            <button class="filter" data-filter="act">Act Now</button>
-            <button class="filter" data-filter="zoo">Zoo</button>
-            <button class="filter" data-filter="available">Available</button>
-            <button class="filter" data-filter="watch">Watch List</button>
-            <button class="filter" data-filter="opponent">Opponent</button>
-            <button class="filter" data-filter="all">All</button>
-          </div>
+          <span class="news-time" id="activeFilterLabel">Relevant intelligence</span>
         </div>
 
         <div class="panel-body" id="newsFeed">
@@ -870,9 +917,9 @@
           <table>
             <thead>
               <tr>
+                <th>Slot</th>
                 <th>Player</th>
                 <th>Pos</th>
-                <th>Status</th>
               </tr>
             </thead>
 
@@ -894,7 +941,7 @@
           <h2>Watch List</h2>
         </div>
 
-        <div class="panel-body table-wrap">
+        <div class="panel-body table-wrap watch-scroll">
 
           <table>
             <thead>
@@ -921,6 +968,18 @@
     </aside>
 
   </div>
+
+  <section class="panel zoo-player-updates">
+    <div class="panel-header">
+      <h2>Zoo Player Updates</h2>
+      <span class="news-time">Latest meaningful notes from your feeds</span>
+    </div>
+    <div class="panel-body">
+      <div id="zooPlayerUpdates" class="zoo-updates-grid">
+        <div class="empty">Checking the feeds for Zoo player news...</div>
+      </div>
+    </div>
+  </section>
 
   <section class="panel">
 
@@ -1102,115 +1161,40 @@
     return zooTeam?.roster || [];
   }
 
+  function setFilterCount(name, value) {
+    const el = document.querySelector(`[data-count="${name}"]`);
+    if (el) el.textContent = value ?? 0;
+  }
+
   function renderSummary() {
-    const summary = xData?.summary || {};
-    const brief = xData?.brief || {};
+    const posts = xData?.posts || [];
+    const count = filter => posts.filter(post => {
+      const i = post.intelligence || {};
+      if (filter === "relevant") return maxRelevance(post) >= 55 && !i.noise;
+      if (filter === "act") return i.actionTier === "ACT NOW" || i.alertLevel === "URGENT";
+      if (filter === "zoo") return i.zooImpact || (i.zooPlayers || []).length > 0;
+      if (filter === "available") return i.availablePlayerImpact || (i.availablePlayers || []).length > 0;
+      if (filter === "watch") return i.watchListImpact || (i.watchPlayers || []).length > 0;
+      if (filter === "opponent") return i.opponentImpact || (i.opponentPlayers || []).length > 0;
+      return true;
+    }).length;
 
-    document.getElementById("zooRosterCount").textContent =
-      espnData?.zooRosterSize ??
-      getZooRoster().length ??
-      "—";
+    setFilterCount("relevant", count("relevant"));
+    setFilterCount("act", count("act"));
+    setFilterCount("zoo", count("zoo"));
+    setFilterCount("available", count("available"));
+    setFilterCount("watch", count("watch"));
+    setFilterCount("opponent", count("opponent"));
+    setFilterCount("all", posts.length);
 
-    document.getElementById("availableCount").textContent =
-      brief.relevantPosts ??
-      summary.relevantPosts ??
-      "—";
-
-    document.getElementById("postsCount").textContent =
-      summary.postsReviewed ?? "—";
-
-    document.getElementById("zooNewsCount").textContent =
-      brief.noisePosts ??
-      summary.noisePosts ??
-      "—";
-
-    document.getElementById("availableNewsCount").textContent =
-      brief.availableOpportunityCount ??
-      summary.availablePlayerRelevant ??
-      "—";
-
-    document.getElementById("urgentCount").textContent =
-      brief.actNowCount ??
-      summary.actNow ??
-      "—";
+    const line = document.getElementById("intelligenceLine");
+    if (line) {
+      line.textContent = `${posts.length} X posts analyzed · click a category to filter`;
+    }
   }
 
   function renderBrief() {
-    const brief = xData?.brief || {};
-    const items = brief.topItems || [];
-
-    document.getElementById("gmRecommendation").textContent =
-      brief.recommendation || "HOLD";
-
-    document.getElementById("briefRelevant").textContent =
-      brief.relevantPosts ?? "—";
-
-    document.getElementById("briefNoise").textContent =
-      brief.noisePosts ?? "—";
-
-    document.getElementById("briefActNow").textContent =
-      brief.actNowCount ?? "—";
-
-    document.getElementById("briefAvailable").textContent =
-      brief.availableOpportunityCount ?? "—";
-
-    document.getElementById("briefZoo").textContent =
-      brief.zooImpactCount ?? "—";
-
-    document.getElementById("briefLine").textContent =
-      `${xData?.summary?.postsReviewed ?? 0} posts analyzed · ${brief.relevantPosts ?? 0} worth knowing`;
-
-    const container = document.getElementById("briefItems");
-
-    if (!items.length) {
-      container.innerHTML =
-        '<div class="empty">No meaningful fantasy developments right now.</div>';
-      return;
-    }
-
-    container.innerHTML = items.map(item => {
-      const tier = item.actionTier || "FYI";
-      const tierClass = tier.toLowerCase().replace(/\s+/g, "-");
-      const players = item.players || [];
-
-      const playerTags = players.slice(0, 4).map(player => {
-        const status =
-          player.onWatchList ? "WATCH LIST" :
-          player.ownershipStatus || player.classification || "";
-        const context = player.indirect ? " · CONTEXT" : "";
-
-        return `<span class="tag">${esc(player.name)}${status ? ` · ${esc(status)}` : ""}${context}</span>`;
-      }).join("");
-
-      return `
-        <div class="brief-item ${esc(tierClass)}">
-
-          <div class="brief-item-top">
-            <div class="brief-item-title">
-              ${esc(item.primaryCategory || "FANTASY UPDATE")} · ${esc(item.primaryEvent || "GENERAL_NEWS")} · ${Number(item.maxRelevance || 0)}
-            </div>
-
-            <div class="brief-item-action">
-              ${esc(item.recommendation || "HOLD")}
-            </div>
-          </div>
-
-          <div class="news-text">
-            ${item.link
-              ? `<a href="${esc(item.link)}" target="_blank" rel="noopener">${esc(item.text || "X update")}</a>`
-              : esc(item.text || "X update")
-            }
-          </div>
-
-          <div class="news-time" style="margin-top:7px;">
-            ${esc(item.author || "X Source")} · ${esc(formatTime(item.publishedAt))}
-          </div>
-
-          ${playerTags ? `<div class="tags">${playerTags}</div>` : ""}
-
-        </div>
-      `;
-    }).join("");
+    // Legacy brief intentionally replaced by clickable Live Intelligence controls.
   }
 
   function postMatchesFilter(post) {
@@ -1307,6 +1291,11 @@
       return `
         <article class="news-card">
 
+          ${tags.length
+            ? `<div class="tags player-context">${tags.join("")}</div>`
+            : ""
+          }
+
           <div class="news-top">
             <div class="news-author">
               ${esc(post.author || "X Source")}
@@ -1322,11 +1311,6 @@
               ${esc(post.text || post.title || "X update")}
             ${linkEnd}
           </div>
-
-          ${tags.length
-            ? `<div class="tags">${tags.join("")}</div>`
-            : ""
-          }
 
           <div class="meter-row">
 
@@ -1538,35 +1522,62 @@
     }).join("");
   }
 
+  function rosterGroup(player) {
+    const raw = String(player.rosterStatus || player.lineupSlot || "").toUpperCase();
+    if (raw.includes("IR")) return "IR";
+    if (raw.includes("BENCH") || raw === "BE") return "BENCH";
+    return "STARTERS";
+  }
+
+  function rosterSlotLabel(player) {
+    const raw = String(player.lineupSlot || player.rosterStatus || "").toUpperCase();
+    if (raw.includes("IR")) return "IR";
+    if (raw.includes("BENCH") || raw === "BE") return "BE";
+    if (raw && !raw.includes("START")) return raw.replace("RB_WR", "RB/WR");
+    return String(player.position || "—").toUpperCase();
+  }
+
   function renderRoster() {
     const body = document.getElementById("rosterBody");
     const roster = getZooRoster();
 
     if (!roster.length) {
-      body.innerHTML =
-        '<tr><td colspan="3" class="empty">No roster data.</td></tr>';
+      body.innerHTML = '<tr><td colspan="3" class="empty">No roster data.</td></tr>';
       return;
     }
 
-    body.innerHTML = roster.map(player => {
-      const status = rosterStatus(player);
+    const groupOrder = { STARTERS: 0, BENCH: 1, IR: 2 };
+    const positionOrder = { QB:0, RB:1, WR:2, TE:3, LB:4, DL:5, CB:6, S:7, K:8 };
+    const sorted = [...roster].sort((a,b) => {
+      const ga = rosterGroup(a), gb = rosterGroup(b);
+      if (groupOrder[ga] !== groupOrder[gb]) return groupOrder[ga] - groupOrder[gb];
+      return (positionOrder[a.position] ?? 99) - (positionOrder[b.position] ?? 99);
+    });
 
-      return `
+    let lastGroup = "";
+    const rows = [];
+
+    sorted.forEach(player => {
+      const group = rosterGroup(player);
+      if (group !== lastGroup) {
+        rows.push(`<tr class="roster-section-row"><td colspan="3">${esc(group)}</td></tr>`);
+        lastGroup = group;
+      }
+
+      const team = player.nflTeam || player.proTeam || player.team || "";
+      rows.push(`
         <tr>
+          <td class="roster-slot">${esc(rosterSlotLabel(player))}</td>
           <td>
             <strong>${esc(player.name)}</strong>
+            ${team ? `<div class="roster-player-meta">${esc(team)}</div>` : ""}
           </td>
-
-          <td>
-            ${esc(player.position)}
-          </td>
-
-          <td class="${status.className}">
-            ${esc(status.label)}
-          </td>
+          <td>${esc(player.position)}</td>
         </tr>
-      `;
-    }).join("");
+      `);
+    });
+
+    body.innerHTML = rows.join("");
   }
 
   function renderWatchList() {
@@ -1579,7 +1590,7 @@
       return;
     }
 
-    body.innerHTML = watchList.slice(0, 15).map(player => {
+    body.innerHTML = watchList.map(player => {
       const actionClass = String(player.recommendation || "")
         .replace(/\s+/g, "-")
         .replace(/[^A-Za-z0-9-]/g, "");
@@ -1606,6 +1617,40 @@
             </span>
           </td>
         </tr>
+      `;
+    }).join("");
+  }
+
+  function renderZooPlayerUpdates() {
+    const container = document.getElementById("zooPlayerUpdates");
+    if (!container) return;
+
+    const posts = (xData?.posts || [])
+      .filter(post => {
+        const i = post.intelligence || {};
+        return (i.zooPlayers || []).length > 0 && (Number(i.zooRelevance || 0) >= 35 || i.hasActionableEvent);
+      })
+      .sort((a,b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
+      .slice(0, 10);
+
+    if (!posts.length) {
+      container.innerHTML = '<div class="empty">No new Zoo player news right now.</div>';
+      return;
+    }
+
+    container.innerHTML = posts.map(post => {
+      const i = post.intelligence || {};
+      const players = (i.zooPlayers || []).join(", ") || "Zoo roster";
+      const recommendation = i.recommendation || i.actionTier || "MONITOR";
+      return `
+        <article class="zoo-update-card">
+          <div class="zoo-update-player">${esc(players)} · ${esc(recommendation)}</div>
+          <div class="zoo-update-source">
+            <span>${esc(post.author || "X Source")}</span>
+            <span>${esc(formatTime(post.publishedAt))}</span>
+          </div>
+          <div class="zoo-update-text">${esc(post.text || post.title || "Update")}</div>
+        </article>
       `;
     }).join("");
   }
@@ -1691,6 +1736,7 @@
     renderExpendability();
     renderRoster();
     renderWatchList();
+    renderZooPlayerUpdates();
     renderMatchup();
   }
 
@@ -1792,6 +1838,10 @@
 
       activeFilter =
         button.dataset.filter || "all";
+
+      const label = button.querySelector("span")?.textContent || "All";
+      const activeLabel = document.getElementById("activeFilterLabel");
+      if (activeLabel) activeLabel.textContent = `${label} intelligence`;
 
       renderNews();
     });
