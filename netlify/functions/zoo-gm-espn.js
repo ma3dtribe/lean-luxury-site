@@ -100,6 +100,71 @@ const LINEUP_SLOT_BY_ID = {
 };
 
 
+const GENERIC_POSITION_SLOTS = new Set([
+  "TQB",
+  "RB/WR",
+  "WR/TE",
+  "OP",
+  "DB",
+  "DP",
+  "BE",
+  "IR",
+  "RES",
+  "FLEX"
+]);
+
+function cleanPositionLabel(position = "") {
+  const value = String(position || "").toUpperCase();
+
+  if (
+    value === "DT" ||
+    value === "DE" ||
+    value === "DL"
+  ) {
+    return "DL";
+  }
+
+  return value;
+}
+
+function positionFromEligibleSlots(
+  eligibleSlots = [],
+  fallback = ""
+) {
+  for (const rawSlotId of eligibleSlots || []) {
+    const slotId = Number(rawSlotId);
+    const label = LINEUP_SLOT_BY_ID[slotId];
+
+    if (!label) continue;
+    if (GENERIC_POSITION_SLOTS.has(label)) continue;
+
+    return cleanPositionLabel(label);
+  }
+
+  return cleanPositionLabel(fallback);
+}
+
+function rosterDisplayPosition(
+  player,
+  lineupSlotId
+) {
+  const slotLabel =
+    LINEUP_SLOT_BY_ID[Number(lineupSlotId)];
+
+  if (
+    slotLabel &&
+    !GENERIC_POSITION_SLOTS.has(slotLabel)
+  ) {
+    return cleanPositionLabel(slotLabel);
+  }
+
+  return positionFromEligibleSlots(
+    player?.eligibleSlots || [],
+    player?.position || ""
+  );
+}
+
+
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -300,6 +365,23 @@ function normalizePlayer(
       player.defaultPositionId || 0
     );
 
+  const eligibleSlots =
+    Array.isArray(player.eligibleSlots)
+      ? player.eligibleSlots.map(Number)
+      : [];
+
+  const defaultPosition =
+    POSITION_BY_ID[
+      defaultPositionId
+    ] ||
+    `POS-${defaultPositionId}`;
+
+  const position =
+    positionFromEligibleSlots(
+      eligibleSlots,
+      defaultPosition
+    );
+
   const ownership =
     player.ownership || {};
 
@@ -326,11 +408,7 @@ function normalizePlayer(
     lastName:
       player.lastName || "",
 
-    position:
-      POSITION_BY_ID[
-        defaultPositionId
-      ] ||
-      `POS-${defaultPositionId}`,
+    position,
 
     defaultPositionId,
 
@@ -369,12 +447,7 @@ function normalizePlayer(
         0
       ),
 
-    eligibleSlots:
-      Array.isArray(
-        player.eligibleSlots
-      )
-        ? player.eligibleSlots
-        : []
+    eligibleSlots
   };
 }
 
@@ -420,6 +493,12 @@ function normalizeRosterEntry(
 
   return {
     ...player,
+
+    position:
+      rosterDisplayPosition(
+        player,
+        lineupSlotId
+      ),
 
     lineupSlotId,
 
