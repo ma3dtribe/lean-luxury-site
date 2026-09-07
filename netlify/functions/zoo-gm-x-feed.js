@@ -2296,7 +2296,10 @@ const CURRENT_ROLE_OVERRIDES = {
   // Current-role corrections supplied for Zoo GM. Keep these small and explicit so
   // live ESPN/news signals still drive the score and the override is easy to remove
   // when the role changes.
-  "tyrel dodson": { adjustment: -22, note: "not currently a Carolina starting linebacker" }
+  "tyrel dodson": { adjustment: -28, note: "not currently a Carolina starting linebacker; reserve-role penalty" },
+  "anthony hill jr.": { adjustment: -26, note: "currently a backup/reserve linebacker; prospect upside does not equal immediate LFL starter value" },
+  "anthony hill jr": { adjustment: -26, note: "currently a backup/reserve linebacker; prospect upside does not equal immediate LFL starter value" },
+  "cody barton": { adjustment: -12, note: "starting-role value acknowledged, but current opportunity does not justify an automatic ADD NOW grade" }
 };
 
 function roleOpportunitySignal(player = {}, posts = []) {
@@ -2599,6 +2602,8 @@ function buildSuggestedWatchList(
         zooValueScore: score,
         priorityScore: score,
         recommendation,
+        onWatchList: false,
+        watchListStatus: "NOT ON WATCH LIST",
         percentOwned: player.percentOwned ?? null,
         percentStarted: player.percentStarted ?? null,
         components: {
@@ -2619,6 +2624,7 @@ function buildSuggestedWatchList(
       if (b.zooValueScore !== a.zooValueScore) return b.zooValueScore - a.zooValueScore;
       return Number(b.percentOwned || 0) - Number(a.percentOwned || 0);
     })
+    .filter(player => !watchedIds.has(String(player.playerId || "")) && !watchedNames.has(normalize(player.name)))
     .slice(0, limit);
 }
 
