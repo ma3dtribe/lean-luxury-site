@@ -1,7 +1,6 @@
 const RSS_FEED_URL = "https://rss.app/feeds/MN6OehHIKqSDETrP.xml";
 const ESPN_ENDPOINT = "https://ma3dtribe.com/.netlify/functions/zoo-gm-espn";
-const WATCH_LIST_CSV_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQcPmd0YL9Ln-sDQlKHnlvRODpCbyEbE6hX6Lc9Cn7nfGRiWapKCvy57PXlYfx4xpVd2Ib2bYwtyCQg/pub?gid=1431580856&single=true&output=csv";
+
 
 const URGENT_KEYWORDS = [
   "ruled out", "did not practice", "limited practice", "full practice",
@@ -597,11 +596,10 @@ function buildPostIntelligence(post, playerCatalog) {
 
 exports.handler = async function () {
   try {
-    const [xml, watchCsv, espnData] = await Promise.all([
-      fetchText(RSS_FEED_URL, "RSS feed"),
-      fetchText(WATCH_LIST_CSV_URL, "Watch list"),
-      fetchJson(ESPN_ENDPOINT, "Zoo GM ESPN")
-    ]);
+    const [xml, espnData] = await Promise.all([
+  fetchText(RSS_FEED_URL, "RSS feed"),
+  fetchJson(ESPN_ENDPOINT, "Zoo GM ESPN")
+]);
 
     if (!espnData || !espnData.ok) {
       throw new Error(
@@ -611,7 +609,9 @@ exports.handler = async function () {
       );
     }
 
-    const watchList = mapWatchRows(parseCsv(watchCsv));
+    const watchList = Array.isArray(espnData.watchList)
+  ? espnData.watchList.filter((player) => player && player.name)
+  : [];
 
     const playerCatalog = buildLeaguePlayerCatalog(
       espnData,
@@ -740,7 +740,7 @@ exports.handler = async function () {
         dataSources: {
           xFeed: "RSS.app",
           espnLeague: "Live Zoo GM ESPN Sync",
-          watchList: "Google Sheets"
+          watchList: "ESPN Watch List"
         },
 
         summary,
