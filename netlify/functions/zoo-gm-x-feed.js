@@ -2,7 +2,7 @@ const RSS_FEED_URL = "https://rss.app/feeds/MN6OehHIKqSDETrP.xml";
 const ESPN_ENDPOINT = "https://ma3dtribe.com/.netlify/functions/zoo-gm-espn";
 
 const URGENT_KEYWORDS = [
-  "ruled out", "did not practice", "limited practice", "full practice",
+  "ruled out", "did not practice", "limited practice", "full practice", "practicing", "practiced",
   "injured reserve", "inactive", "injured", "injury", "questionable",
   "doubtful", "waived", "released", "cut", "traded", "trade",
   "suspended", "starter", "starting", "benched", "depth chart",
@@ -10,7 +10,7 @@ const URGENT_KEYWORDS = [
 ];
 
 const FANTASY_KEYWORDS = [
-  "fantasy", "injury", "practice", "inactive", "starter", "starting",
+  "fantasy", "injury", "practice", "practicing", "practiced", "inactive", "starter", "starting",
   "depth chart", "snap", "snaps", "target", "targets", "carry",
   "carries", "touches", "routes", "route participation", "red zone",
   "goal line", "waiver", "waivers", "free agent", "trade", "traded",
@@ -34,7 +34,6 @@ const EVENT_RULES = [
       "injury",
       "injured",
       "injured reserve",
-      "ir",
       "concussion",
       "hamstring",
       "ankle",
@@ -54,7 +53,16 @@ const EVENT_RULES = [
       "full practice",
       "practice participation",
       "returned to practice",
-      "missed practice"
+      "missed practice",
+      "practicing",
+      "practiced",
+      "participating in practice",
+      "back at practice",
+      "working at practice",
+      "full participant",
+      "limited participant",
+      "returned to drills",
+      "back on the field"
     ]
   ],
   [
@@ -175,8 +183,7 @@ const SOURCE_TIER_1 = new Set([
   "rapsheet",
   "adamschefter",
   "tompelissero",
-  "jfwlerespn",
-  "jowlerespn",
+  "jfowlerespn",
   "mysportsupdate",
   "schultz_report"
 ]);
@@ -314,6 +321,106 @@ const POSITION_ALIASES = {
   CB: [" cb ", "cornerback", "nickel"],
   S: [" safety ", " saf ", "free safety", "strong safety"]
 };
+
+// -----------------------------------------------------------------------------
+// LFL STATIC LEAGUE INTELLIGENCE
+// These values come from the league's fixed roster/scoring rules plus the
+// 2023-2025 positional scoring history supplied for Zoo GM. They are static on
+// purpose; live ESPN calls are reserved for roster/waiver/news information.
+// -----------------------------------------------------------------------------
+const LFL_CONFIG = {
+  leagueSize: 10,
+  rosterSize: 20,
+  starters: 14,
+  bench: 6,
+  ir: 2,
+
+  startingSlots: {
+    QB: 1,
+    RB: 2,
+    RB_WR: 1,
+    WR: 2,
+    TE: 1,
+    LB: 3,
+    DL: 1,
+    CB: 1,
+    S: 1,
+    K: 1
+  },
+
+  // Preferred 20-man Zoo construction. This deliberately spends bench spots
+  // on RB/WR/LB rather than duplicating one-starter positions.
+  preferredRosterCounts: {
+    QB: 1,
+    RB: 5,
+    WR: 4,
+    TE: 1,
+    LB: 5,
+    DL: 1,
+    CB: 1,
+    S: 1,
+    K: 1
+  },
+
+  positionProfiles: {
+    QB: { scarcity: 42, market: 38, benchBias: -18, historicalAvg: [44.98, 47.0, 44.09] },
+    RB: { scarcity: 100, market: 100, benchBias: 20, historicalAvg: [38.79, 40.0, 40.15] },
+    WR: { scarcity: 80, market: 82, benchBias: 14, historicalAvg: [37.55, 37.0, 35.81] },
+    TE: { scarcity: 48, market: 42, benchBias: -16, historicalAvg: [28.57, 30.0, 29.48] },
+    LB: { scarcity: 82, market: 72, benchBias: 16, historicalAvg: [39.03, 38.0, 36.91] },
+    DL: { scarcity: 54, market: 48, benchBias: -15, historicalAvg: [35.1, 31.0, 34.08] },
+    CB: { scarcity: 40, market: 34, benchBias: -16, historicalAvg: [38.4, 37.0, 35.19] },
+    S:  { scarcity: 46, market: 40, benchBias: -16, historicalAvg: [40.0, 37.0, 33.73] },
+    K:  { scarcity: 24, market: 18, benchBias: -24, historicalAvg: [25.4, 0, 0] }
+  },
+
+  scoring: {
+    passing: { yardsPer20: 1, completion: 1, touchdown: 4.5, bonus40TD: 0.5, bonus50TD: 1, interception: -4, twoPoint: 2, sacked: -2 },
+    rushing: { yardsPer5: 1.3, attempt: 0.5, touchdown: 6, bonus40TD: 1, bonus50TD: 2, twoPoint: 2 },
+    receiving: { yardsPer5: 1.5, reception: 2, touchdown: 6, bonus40TD: 1, bonus50TD: 2, twoPoint: 2 },
+    kicking: { pat: 1, missedPat: -1, fg0to39: 6, fg40to49: 15, missed0to39: -4, missed40to49: -2, fg50to59: 25, fg60plus: 25 },
+    misc: { kickReturnTD: 6, puntReturnTD: 6, fumbleRecoveredTD: 6, fumbleLost: -3, interceptionReturnTD: 15, fumbleReturnTD: 15, blockedReturnTD: 20 },
+    idp: { sack: 15, blockedKick: 18, interception: 22, fumbleRecovery: 10, forcedFumble: 5, safety: 25, assistedTackle: 2, soloTackle: 4, stuff: 3, passDefended: 12 }
+  },
+
+  philosophy: {
+    priorityDepth: ["RB", "WR", "LB"],
+    singleCarryPositions: ["QB", "TE", "DL", "CB", "S", "K"],
+    rbTradePremium: true,
+    evaluateAcrossPositions: true
+  },
+
+  // Current Zoo strategic context. These are small tie-breaker adjustments, not
+  // permanent player rankings. Remove/update them when Zoo's roster situation changes.
+  zooStrategicOverrides: {
+    "patrick queen": { expendabilityAdjustment: 14, note: "current Zoo first-cut benchmark" },
+    "demarvion overshown": { expendabilityAdjustment: -8, note: "upside stash protection" },
+    "jacob rodriguez": { expendabilityAdjustment: -10, note: "recent opportunity/upside add" }
+  }
+};
+
+function canonicalPosition(position = "") {
+  const p = String(position || "").toUpperCase();
+  if (p === "DE" || p === "DT") return "DL";
+  if (p === "DB") return "CB";
+  return p;
+}
+
+function getPositionProfile(position = "") {
+  const p = canonicalPosition(position);
+  return LFL_CONFIG.positionProfiles[p] || {
+    scarcity: 35,
+    market: 30,
+    benchBias: -10,
+    historicalAvg: [0, 0, 0]
+  };
+}
+
+function historicalPositionAverage(position = "") {
+  const values = getPositionProfile(position).historicalAvg.filter(Number);
+  if (!values.length) return 0;
+  return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100;
+}
 
 function decodeXml(text = "") {
   return String(text)
@@ -731,6 +838,18 @@ function buildLeaguePlayerCatalog(
           player.nflTeam ||
           "",
 
+        percentOwned:
+          player.percentOwned ??
+          null,
+
+        percentStarted:
+          player.percentStarted ??
+          null,
+
+        injuryStatus:
+          player.injuryStatus ||
+          "ACTIVE",
+
         ownershipStatus:
           "UNKNOWN",
 
@@ -784,6 +903,21 @@ function buildLeaguePlayerCatalog(
       current.nflTeam ||
       player.nflTeam ||
       "";
+
+    next.percentOwned =
+      player.percentOwned ??
+      current.percentOwned ??
+      null;
+
+    next.percentStarted =
+      player.percentStarted ??
+      current.percentStarted ??
+      null;
+
+    next.injuryStatus =
+      player.injuryStatus ||
+      current.injuryStatus ||
+      "ACTIVE";
 
     catalog.set(
       key,
@@ -931,6 +1065,18 @@ function buildLeaguePlayerCatalog(
           nflTeam:
             watchPlayer.nflTeam ||
             "",
+
+          percentOwned:
+            watchPlayer.percentOwned ??
+            null,
+
+          percentStarted:
+            watchPlayer.percentStarted ??
+            null,
+
+          injuryStatus:
+            watchPlayer.injuryStatus ||
+            "ACTIVE",
 
           ownershipStatus:
             "UNKNOWN",
@@ -1113,13 +1259,6 @@ function detectEventTypes(
           hasKeyword(
             text,
             keyword
-          ) ||
-          normalize(
-            text
-          ).includes(
-            normalize(
-              keyword
-            )
           )
       )
     ) {
@@ -1658,6 +1797,16 @@ function scoreFantasyRelevance(
     score += 10;
   }
 
+  if (
+    actionable &&
+    playerMatches.some(
+      player =>
+        player.ownershipStatus === "LFL OWNED"
+    )
+  ) {
+    score += 12;
+  }
+
   score +=
     Number(
       source.boost ||
@@ -1994,6 +2143,386 @@ function getPostAgeHours(
   );
 }
 
+
+function getZooRoster(espnData = {}) {
+  if (Array.isArray(espnData?.zoo?.roster)) {
+    return espnData.zoo.roster;
+  }
+
+  const zooTeamId = getZooTeamId(espnData);
+  const team = (espnData.teams || []).find(
+    item => Number(item.teamId) === Number(zooTeamId)
+  );
+
+  return Array.isArray(team?.roster) ? team.roster : [];
+}
+
+function countRosterPositions(roster = [], { includeIR = false } = {}) {
+  const counts = {};
+
+  for (const player of roster) {
+    const slot = String(player?.rosterStatus || player?.lineupSlot || "").toUpperCase();
+    if (!includeIR && slot === "IR") continue;
+
+    const position = canonicalPosition(player?.position);
+    if (!position) continue;
+    counts[position] = (counts[position] || 0) + 1;
+  }
+
+  return counts;
+}
+
+function getPreferredCount(position = "") {
+  return Number(
+    LFL_CONFIG.preferredRosterCounts[canonicalPosition(position)] || 1
+  );
+}
+
+function rosterNeedScore(position = "", counts = {}) {
+  const p = canonicalPosition(position);
+  const current = Number(counts[p] || 0);
+  const preferred = getPreferredCount(p);
+  const profile = getPositionProfile(p);
+
+  if (current < preferred) {
+    return clamp(20 + ((preferred - current) * 5) + (profile.benchBias > 0 ? 3 : 0), 0, 25);
+  }
+
+  if (current === preferred) {
+    return profile.benchBias > 0 ? 15 : 8;
+  }
+
+  return profile.benchBias > 0 ? 6 : 2;
+}
+
+function playerMarketQuality(player = {}) {
+  const owned = Number(player.percentOwned || 0);
+  const started = Number(player.percentStarted || 0);
+  return clamp((owned * 0.55) + (started * 1.1), 0, 100);
+}
+
+function actionTierValue(tier = "") {
+  return {
+    "ACT NOW": 20,
+    "MONITOR": 15,
+    "FYI": 8,
+    "NOISE": 0
+  }[String(tier)] || 0;
+}
+
+function postsForPlayer(posts = [], playerName = "") {
+  return posts.filter(post => {
+    const intelligence = post.intelligence || {};
+    return (intelligence.impactPlayers || intelligence.players || []).some(
+      player => normalize(player.name) === normalize(playerName)
+    );
+  });
+}
+
+function liveNewsScore(posts = [], playerName = "") {
+  const related = postsForPlayer(posts, playerName);
+  if (!related.length) return 0;
+
+  return clamp(Math.max(
+    ...related.map(post => {
+      const i = post.intelligence || {};
+      let value = actionTierValue(i.actionTier);
+      if (i.hasActionableEvent) value += 3;
+      if (["INACTIVE", "INJURY", "PRACTICE", "TRANSACTION", "DEPTH_CHART"].includes(i.primaryEvent)) {
+        value += 2;
+      }
+      return value;
+    })
+  ), 0, 20);
+}
+
+function acquisitionScore(player = {}, rosterCounts = {}, posts = []) {
+  const position = canonicalPosition(player.position);
+  const profile = getPositionProfile(position);
+  const need = rosterNeedScore(position, rosterCounts);
+  const marketQuality = playerMarketQuality(player);
+  const news = liveNewsScore(posts, player.name);
+
+  let score =
+    (need * 1.0) +
+    (profile.scarcity * 0.25) +
+    (profile.market * 0.12) +
+    (marketQuality * 0.22) +
+    (news * 0.75) +
+    profile.benchBias;
+
+  const current = Number(rosterCounts[position] || 0);
+  const preferred = getPreferredCount(position);
+
+  if (
+    LFL_CONFIG.philosophy.singleCarryPositions.includes(position) &&
+    current >= preferred
+  ) {
+    score -= 24;
+  }
+
+  if (["RB", "WR", "LB"].includes(position) && current < preferred) {
+    score += 8;
+  }
+
+  if (position === "RB") {
+    score += 8;
+  }
+
+  return clamp(Math.round(score), 0, 100);
+}
+
+function buildWatchListIntelligence(
+  watchList = [],
+  playerCatalog = [],
+  espnData = {},
+  posts = []
+) {
+  const zooRoster = getZooRoster(espnData);
+  const counts = countRosterPositions(zooRoster);
+
+  const results = [];
+
+  for (const watchPlayer of watchList) {
+    const catalogPlayer = playerCatalog.find(
+      player =>
+        String(player.playerId || "") === String(watchPlayer.playerId || "") ||
+        normalize(player.name) === normalize(watchPlayer.name)
+    ) || watchPlayer;
+
+    const position = canonicalPosition(catalogPlayer.position);
+    const profile = getPositionProfile(position);
+    const need = rosterNeedScore(position, counts);
+    const news = liveNewsScore(posts, catalogPlayer.name);
+    const marketQuality = playerMarketQuality(catalogPlayer);
+
+    const replacementValue = clamp(
+      Math.round((profile.scarcity * 0.55) + (marketQuality * 0.45)),
+      0,
+      100
+    );
+
+    const claimRisk = clamp(
+      Math.round((Number(catalogPlayer.percentOwned || 0) * 0.65) + (Number(catalogPlayer.percentStarted || 0) * 1.2)),
+      0,
+      100
+    );
+
+    let score =
+      (need * 1.0) +
+      (profile.scarcity * 0.20) +
+      (news * 1.0) +
+      (replacementValue * 0.15) +
+      (profile.market * 0.10) +
+      (claimRisk * 0.10);
+
+    const currentCount = Number(counts[position] || 0);
+    const preferred = getPreferredCount(position);
+    const redundantSingle =
+      LFL_CONFIG.philosophy.singleCarryPositions.includes(position) &&
+      currentCount >= preferred;
+
+    if (redundantSingle) score -= 18;
+    if (["RB", "WR", "LB"].includes(position) && currentCount < preferred) score += 8;
+    if (position === "RB") score += 8;
+    if (String(watchPlayer.priority || "").toLowerCase() === "high") score += 5;
+    if (catalogPlayer.ownershipStatus === "LFL OWNED") score -= 15;
+
+    score = clamp(Math.round(score), 0, 100);
+
+    let recommendation = "IGNORE";
+    if (catalogPlayer.ownershipStatus === "LFL OWNED") {
+      recommendation = score >= 70 ? "TRADE WATCH" : "OWNED - MONITOR";
+    } else if (score >= 82) {
+      recommendation = "ADD NOW";
+    } else if (score >= 68) {
+      recommendation = "WATCH CLOSELY";
+    } else if (score >= 50) {
+      recommendation = "HOLD";
+    }
+
+    const reasons = [];
+    if (position === "RB") reasons.push("LFL RB scarcity + trade premium");
+    if (need >= 20) reasons.push(`Zoo needs ${position} depth`);
+    if (redundantSingle) reasons.push(`Zoo normally carries one ${position}`);
+    if (news >= 15) reasons.push("actionable live news");
+    if (claimRisk >= 60) reasons.push("elevated waiver claim risk");
+    if (profile.scarcity >= 80 && position !== "RB") reasons.push(`high ${position} lineup demand`);
+    if (!reasons.length) reasons.push("depth value versus current Zoo construction");
+
+    results.push({
+      playerId: catalogPlayer.playerId || watchPlayer.playerId || null,
+      name: catalogPlayer.name,
+      position,
+      nflTeam: catalogPlayer.nflTeam || "",
+      ownershipStatus: catalogPlayer.ownershipStatus || "UNKNOWN",
+      lflTeam: catalogPlayer.lflTeam || "",
+      priorityScore: score,
+      recommendation,
+      components: {
+        zooNeed: need,
+        positionalScarcity: profile.scarcity,
+        liveNews: news,
+        replacementValue,
+        tradeMarketValue: profile.market,
+        claimRisk
+      },
+      historicalPositionAverage: historicalPositionAverage(position),
+      currentZooCount: currentCount,
+      preferredZooCount: preferred,
+      reasons
+    });
+  }
+
+  return results.sort((a, b) => b.priorityScore - a.priorityScore);
+}
+
+function simulateCountsAfterCut(counts = {}, cutPosition = "") {
+  const next = { ...counts };
+  const p = canonicalPosition(cutPosition);
+  next[p] = Math.max(0, Number(next[p] || 0) - 1);
+  return next;
+}
+
+function buildBestAvailableOptions(
+  espnData = {},
+  posts = [],
+  counts = {},
+  limit = 12
+) {
+  return (espnData.availablePlayers || [])
+    .filter(player => player && player.name && canonicalPosition(player.position) !== "D/ST")
+    .map(player => ({
+      ...player,
+      position: canonicalPosition(player.position),
+      acquisitionScore: acquisitionScore(player, counts, posts)
+    }))
+    .sort((a, b) => b.acquisitionScore - a.acquisitionScore)
+    .slice(0, limit);
+}
+
+function buildExpendability(espnData = {}, posts = []) {
+  const roster = getZooRoster(espnData);
+  const counts = countRosterPositions(roster);
+  const results = [];
+
+  for (const player of roster) {
+    const position = canonicalPosition(player.position);
+    if (!position || String(player.rosterStatus || player.lineupSlot || "").toUpperCase() === "IR") {
+      continue;
+    }
+
+    const profile = getPositionProfile(position);
+    const preferred = getPreferredCount(position);
+    const positionCount = Number(counts[position] || 0);
+    const surplus = Math.max(0, positionCount - preferred);
+    const lineupStatus = String(player.rosterStatus || player.lineupSlot || "").toUpperCase();
+    const isBench = ["BE", "BENCH", "20"].includes(lineupStatus);
+    const marketQuality = playerMarketQuality(player);
+    const news = liveNewsScore(posts, player.name);
+
+    const afterCutCounts = simulateCountsAfterCut(counts, position);
+    const replacementOptions = buildBestAvailableOptions(
+      espnData,
+      posts,
+      afterCutCounts,
+      5
+    );
+    const bestReplacement = replacementOptions[0] || null;
+
+    let score = 42;
+
+    if (isBench) score += 18;
+    if (surplus > 0) score += Math.min(30, 20 + ((surplus - 1) * 6));
+
+    // Scarce/tradeable positions are harder to cut even if they are on the bench.
+    score -= profile.scarcity * 0.18;
+    score -= profile.market * 0.10;
+    score -= marketQuality * 0.08;
+
+    // Preserve positive actionable news/upside; negative injury news is intentionally
+    // not treated as an automatic cut because IR/stash value can still matter.
+    score -= news * 0.35;
+
+    if (position === "RB") score -= 14;
+    if (position === "WR") score -= 7;
+    if (position === "LB" && surplus === 0) score -= 5;
+
+    if (
+      LFL_CONFIG.philosophy.singleCarryPositions.includes(position) &&
+      positionCount > preferred
+    ) {
+      score += 20;
+    }
+
+    if (bestReplacement) {
+      score += Math.max(0, (bestReplacement.acquisitionScore - 55) * 0.35);
+    }
+
+    const strategicOverride =
+      LFL_CONFIG.zooStrategicOverrides[normalize(player.name)] ||
+      null;
+
+    if (strategicOverride) {
+      score += Number(strategicOverride.expendabilityAdjustment || 0);
+    }
+
+    score = clamp(Math.round(score), 0, 100);
+
+    const reasons = [];
+    if (isBench) reasons.push("currently a Zoo bench player");
+    if (surplus > 0) reasons.push(`${position} is above Zoo's preferred roster count`);
+    if (position === "LB" && surplus > 0) reasons.push("LB production is more replaceable than RB inventory");
+    if (position === "RB") reasons.push("RB scarcity/trade value strongly protects this roster spot");
+    if (LFL_CONFIG.philosophy.singleCarryPositions.includes(position) && positionCount > preferred) {
+      reasons.push(`duplicate ${position} is normally unnecessary`);
+    }
+    if (bestReplacement && bestReplacement.acquisitionScore >= 65) {
+      reasons.push(`strong waiver alternative: ${bestReplacement.name} (${bestReplacement.position})`);
+    }
+    if (strategicOverride?.note) reasons.push(strategicOverride.note);
+    if (!reasons.length) reasons.push("lower marginal value versus the rest of Zoo's roster");
+
+    results.push({
+      playerId: player.playerId || null,
+      name: player.name,
+      position,
+      nflTeam: player.nflTeam || "",
+      lineupStatus: player.rosterStatus || player.lineupSlot || "",
+      injuryStatus: player.injuryStatus || "ACTIVE",
+      expendabilityScore: score,
+      currentPositionCount: positionCount,
+      preferredPositionCount: preferred,
+      surplusAtPosition: surplus,
+      historicalPositionAverage: historicalPositionAverage(position),
+      strategicAdjustment: strategicOverride?.expendabilityAdjustment || 0,
+      bestAvailableReplacement: bestReplacement ? {
+        playerId: bestReplacement.playerId || null,
+        name: bestReplacement.name,
+        position: bestReplacement.position,
+        nflTeam: bestReplacement.nflTeam || "",
+        acquisitionScore: bestReplacement.acquisitionScore,
+        percentOwned: bestReplacement.percentOwned ?? null,
+        percentStarted: bestReplacement.percentStarted ?? null
+      } : null,
+      reasons
+    });
+  }
+
+  results.sort((a, b) => b.expendabilityScore - a.expendabilityScore);
+
+  return {
+    top3: results.slice(0, 3).map((item, index) => ({
+      rank: index + 1,
+      ...item
+    })),
+    all: results,
+    rosterCounts: counts,
+    preferredRosterCounts: LFL_CONFIG.preferredRosterCounts,
+    bestAvailableOverall: buildBestAvailableOptions(espnData, posts, counts, 10)
+  };
+}
+
 function getActionTier({
   fantasyRelevance,
   zooRelevance,
@@ -2005,6 +2534,7 @@ function getActionTier({
   watchPlayers = [],
   availablePlayers = [],
   opponentPlayers = [],
+  lflOwnedPlayers = [],
   eventTypes = []
 }) {
   const maxScore =
@@ -2041,8 +2571,8 @@ function getActionTier({
   const directImpact =
     zooPlayers.length > 0 ||
     watchPlayers.length > 0 ||
-    opponentPlayers.length >
-      0;
+    opponentPlayers.length > 0 ||
+    (actionable && lflOwnedPlayers.length > 0);
 
   if (
     criticalEvent &&
@@ -2067,6 +2597,10 @@ function getActionTier({
     ) ||
     maxScore >= 75
   ) {
+    if (actionable && lflOwnedPlayers.length > 0 && maxScore < 55 &&
+        !zooPlayers.length && !watchPlayers.length && !opponentPlayers.length) {
+      return "FYI";
+    }
     return "MONITOR";
   }
 
@@ -2090,6 +2624,7 @@ function getPrimaryCategory({
   watchPlayers = [],
   availablePlayers = [],
   opponentPlayers = [],
+  lflOwnedPlayers = [],
   fantasyRelevance = 0,
   primaryEvent =
     "GENERAL_NEWS"
@@ -2137,6 +2672,12 @@ function getPrimaryCategory({
   }
 
   if (
+    lflOwnedPlayers.length > 0
+  ) {
+    return "LFL NEWS";
+  }
+
+  if (
     primaryEvent ===
       "PERFORMANCE_ANALYSIS" ||
     fantasyRelevance >= 60
@@ -2153,6 +2694,7 @@ function getRecommendation({
   watchPlayers = [],
   availablePlayers = [],
   opponentPlayers = [],
+  lflOwnedPlayers = [],
   urgentKeywords = [],
   eventTypes = []
 }) {
@@ -2214,6 +2756,13 @@ function getRecommendation({
     watchPlayers.length
   ) {
     return "MONITOR WATCH LIST";
+  }
+
+  if (
+    lflOwnedPlayers.length &&
+    actionable
+  ) {
+    return "MONITOR LFL PLAYER";
   }
 
   return "HOLD";
@@ -2725,6 +3274,7 @@ function buildPostIntelligence(
         actionableAvailablePlayers,
 
       opponentPlayers,
+      lflOwnedPlayers,
       eventTypes
     });
 
@@ -2738,6 +3288,7 @@ function buildPostIntelligence(
         actionableAvailablePlayers,
 
       opponentPlayers,
+      lflOwnedPlayers,
       fantasyRelevance,
       primaryEvent
     });
@@ -2752,6 +3303,7 @@ function buildPostIntelligence(
         actionableAvailablePlayers,
 
       opponentPlayers,
+      lflOwnedPlayers,
       urgentKeywords,
       eventTypes
     });
@@ -2915,8 +3467,14 @@ async function () {
     ] =
       await Promise.all([
         fetchText(
-          RSS_FEED_URL,
-          "RSS feed"
+          `${RSS_FEED_URL}?zgm=${Date.now()}`,
+          "RSS feed",
+          {
+            headers: {
+              "Cache-Control": "no-cache",
+              "Pragma": "no-cache"
+            }
+          }
         ),
 
         fetchJson(
@@ -3066,6 +3624,41 @@ async function () {
         posts
       );
 
+    const watchListIntelligence =
+      buildWatchListIntelligence(
+        watchList,
+        playerCatalog,
+        espnData,
+        posts
+      );
+
+    const expendability =
+      buildExpendability(
+        espnData,
+        posts
+      );
+
+    const leagueIntelligence = {
+      leagueSize: LFL_CONFIG.leagueSize,
+      rosterSize: LFL_CONFIG.rosterSize,
+      starters: LFL_CONFIG.starters,
+      bench: LFL_CONFIG.bench,
+      ir: LFL_CONFIG.ir,
+      startingSlots: LFL_CONFIG.startingSlots,
+      preferredRosterCounts: LFL_CONFIG.preferredRosterCounts,
+      philosophy: LFL_CONFIG.philosophy,
+      positionProfiles: Object.fromEntries(
+        Object.entries(LFL_CONFIG.positionProfiles).map(([position, profile]) => [
+          position,
+          {
+            ...profile,
+            historicalThreeYearAverage: historicalPositionAverage(position)
+          }
+        ])
+      ),
+      scoring: LFL_CONFIG.scoring
+    };
+
     const summary = {
       postsReviewed:
         posts.length,
@@ -3199,6 +3792,20 @@ async function () {
       watchListLoaded:
         watchList.length,
 
+      watchListAddNow:
+        watchListIntelligence.filter(
+          player => player.recommendation === "ADD NOW"
+        ).length,
+
+      watchListWatchClosely:
+        watchListIntelligence.filter(
+          player => player.recommendation === "WATCH CLOSELY"
+        ).length,
+
+      topExpendable:
+        expendability.top3[0]?.name ||
+        "",
+
       playerCatalogLoaded:
         playerCatalog.length
     };
@@ -3236,7 +3843,10 @@ async function () {
 
           summary,
           brief,
+          leagueIntelligence,
           watchList,
+          watchListIntelligence,
+          expendability,
           posts
         })
     };
