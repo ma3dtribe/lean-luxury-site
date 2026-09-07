@@ -1692,38 +1692,83 @@
   }
 
   function renderZooPlayerUpdates() {
-    const container = document.getElementById("zooPlayerUpdates");
-    if (!container) return;
+  const container = document.getElementById("zooPlayerUpdates");
+  if (!container) return;
 
-    const posts = (xData?.posts || [])
-      .filter(post => {
-        const i = post.intelligence || {};
-        return (i.zooPlayers || []).length > 0 && (Number(i.zooRelevance || 0) >= 35 || i.hasActionableEvent);
-      })
-      .sort((a,b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
-      .slice(0, 10);
+  const cutoff = Date.now() - (12 * 60 * 60 * 1000);
+  const latestByPlayer = new Map();
 
-    if (!posts.length) {
-      container.innerHTML = '<div class="empty">No new Zoo player news right now.</div>';
-      return;
-    }
-
-    container.innerHTML = posts.map(post => {
+  (xData?.posts || [])
+    .filter(post => {
       const i = post.intelligence || {};
-      const players = (i.zooPlayers || []).join(", ") || "Zoo roster";
-      const recommendation = i.recommendation || i.actionTier || "MONITOR";
-      return `
-        <article class="zoo-update-card">
-          <div class="zoo-update-player">${esc(players)} · ${esc(recommendation)}</div>
-          <div class="zoo-update-source">
-            <span>${esc(post.author || "X Source")}</span>
-            <span>${esc(formatTime(post.publishedAt))}</span>
-          </div>
-          <div class="zoo-update-text">${esc(post.text || post.title || "Update")}</div>
-        </article>
-      `;
-    }).join("");
+      const published = new Date(post.publishedAt || 0).getTime();
+
+      return (
+        Number.isFinite(published) &&
+        published >= cutoff &&
+        (i.zooPlayers || []).length > 0
+      );
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.publishedAt || 0).getTime() -
+        new Date(a.publishedAt || 0).getTime()
+    )
+    .forEach(post => {
+      const i = post.intelligence || {};
+
+      (i.zooPlayers || []).forEach(player => {
+        const key = String(player || "")
+          .trim()
+          .toLowerCase();
+
+        if (key && !latestByPlayer.has(key)) {
+          latestByPlayer.set(key, {
+            player,
+            post
+          });
+        }
+      });
+    });
+
+  const updates = Array.from(latestByPlayer.values())
+    .sort(
+      (a, b) =>
+        new Date(b.post.publishedAt || 0).getTime() -
+        new Date(a.post.publishedAt || 0).getTime()
+    );
+
+  if (!updates.length) {
+    container.innerHTML =
+      '<div class="empty">No Zoo player tweets in the last 12 hours.</div>';
+    return;
   }
+
+  container.innerHTML = updates.map(({ player, post }) => {
+    const i = post.intelligence || {};
+    const recommendation =
+      i.recommendation ||
+      i.actionTier ||
+      "MONITOR";
+
+    return `
+      <article class="zoo-update-card">
+        <div class="zoo-update-player">
+          ${esc(player)} · ${esc(recommendation)}
+        </div>
+
+        <div class="zoo-update-source">
+          <span>${esc(post.author || "X Source")}</span>
+          <span>${esc(formatTime(post.publishedAt))}</span>
+        </div>
+
+        <div class="zoo-update-text">
+          ${esc(post.text || post.title || "Update")}
+        </div>
+      </article>
+    `;
+  }).join("");
+}
 
   function findCurrentMatchup() {
     const zooId = Number(
