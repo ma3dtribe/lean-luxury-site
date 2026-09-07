@@ -1,7 +1,6 @@
 const RSS_FEED_URL = "https://rss.app/feeds/MN6OehHIKqSDETrP.xml";
 const ESPN_ENDPOINT = "https://ma3dtribe.com/.netlify/functions/zoo-gm-espn";
 
-
 const URGENT_KEYWORDS = [
   "ruled out", "did not practice", "limited practice", "full practice",
   "injured reserve", "inactive", "injured", "injury", "questionable",
@@ -88,50 +87,6 @@ function findKeywords(text = "", keywordList = []) {
   return keywordList.filter((keyword) => hasKeyword(text, keyword));
 }
 
-function parseCsv(csvText = "") {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < csvText.length; i += 1) {
-    const char = csvText[i];
-    const next = csvText[i + 1];
-
-    if (char === '"' && inQuotes && next === '"') {
-      field += '"';
-      i += 1;
-    } else if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === "," && !inQuotes) {
-      row.push(field);
-      field = "";
-    } else if ((char === "\n" || char === "\r") && !inQuotes) {
-      if (char === "\r" && next === "\n") i += 1;
-      row.push(field);
-      field = "";
-      if (row.some((value) => value.trim() !== "")) rows.push(row);
-      row = [];
-    } else {
-      field += char;
-    }
-  }
-
-  row.push(field);
-  if (row.some((value) => value.trim() !== "")) rows.push(row);
-  if (rows.length < 2) return [];
-
-  const headers = rows[0].map((header) => header.trim());
-
-  return rows.slice(1).map((values) => {
-    const obj = {};
-    headers.forEach((header, index) => {
-      obj[header] = (values[index] || "").trim();
-    });
-    return obj;
-  });
-}
-
 async function fetchText(url, label, options = {}) {
   const response = await fetch(url, {
     method: options.method || "GET",
@@ -201,25 +156,6 @@ function priorityScore(priority = "") {
   if (value === "low") return 5;
 
   return 8;
-}
-
-function mapWatchRows(rows = []) {
-  return rows
-    .filter((row) => row.Player)
-    .filter(
-      (row) =>
-        !row.Status ||
-        !["inactive", "removed"].includes(row.Status.toLowerCase())
-    )
-    .map((row) => ({
-      name: row.Player,
-      position: row.Position || "",
-      nflTeam: row["NFL Team"] || "",
-      reason: row.Reason || "",
-      priority: row.Priority || "",
-      trigger: row.Trigger || "",
-      status: row.Status || ""
-    }));
 }
 
 function getZooTeamId(espnData = {}) {
@@ -480,6 +416,289 @@ function getAlertLevel(...scores) {
   return "STORE";
 }
 
+function getPostAgeHours(publishedAt = "") {
+  const published = new Date(publishedAt).getTime();
+
+  if (!Number.isFinite(published)) return 999;
+
+  return Math.max(
+    0,
+    (Date.now() - published) / (1000 * 60 * 60)
+  );
+}
+
+function getActionTier({
+  fantasyRelevance,
+  zooRelevance,
+  watchRelevance,
+  availableRelevance,
+  opponentRelevance,
+  urgentKeywords = [],
+  zooPlayers = [],
+  watchPlayers = [],
+  availablePlayers = [],
+  opponentPlayers = []
+}) {
+  const maxScore = Math.max(
+    fantasyRelevance,
+    zooRelevance,
+    watchRelevance,
+    availableRelevance,
+    opponentRelevance
+  );
+
+  const hasUrgentSignal = urgentKeywords.length > 0;
+  const directImpact =
+    zooPlayers.length > 0 ||
+    watchPlayers.length > 0 ||
+    opponentPlayers.length > 0;
+
+  if (
+    hasUrgentSignal &&
+    (
+      zooPlayers.length > 0 ||
+      availablePlayers.length > 0 ||
+      watchPlayers.length > 0
+    ) &&
+    maxScore >= 75
+  ) {
+    return "ACT NOW";
+  }
+
+  if (
+    directImpact ||
+    availableRelevance >= 65 ||
+    maxScore >= 75
+  ) {
+    return "MONITOR";
+  }
+
+  if (
+    fantasyRelevance >= 45 ||
+    availableRelevance >= 55
+  ) {
+    return "FYI";
+  }
+
+  return "NOISE";
+}
+
+function getPrimaryCategory({
+  actionTier,
+  zooPlayers = [],
+  watchPlayers = [],
+  availablePlayers = [],
+  opponentPlayers = [],
+  fantasyRelevance = 0
+}) {
+  if (actionTier === "NOISE") {
+    return "NOISE";
+  }
+
+  if (zooPlayers.length > 0) {
+    return "ZOO IMPACT";
+  }
+
+  if (
+    availablePlayers.length > 0 &&
+    watchPlayers.length > 0
+  ) {
+    return "WATCH LIST";
+  }
+
+  if (availablePlayers.length > 0) {
+    return "AVAILABLE OPPORTUNITY";
+  }
+
+  if (watchPlayers.length > 0) {
+    return "WATCH LIST";
+  }
+
+  if (opponentPlayers.length > 0) {
+    return "OPPONENT";
+  }
+
+  if (fantasyRelevance >= 60) {
+    return "FANTASY TREND";
+  }
+
+  return "AROUND THE NFL";
+}
+
+function getRecommendation({
+  actionTier,
+  zooPlayers = [],
+  watchPlayers = [],
+  availablePlayers = [],
+  opponentPlayers = [],
+  urgentKeywords = []
+}) {
+  const urgent = urgentKeywords.length > 0;
+
+  if (
+    actionTier === "ACT NOW" &&
+    zooPlayers.length &&
+    urgent
+  ) {
+    return "CHECK ZOO LINEUP";
+  }
+
+  if (
+    actionTier === "ACT NOW" &&
+    availablePlayers.length
+  ) {
+    return "REVIEW WAIVERS";
+  }
+
+  if (
+    availablePlayers.length &&
+    watchPlayers.length
+  ) {
+    return "MONITOR FOR ADD";
+  }
+
+  if (availablePlayers.length) {
+    return "REVIEW AVAILABLE PLAYER";
+  }
+
+  if (zooPlayers.length) {
+    return "MONITOR ZOO PLAYER";
+  }
+
+  if (opponentPlayers.length) {
+    return "MONITOR OPPONENT";
+  }
+
+  if (watchPlayers.length) {
+    return "MONITOR WATCH LIST";
+  }
+
+  return "HOLD";
+}
+
+function getPriorityScore(post) {
+  const i = post.intelligence || {};
+
+  const tierWeight = {
+    "ACT NOW": 400,
+    "MONITOR": 300,
+    "FYI": 200,
+    "NOISE": 100
+  }[i.actionTier] || 0;
+
+  const maxScore = Math.max(
+    Number(i.fantasyRelevance || 0),
+    Number(i.zooRelevance || 0),
+    Number(i.watchRelevance || 0),
+    Number(i.availableRelevance || 0),
+    Number(i.opponentRelevance || 0)
+  );
+
+  const agePenalty = Math.min(
+    getPostAgeHours(post.publishedAt),
+    72
+  );
+
+  return tierWeight + maxScore - agePenalty;
+}
+
+function buildBrief(posts = []) {
+  const meaningful = posts
+    .filter(
+      (post) =>
+        post.intelligence?.actionTier !== "NOISE"
+    )
+    .sort(
+      (a, b) =>
+        getPriorityScore(b) - getPriorityScore(a)
+    );
+
+  const actNow = meaningful.filter(
+    (post) =>
+      post.intelligence?.actionTier === "ACT NOW"
+  );
+
+  const zoo = meaningful.filter(
+    (post) =>
+      post.intelligence?.directZooImpact
+  );
+
+  const available = meaningful.filter(
+    (post) =>
+      post.intelligence?.availablePlayerImpact
+  );
+
+  const watch = meaningful.filter(
+    (post) =>
+      post.intelligence?.watchListImpact
+  );
+
+  const opponent = meaningful.filter(
+    (post) =>
+      post.intelligence?.opponentImpact
+  );
+
+  let recommendation = "HOLD";
+
+  if (
+    actNow.some(
+      (post) =>
+        post.intelligence?.recommendation ===
+        "CHECK ZOO LINEUP"
+    )
+  ) {
+    recommendation = "CHECK ZOO LINEUP";
+  } else if (
+    actNow.some(
+      (post) =>
+        post.intelligence?.recommendation ===
+        "REVIEW WAIVERS"
+    )
+  ) {
+    recommendation = "REVIEW WAIVERS";
+  } else if (
+    available.some(
+      (post) =>
+        post.intelligence?.watchListImpact
+    )
+  ) {
+    recommendation = "MONITOR WAIVERS";
+  }
+
+  return {
+    recommendation,
+    relevantPosts: meaningful.length,
+    noisePosts: posts.length - meaningful.length,
+    actNowCount: actNow.length,
+    zooImpactCount: zoo.length,
+    availableOpportunityCount: available.length,
+    watchListCount: watch.length,
+    opponentCount: opponent.length,
+
+    topItems: meaningful.slice(0, 8).map((post) => ({
+      author: post.author,
+      text: post.text,
+      link: post.link,
+      publishedAt: post.publishedAt,
+      actionTier: post.intelligence.actionTier,
+      primaryCategory:
+        post.intelligence.primaryCategory,
+      recommendation:
+        post.intelligence.recommendation,
+
+      maxRelevance: Math.max(
+        post.intelligence.fantasyRelevance,
+        post.intelligence.zooRelevance,
+        post.intelligence.watchRelevance,
+        post.intelligence.availableRelevance,
+        post.intelligence.opponentRelevance
+      ),
+
+      players: post.intelligence.players
+    }))
+  };
+}
+
 function buildPostIntelligence(post, playerCatalog) {
   const combinedText = `${post.title} ${post.text}`;
 
@@ -524,7 +743,10 @@ function buildPostIntelligence(post, playerCatalog) {
   );
 
   const zooPlayers = playerMatches
-    .filter((player) => player.ownershipStatus === "ZOO")
+    .filter(
+      (player) =>
+        player.ownershipStatus === "ZOO"
+    )
     .map((player) => player.name);
 
   const watchPlayers = playerMatches
@@ -532,11 +754,17 @@ function buildPostIntelligence(post, playerCatalog) {
     .map((player) => player.name);
 
   const availablePlayers = playerMatches
-    .filter((player) => player.ownershipStatus === "AVAILABLE")
+    .filter(
+      (player) =>
+        player.ownershipStatus === "AVAILABLE"
+    )
     .map((player) => player.name);
 
   const lflOwnedPlayers = playerMatches
-    .filter((player) => player.ownershipStatus === "LFL OWNED")
+    .filter(
+      (player) =>
+        player.ownershipStatus === "LFL OWNED"
+    )
     .map((player) => ({
       name: player.name,
       lflTeam: player.lflTeam
@@ -545,6 +773,37 @@ function buildPostIntelligence(post, playerCatalog) {
   const opponentPlayers = playerMatches
     .filter((player) => player.opponentThisWeek)
     .map((player) => player.name);
+
+  const actionTier = getActionTier({
+    fantasyRelevance,
+    zooRelevance,
+    watchRelevance,
+    availableRelevance,
+    opponentRelevance,
+    urgentKeywords,
+    zooPlayers,
+    watchPlayers,
+    availablePlayers,
+    opponentPlayers
+  });
+
+  const primaryCategory = getPrimaryCategory({
+    actionTier,
+    zooPlayers,
+    watchPlayers,
+    availablePlayers,
+    opponentPlayers,
+    fantasyRelevance
+  });
+
+  const recommendation = getRecommendation({
+    actionTier,
+    zooPlayers,
+    watchPlayers,
+    availablePlayers,
+    opponentPlayers,
+    urgentKeywords
+  });
 
   return {
     ...post,
@@ -578,6 +837,15 @@ function buildPostIntelligence(post, playerCatalog) {
       availableRelevance,
       opponentRelevance,
 
+      actionTier,
+      primaryCategory,
+      recommendation,
+
+      ageHours:
+        Math.round(
+          getPostAgeHours(post.publishedAt) * 10
+        ) / 10,
+
       alertLevel: getAlertLevel(
         fantasyRelevance,
         zooRelevance,
@@ -588,7 +856,8 @@ function buildPostIntelligence(post, playerCatalog) {
 
       directZooImpact: zooPlayers.length > 0,
       watchListImpact: watchPlayers.length > 0,
-      availablePlayerImpact: availablePlayers.length > 0,
+      availablePlayerImpact:
+        availablePlayers.length > 0,
       opponentImpact: opponentPlayers.length > 0
     }
   };
@@ -597,9 +866,15 @@ function buildPostIntelligence(post, playerCatalog) {
 exports.handler = async function () {
   try {
     const [xml, espnData] = await Promise.all([
-  fetchText(RSS_FEED_URL, "RSS feed"),
-  fetchJson(ESPN_ENDPOINT, "Zoo GM ESPN")
-]);
+      fetchText(
+        RSS_FEED_URL,
+        "RSS feed"
+      ),
+      fetchJson(
+        ESPN_ENDPOINT,
+        "Zoo GM ESPN"
+      )
+    ]);
 
     if (!espnData || !espnData.ok) {
       throw new Error(
@@ -609,59 +884,95 @@ exports.handler = async function () {
       );
     }
 
-    const watchList = Array.isArray(espnData.watchList)
-  ? espnData.watchList.filter((player) => player && player.name)
-  : [];
+    const watchList = Array.isArray(
+      espnData.watchList
+    )
+      ? espnData.watchList.filter(
+          (player) => player && player.name
+        )
+      : [];
 
-    const playerCatalog = buildLeaguePlayerCatalog(
-      espnData,
-      watchList
-    );
+    const playerCatalog =
+      buildLeaguePlayerCatalog(
+        espnData,
+        watchList
+      );
 
     const rawPosts = [
-      ...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)
+      ...xml.matchAll(
+        /<item>([\s\S]*?)<\/item>/gi
+      )
     ].map((match) => {
       const item = match[1];
 
-      const rawTitle = getTag(item, "title");
-      const rawDescription = getTag(item, "description");
+      const rawTitle = getTag(
+        item,
+        "title"
+      );
+
+      const rawDescription = getTag(
+        item,
+        "description"
+      );
 
       return {
-        author: getAuthorFromTitle(stripHtml(rawTitle)),
+        author: getAuthorFromTitle(
+          stripHtml(rawTitle)
+        ),
         text: stripHtml(rawDescription),
         title: stripHtml(rawTitle),
-        link: stripHtml(getTag(item, "link")),
-        publishedAt: stripHtml(getTag(item, "pubDate")),
-        guid: stripHtml(getTag(item, "guid"))
+        link: stripHtml(
+          getTag(item, "link")
+        ),
+        publishedAt: stripHtml(
+          getTag(item, "pubDate")
+        ),
+        guid: stripHtml(
+          getTag(item, "guid")
+        )
       };
     });
 
+    // Live Intelligence feed:
+    // newest post first.
     const posts = rawPosts
       .map((post) =>
-        buildPostIntelligence(post, playerCatalog)
+        buildPostIntelligence(
+          post,
+          playerCatalog
+        )
       )
       .sort((a, b) => {
-        const aScore = Math.max(
-          a.intelligence.fantasyRelevance,
-          a.intelligence.zooRelevance,
-          a.intelligence.watchRelevance,
-          a.intelligence.availableRelevance,
-          a.intelligence.opponentRelevance
-        );
+        const aTime =
+          new Date(a.publishedAt).getTime() || 0;
 
-        const bScore = Math.max(
-          b.intelligence.fantasyRelevance,
-          b.intelligence.zooRelevance,
-          b.intelligence.watchRelevance,
-          b.intelligence.availableRelevance,
-          b.intelligence.opponentRelevance
-        );
+        const bTime =
+          new Date(b.publishedAt).getTime() || 0;
 
-        return bScore - aScore;
+        return bTime - aTime;
       });
+
+    // Zoo GM Brief:
+    // relevance / urgency first.
+    const brief = buildBrief(posts);
 
     const summary = {
       postsReviewed: posts.length,
+      relevantPosts: brief.relevantPosts,
+      noisePosts: brief.noisePosts,
+      actNow: brief.actNowCount,
+
+      monitor: posts.filter(
+        (post) =>
+          post.intelligence.actionTier ===
+          "MONITOR"
+      ).length,
+
+      fyi: posts.filter(
+        (post) =>
+          post.intelligence.actionTier ===
+          "FYI"
+      ).length,
 
       fantasyRelevant: posts.filter(
         (post) =>
@@ -680,7 +991,8 @@ exports.handler = async function () {
 
       availablePlayerRelevant: posts.filter(
         (post) =>
-          post.intelligence.availableRelevance >= 60
+          post.intelligence.availableRelevance >=
+          60
       ).length,
 
       opponentRelevant: posts.filter(
@@ -695,13 +1007,15 @@ exports.handler = async function () {
 
       important: posts.filter(
         (post) =>
-          post.intelligence.alertLevel === "IMPORTANT"
+          post.intelligence.alertLevel ===
+          "IMPORTANT"
       ).length,
 
       zooRosterLoaded:
         espnData.zooRosterSize ??
         (
-          espnData.zoo && espnData.zoo.roster
+          espnData.zoo &&
+          espnData.zoo.roster
             ? espnData.zoo.roster.length
             : 0
         ),
@@ -715,7 +1029,9 @@ exports.handler = async function () {
 
       availablePlayersLoaded:
         espnData.availablePlayerCount ??
-        (espnData.availablePlayers || []).length,
+        (
+          espnData.availablePlayers || []
+        ).length,
 
       watchListLoaded:
         watchList.length,
@@ -735,15 +1051,19 @@ exports.handler = async function () {
       body: JSON.stringify({
         ok: true,
 
-        source: "Zoo GM Fantasy X List",
+        source:
+          "Zoo GM Fantasy X List",
 
         dataSources: {
           xFeed: "RSS.app",
-          espnLeague: "Live Zoo GM ESPN Sync",
-          watchList: "ESPN Watch List"
+          espnLeague:
+            "Live Zoo GM ESPN Sync",
+          watchList:
+            "ESPN Watch List"
         },
 
         summary,
+        brief,
         watchList,
         posts
       })
@@ -759,8 +1079,10 @@ exports.handler = async function () {
       statusCode: 500,
 
       headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-store"
+        "Content-Type":
+          "application/json",
+        "Cache-Control":
+          "no-store"
       },
 
       body: JSON.stringify({
