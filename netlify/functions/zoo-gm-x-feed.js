@@ -2280,6 +2280,72 @@ function candidateContext(player = {}, watchContext = null) {
   };
 }
 
+function injuryAvailabilityAdjustment(player = {}) {
+  const status = normalize(player.injuryStatus || player.status || "");
+
+  if (!status || status === "active" || status === "healthy") return 0;
+  if (/(injured reserve|\bir\b|pup|physically unable|nfi|reserve)/.test(status)) return -32;
+  if (/(out|suspended)/.test(status)) return -24;
+  if (/(doubtful)/.test(status)) return -12;
+  if (/(questionable)/.test(status)) return -5;
+
+  return -3;
+}
+
+const CURRENT_ROLE_OVERRIDES = {
+  // Current-role corrections supplied for Zoo GM. Keep these small and explicit so
+  // live ESPN/news signals still drive the score and the override is easy to remove
+  // when the role changes.
+  "tyrel dodson": { adjustment: -22, note: "not currently a Carolina starting linebacker" }
+};
+
+function roleOpportunitySignal(player = {}, posts = []) {
+  const related = postsForPlayer(posts, player.name);
+  let adjustment = 0;
+  const notes = [];
+
+  for (const post of related.slice(0, 8)) {
+    const text = normalize(`${post.title || ""} ${post.text || ""}`);
+
+    if (/(practice squad|signed to the practice squad|backup|second team|second-team|not starting|reserve role)/.test(text)) {
+      adjustment = Math.min(adjustment, -18);
+      notes.push("current news indicates a reserve/non-starting role");
+    }
+
+    if (/(named starter|starting linebacker|starting corner|starting safety|starting defensive|first team|first-team|every down|every-down|green dot|full time role|full-time role|100% of snaps|all defensive snaps)/.test(text)) {
+      adjustment = Math.max(adjustment, 14);
+      notes.push("current news supports a starting/high-snap role");
+    }
+
+    if (/(promoted from the practice squad|elevated from the practice squad)/.test(text)) {
+      adjustment = Math.max(adjustment, 4);
+      notes.push("recent roster promotion increases opportunity");
+    }
+  }
+
+  const override = CURRENT_ROLE_OVERRIDES[normalize(player.name)] || null;
+  if (override) {
+    adjustment += Number(override.adjustment || 0);
+    notes.push(override.note);
+  }
+
+  return {
+    adjustment: clamp(Math.round(adjustment), -35, 20),
+    notes: [...new Set(notes)]
+  };
+}
+
+function playerAvailabilityContext(player = {}, posts = []) {
+  const injuryAdjustment = injuryAvailabilityAdjustment(player);
+  const role = roleOpportunitySignal(player, posts);
+  return {
+    injuryAdjustment,
+    roleAdjustment: role.adjustment,
+    totalAdjustment: clamp(injuryAdjustment + role.adjustment, -45, 20),
+    roleNotes: role.notes
+  };
+}
+
 function acquisitionScore(player = {}, rosterCounts = {}, posts = [], watchContext = null) {
   const position = canonicalPosition(player.position);
   const profile = getPositionProfile(position);
@@ -2289,6 +2355,7 @@ function acquisitionScore(player = {}, rosterCounts = {}, posts = [], watchConte
   const lflValue = positionLflValue(position);
   const history = historicalProductionIndex(position);
   const context = candidateContext(player, watchContext);
+  const availability = playerAvailabilityContext(player, posts);
 
   let score =
     (need * 0.70) +
@@ -2297,7 +2364,8 @@ function acquisitionScore(player = {}, rosterCounts = {}, posts = [], watchConte
     (marketQuality * 0.12) +
     (news * 0.85) +
     (context.watchPriorityBonus * 0.80) +
-    (profile.benchBias * 0.35);
+    (profile.benchBias * 0.35) +
+    availability.totalAdjustment;
 
   const current = Number(rosterCounts[position] || 0);
   const preferred = getPreferredCount(position);
@@ -2362,6 +2430,7 @@ function buildWatchListIntelligence(
     const marketQuality = playerMarketQuality(catalogPlayer);
     const historicalIndex = historicalProductionIndex(position);
     const lflValue = positionLflValue(position);
+    const availability = playerAvailabilityContext(catalogPlayer, posts);
 
     const replacementValue = clamp(
       Math.round(
@@ -2390,7 +2459,8 @@ function buildWatchListIntelligence(
       (replacementValue * 0.16) +
       (marketQuality * 0.08) +
       (claimRisk * 0.06) +
-      (watchPriorityBonus(watchPlayer.priority) * 0.75);
+      (watchPriorityBonus(watchPlayer.priority) * 0.75) +
+      availability.totalAdjustment;
 
     const currentCount = Number(counts[position] || 0);
     const preferred = getPreferredCount(position);
@@ -2435,6 +2505,9 @@ function buildWatchListIntelligence(
     if (news >= 15) reasons.push("actionable live news");
     if (claimRisk >= 60) reasons.push("elevated waiver claim risk");
     if (historicalIndex >= 60) reasons.push(`strong 2023-2025 LFL scoring environment for ${position}`);
+    if (availability.injuryAdjustment <= -24) reasons.push(`major availability penalty: ${catalogPlayer.injuryStatus || "inactive/reserve status"}`);
+    else if (availability.injuryAdjustment < 0) reasons.push(`injury/status penalty: ${catalogPlayer.injuryStatus || "limited availability"}`);
+    reasons.push(...availability.roleNotes);
     if (!reasons.length) reasons.push("depth value versus current Zoo construction");
 
     results.push({
@@ -2457,8 +2530,11 @@ function buildWatchListIntelligence(
         liveNews: news,
         replacementValue,
         tradeMarketValue: profile.market,
-        claimRisk
+        claimRisk,
+        injuryAvailabilityAdjustment: availability.injuryAdjustment,
+        roleOpportunityAdjustment: availability.roleAdjustment
       },
+      injuryStatus: catalogPlayer.injuryStatus || "ACTIVE",
       historicalPositionAverage: historicalPositionAverage(position),
       currentZooCount: currentCount,
       preferredZooCount: preferred,
@@ -2467,6 +2543,83 @@ function buildWatchListIntelligence(
   }
 
   return results.sort((a, b) => b.priorityScore - a.priorityScore);
+}
+
+function buildSuggestedWatchList(
+  watchList = [],
+  espnData = {},
+  posts = [],
+  limit = 12
+) {
+  const zooRoster = getZooRoster(espnData);
+  const counts = countRosterPositions(zooRoster);
+  const watchedIds = new Set((watchList || []).map(player => String(player.playerId || "")).filter(Boolean));
+  const watchedNames = new Set((watchList || []).map(player => normalize(player.name)).filter(Boolean));
+
+  return (espnData.availablePlayers || [])
+    .filter(player => {
+      if (!player?.name) return false;
+      const position = canonicalPosition(player.position);
+      if (!position || position === "D/ST") return false;
+      if (watchedIds.has(String(player.playerId || ""))) return false;
+      if (watchedNames.has(normalize(player.name))) return false;
+      return true;
+    })
+    .map(player => {
+      const position = canonicalPosition(player.position);
+      const profile = getPositionProfile(position);
+      const availability = playerAvailabilityContext(player, posts);
+      const score = acquisitionScore(player, counts, posts, null);
+      const marketQuality = playerMarketQuality(player);
+      const news = liveNewsScore(posts, player.name);
+
+      let recommendation = "SCOUT";
+      if (score >= 82) recommendation = "ADD TO WATCH LIST";
+      else if (score >= 70) recommendation = "WATCH CLOSELY";
+      else if (score >= 60) recommendation = "SCOUT";
+      else recommendation = "DEEP WATCH";
+
+      const reasons = [];
+      if (position === "LB") reasons.push("3 LBs start weekly in the LFL");
+      if (["DL", "CB", "S"].includes(position)) reasons.push(`high-impact LFL ${position} scoring creates starter-upgrade upside`);
+      if (position === "RB") reasons.push("RB scarcity and trade inventory matter in the LFL");
+      if (rosterNeedScore(position, counts) >= 20) reasons.push(`Zoo needs ${position} depth`);
+      if (marketQuality >= 55) reasons.push("strong current fantasy market signal");
+      if (news >= 15) reasons.push("actionable live news signal");
+      if (availability.injuryAdjustment <= -24) reasons.push(`reserve/injury penalty: ${player.injuryStatus || "inactive"}`);
+      reasons.push(...availability.roleNotes);
+      if (!reasons.length) reasons.push("Zoo-value profile is stronger than many currently watched options");
+
+      return {
+        playerId: player.playerId || null,
+        name: player.name,
+        position,
+        nflTeam: player.nflTeam || "",
+        injuryStatus: player.injuryStatus || "ACTIVE",
+        zooValueScore: score,
+        priorityScore: score,
+        recommendation,
+        percentOwned: player.percentOwned ?? null,
+        percentStarted: player.percentStarted ?? null,
+        components: {
+          zooNeed: rosterNeedScore(position, counts),
+          lflPositionValue: positionLflValue(position),
+          positionalScarcity: profile.scarcity,
+          starterDemand: profile.starterDemand,
+          scoringLeverage: profile.scoringLeverage,
+          liveNews: news,
+          marketQuality,
+          injuryAvailabilityAdjustment: availability.injuryAdjustment,
+          roleOpportunityAdjustment: availability.roleAdjustment
+        },
+        reasons
+      };
+    })
+    .sort((a, b) => {
+      if (b.zooValueScore !== a.zooValueScore) return b.zooValueScore - a.zooValueScore;
+      return Number(b.percentOwned || 0) - Number(a.percentOwned || 0);
+    })
+    .slice(0, limit);
 }
 
 function simulateCountsAfterCut(counts = {}, cutPosition = "") {
@@ -3759,6 +3912,14 @@ async function () {
         posts
       );
 
+    const suggestedWatchList =
+      buildSuggestedWatchList(
+        watchList,
+        espnData,
+        posts,
+        12
+      );
+
     const expendability =
       buildExpendability(
         espnData,
@@ -3930,6 +4091,12 @@ async function () {
           player => player.recommendation === "WATCH CLOSELY"
         ).length,
 
+      suggestedWatchListLoaded:
+        suggestedWatchList.length,
+
+      topSuggestedWatch:
+        suggestedWatchList[0]?.name || "",
+
       topExpendable:
         expendability.top3[0]?.name ||
         "",
@@ -3974,6 +4141,7 @@ async function () {
           leagueIntelligence,
           watchList,
           watchListIntelligence,
+          suggestedWatchList,
           expendability,
           posts
         })
