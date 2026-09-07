@@ -845,13 +845,13 @@
       <span class="news-time" id="intelligenceLine">Choose what you want Zoo GM to surface</span>
     </div>
     <div class="panel-body intelligence-control-body">
-      <button class="filter active" data-filter="relevant"><span>Relevant</span><span class="filter-count" data-count="relevant">—</span></button>
+      <button class="filter" data-filter="relevant"><span>Relevant</span><span class="filter-count" data-count="relevant">—</span></button>
       <button class="filter" data-filter="act"><span>Act Now</span><span class="filter-count" data-count="act">—</span></button>
       <button class="filter" data-filter="zoo"><span>Zoo</span><span class="filter-count" data-count="zoo">—</span></button>
       <button class="filter" data-filter="available"><span>Available</span><span class="filter-count" data-count="available">—</span></button>
       <button class="filter" data-filter="watch"><span>Watch List</span><span class="filter-count" data-count="watch">—</span></button>
       <button class="filter" data-filter="opponent"><span>Opponent</span><span class="filter-count" data-count="opponent">—</span></button>
-      <button class="filter" data-filter="all"><span>All</span><span class="filter-count" data-count="all">—</span></button>
+      <button class="filter active" data-filter="all"><span>All</span><span class="filter-count" data-count="all">—</span></button>
     </div>
   </section>
 
@@ -864,7 +864,7 @@
         <div class="panel-header">
           <h2>Live Intelligence</h2>
 
-          <span class="news-time" id="activeFilterLabel">Relevant intelligence</span>
+          <span class="news-time" id="activeFilterLabel">All intelligence</span>
         </div>
 
         <div class="panel-body" id="newsFeed">
@@ -984,8 +984,8 @@
 
   <section class="panel suggested-watch-panel">
     <div class="panel-header">
-      <h2>Suggested Watch List</h2>
-      <span class="news-time">Top available players Zoo GM thinks you may be missing</span>
+      <h2>GM Suggested Watch Adds</h2>
+      <span class="news-time">Players Zoo GM found who are NOT on your ESPN Watch List</span>
     </div>
     <div class="panel-body table-wrap watch-scroll">
       <table>
@@ -994,11 +994,12 @@
             <th>Player</th>
             <th>Pos</th>
             <th>Zoo Value</th>
+            <th>Status</th>
             <th>Why</th>
           </tr>
         </thead>
         <tbody id="suggestedWatchBody">
-          <tr><td colspan="4">Scanning available LFL players...</td></tr>
+          <tr><td colspan="5">Scanning available LFL players...</td></tr>
         </tbody>
       </table>
     </div>
@@ -1075,7 +1076,7 @@
 
   let espnData = null;
   let xData = null;
-  let activeFilter = "relevant";
+  let activeFilter = "all";
   let selectedReportWeek = null;
 
   function withCacheBust(url) {
@@ -1255,7 +1256,7 @@
 
     const posts = (xData?.posts || [])
       .filter(postMatchesFilter)
-      .slice(0, 60);
+      .slice(0, 30);
 
     if (!posts.length) {
       container.innerHTML =
@@ -1655,7 +1656,7 @@
       [];
 
     if (!suggested.length) {
-      body.innerHTML = '<tr><td colspan="4" class="empty">No strong new watch-list suggestions right now.</td></tr>';
+      body.innerHTML = '<tr><td colspan="5" class="empty">No strong new players outside your current Watch List right now.</td></tr>';
       return;
     }
 
@@ -1683,6 +1684,7 @@
           </td>
           <td>${esc(player.position || "—")}</td>
           <td class="priority-score">${score}</td>
+          <td><span class="watch-action WATCH-CLOSELY">${esc(player.watchListStatus || "NOT ON WATCH LIST")}</span></td>
           <td>${esc(reasons)}</td>
         </tr>
       `;
