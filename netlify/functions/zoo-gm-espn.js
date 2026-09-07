@@ -2,6 +2,51 @@ const SEASON_ID = 2026;
 const LEAGUE_ID = 261539;
 const ZOO_TEAM_NAME = process.env.ZOO_TEAM_NAME || "Zoo";
 
+const ESPN_WATCH_LIST_IDS = [
+  4870795,
+  4567104,
+  4569603,
+  3127273,
+  4954445,
+  4685248,
+  4869645,
+  4905664,
+  4362249,
+  3929846,
+  4034790,
+  4870998,
+  17372,
+  4702555,
+  4043169,
+  4035232,
+  4431005,
+  4870805,
+  4869461,
+  4683813,
+  3919512,
+  4676004,
+  3917853,
+  4596334,
+  3150744,
+  4832800,
+  4688813,
+  3916433,
+  4696044,
+  3054850,
+  4426350,
+  3926229,
+  4683062,
+  4431664,
+  4433975,
+  4361652,
+  4685617,
+  5081397,
+  4034949,
+  4361529,
+  4710714,
+  5083315,
+  4880281
+];
 const ESPN_BASE =
   `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON_ID}`;
 
@@ -1174,7 +1219,29 @@ async function (event = {}) {
         availablePlayers
       );
 
+    const watchList =
+  ESPN_WATCH_LIST_IDS
+    .map(playerId => {
+      const player =
+        playerById.get(
+          Number(playerId)
+        );
 
+      if (!player) {
+        return {
+          playerId: Number(playerId),
+          name: `Player ${playerId}`,
+          position: "",
+          nflTeam: "",
+          found: false
+        };
+      }
+
+      return {
+        ...player,
+        found: true
+      };
+    });
     /*
       NORMALIZE TRANSACTIONS
     */
@@ -1404,7 +1471,10 @@ async function (event = {}) {
         availablePlayers,
 
 
-        transactions,
+watchList,
+
+
+transactions,
 
 
         pendingTransactions,
