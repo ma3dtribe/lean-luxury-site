@@ -47,12 +47,12 @@ const ESPN_WATCH_LIST_IDS = [
   5083315,
   4880281
 ];
+
 const ESPN_BASE =
   `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON_ID}`;
 
 const LEAGUE_BASE =
   `${ESPN_BASE}/segments/0/leagues/${LEAGUE_ID}`;
-
 
 const POSITION_BY_ID = {
   1: "QB",
@@ -70,7 +70,6 @@ const POSITION_BY_ID = {
   15: "DP",
   16: "D/ST"
 };
-
 
 const LINEUP_SLOT_BY_ID = {
   0: "QB",
@@ -98,7 +97,6 @@ const LINEUP_SLOT_BY_ID = {
   22: "RES",
   23: "FLEX"
 };
-
 
 const GENERIC_POSITION_SLOTS = new Set([
   "TQB",
@@ -164,7 +162,6 @@ function rosterDisplayPosition(
   );
 }
 
-
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -175,7 +172,6 @@ function jsonResponse(statusCode, body) {
     body: JSON.stringify(body)
   };
 }
-
 
 function getHeader(event, name) {
   const headers = event?.headers || {};
@@ -189,7 +185,6 @@ function getHeader(event, name) {
 
   return undefined;
 }
-
 
 function leagueUrl(views = [], params = {}) {
   const url = new URL(LEAGUE_BASE);
@@ -210,7 +205,6 @@ function leagueUrl(views = [], params = {}) {
 
   return url.toString();
 }
-
 
 async function fetchJson(
   url,
@@ -259,7 +253,6 @@ async function fetchJson(
   }
 }
 
-
 function teamDisplayName(team) {
   if (!team) {
     return "";
@@ -278,7 +271,6 @@ function teamDisplayName(team) {
     .trim();
 }
 
-
 function buildMemberMap(members = []) {
   const map = new Map();
 
@@ -296,7 +288,6 @@ function buildMemberMap(members = []) {
 
   return map;
 }
-
 
 function buildProTeamMap(seasonData) {
   const teams =
@@ -321,7 +312,6 @@ function buildProTeamMap(seasonData) {
   return map;
 }
 
-
 function getPlayerObject(source) {
   return (
     source?.playerPoolEntry?.player ||
@@ -330,7 +320,6 @@ function getPlayerObject(source) {
   );
 }
 
-
 function getPoolEntry(source) {
   return (
     source?.playerPoolEntry ||
@@ -338,7 +327,6 @@ function getPoolEntry(source) {
     {}
   );
 }
-
 
 function normalizePlayer(
   source,
@@ -451,7 +439,6 @@ function normalizePlayer(
   };
 }
 
-
 function normalizeRosterEntry(
   entry,
   proTeamMap
@@ -516,7 +503,6 @@ function normalizeRosterEntry(
       null
   };
 }
-
 
 function normalizeTeam(
   team,
@@ -595,7 +581,6 @@ function normalizeTeam(
   };
 }
 
-
 function matchupSide(
   side,
   teamById
@@ -630,7 +615,6 @@ function matchupSide(
         ?.score ?? null
   };
 }
-
 
 function normalizeMatchups(
   schedule = [],
@@ -674,7 +658,6 @@ function normalizeMatchups(
     );
 }
 
-
 function buildPlayerLookup(
   teams,
   availablePlayers
@@ -706,7 +689,6 @@ function buildPlayerLookup(
 
   return map;
 }
-
 
 function normalizeTransaction(
   transaction,
@@ -830,7 +812,6 @@ function normalizeTransaction(
   };
 }
 
-
 function normalizeAvailablePlayers(
   data,
   proTeamMap
@@ -867,6 +848,556 @@ function normalizeAvailablePlayers(
     .filter(Boolean);
 }
 
+/*
+  COMMISH REPORT
+*/
+
+function numericScore(value) {
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? number
+    : null;
+}
+
+function getAppliedPlayerScore(
+  entry,
+  reportWeek
+) {
+  const applied =
+    numericScore(
+      entry?.appliedStatTotal
+    );
+
+  if (applied !== null) {
+    return applied;
+  }
+
+  const player =
+    getPlayerObject(entry);
+
+  const stats =
+    player?.stats || [];
+
+  const matching =
+    stats.find(
+      stat =>
+        Number(stat.scoringPeriodId) ===
+          Number(reportWeek) &&
+        Number(stat.statSourceId) === 0 &&
+        numericScore(
+          stat.appliedTotal
+        ) !== null
+    );
+
+  if (matching) {
+    return Number(
+      matching.appliedTotal
+    );
+  }
+
+  const fallback =
+    stats.find(
+      stat =>
+        Number(stat.scoringPeriodId) ===
+          Number(reportWeek) &&
+        numericScore(
+          stat.appliedTotal
+        ) !== null
+    );
+
+  return fallback
+    ? Number(fallback.appliedTotal)
+    : 0;
+}
+
+function normalizeReportPlayer(
+  entry,
+  teamId,
+  teamName,
+  reportWeek,
+  proTeamMap
+) {
+  const player =
+    normalizePlayer(
+      entry,
+      proTeamMap
+    );
+
+  if (!player) {
+    return null;
+  }
+
+  const lineupSlotId =
+    Number(
+      entry?.lineupSlotId ?? -1
+    );
+
+  return {
+    ...player,
+
+    position:
+      rosterDisplayPosition(
+        player,
+        lineupSlotId
+      ),
+
+    teamId,
+
+    teamName,
+
+    lineupSlotId,
+
+    lineupSlot:
+      LINEUP_SLOT_BY_ID[
+        lineupSlotId
+      ] ||
+      `SLOT-${lineupSlotId}`,
+
+    rosterStatus:
+      lineupSlotId === 20
+        ? "BENCH"
+        : (
+            lineupSlotId === 21 ||
+            lineupSlotId === 22
+          )
+          ? "IR"
+          : "STARTER",
+
+    points:
+      getAppliedPlayerScore(
+        entry,
+        reportWeek
+      )
+  };
+}
+
+function reportSide(
+  side,
+  teamById,
+  reportWeek,
+  proTeamMap
+) {
+  if (!side) {
+    return null;
+  }
+
+  const teamId =
+    Number(side.teamId || 0);
+
+  const teamName =
+    teamById.get(teamId)
+      ?.name ||
+    `Team ${teamId}`;
+
+  const rosterEntries =
+    side?.rosterForCurrentScoringPeriod
+      ?.entries ||
+    side?.rosterForMatchupPeriod
+      ?.entries ||
+    side?.roster?.entries ||
+    [];
+
+  const players =
+    rosterEntries
+      .map(
+        entry =>
+          normalizeReportPlayer(
+            entry,
+            teamId,
+            teamName,
+            reportWeek,
+            proTeamMap
+          )
+      )
+      .filter(Boolean);
+
+  return {
+    teamId,
+    teamName,
+
+    totalPoints:
+      numericScore(
+        side.totalPoints
+      ) ??
+      numericScore(
+        side.cumulativeScore?.score
+      ),
+
+    players
+  };
+}
+
+function determineWinner(
+  game,
+  home,
+  away
+) {
+  const declared =
+    String(
+      game?.winner || ""
+    ).toUpperCase();
+
+  if (declared === "HOME") {
+    return home?.teamId || null;
+  }
+
+  if (declared === "AWAY") {
+    return away?.teamId || null;
+  }
+
+  if (
+    home?.totalPoints !== null &&
+    away?.totalPoints !== null
+  ) {
+    if (
+      home.totalPoints >
+      away.totalPoints
+    ) {
+      return home.teamId;
+    }
+
+    if (
+      away.totalPoints >
+      home.totalPoints
+    ) {
+      return away.teamId;
+    }
+  }
+
+  return null;
+}
+
+function buildPowerRankings(teams = []) {
+  return [...teams]
+    .sort(
+      (a, b) => {
+        if (b.wins !== a.wins) {
+          return b.wins - a.wins;
+        }
+
+        const bPf =
+          Number(b.pointsFor || 0);
+
+        const aPf =
+          Number(a.pointsFor || 0);
+
+        return bPf - aPf;
+      }
+    )
+    .map(
+      (team, index) => ({
+        rank: index + 1,
+        teamId: team.teamId,
+        teamName: team.name,
+        wins: team.wins,
+        losses: team.losses,
+        ties: team.ties,
+        pointsFor: team.pointsFor
+      })
+    );
+}
+
+function buildCommishReport({
+  boxscoreData,
+  coreSchedule,
+  teams,
+  teamById,
+  proTeamMap,
+  reportWeek
+}) {
+  const boxscoreSchedule =
+    Array.isArray(
+      boxscoreData?.schedule
+    )
+      ? boxscoreData.schedule
+      : [];
+
+  const fallbackSchedule =
+    Array.isArray(coreSchedule)
+      ? coreSchedule.filter(
+          game =>
+            Number(
+              game.matchupPeriodId
+            ) === Number(reportWeek)
+        )
+      : [];
+
+  const schedule =
+    boxscoreSchedule.length
+      ? boxscoreSchedule
+      : fallbackSchedule;
+
+  const games =
+    schedule
+      .filter(
+        game =>
+          Number(
+            game.matchupPeriodId
+          ) === Number(reportWeek)
+      )
+      .map(
+        game => {
+          const home =
+            reportSide(
+              game.home,
+              teamById,
+              reportWeek,
+              proTeamMap
+            );
+
+          const away =
+            reportSide(
+              game.away,
+              teamById,
+              reportWeek,
+              proTeamMap
+            );
+
+          const winnerTeamId =
+            determineWinner(
+              game,
+              home,
+              away
+            );
+
+          return {
+            matchupId:
+              game.id ?? null,
+
+            matchupPeriodId:
+              game.matchupPeriodId ??
+              reportWeek,
+
+            winner:
+              game.winner || null,
+
+            winnerTeamId,
+
+            winnerTeamName:
+              winnerTeamId
+                ? teamById.get(
+                    winnerTeamId
+                  )?.name ||
+                  null
+                : null,
+
+            home,
+            away
+          };
+        }
+      );
+
+  const teamScores = [];
+
+  for (const game of games) {
+    if (
+      game.home &&
+      game.home.totalPoints !== null
+    ) {
+      teamScores.push({
+        teamId:
+          game.home.teamId,
+        teamName:
+          game.home.teamName,
+        points:
+          game.home.totalPoints
+      });
+    }
+
+    if (
+      game.away &&
+      game.away.totalPoints !== null
+    ) {
+      teamScores.push({
+        teamId:
+          game.away.teamId,
+        teamName:
+          game.away.teamName,
+        points:
+          game.away.totalPoints
+      });
+    }
+  }
+
+  teamScores.sort(
+    (a, b) =>
+      b.points - a.points
+  );
+
+  const winningTeamIds =
+    new Set(
+      games
+        .map(
+          game =>
+            game.winnerTeamId
+        )
+        .filter(Boolean)
+    );
+
+  const winningPlayers = [];
+
+  for (const game of games) {
+    for (
+      const side of [
+        game.home,
+        game.away
+      ]
+    ) {
+      if (
+        !side ||
+        !winningTeamIds.has(
+          side.teamId
+        )
+      ) {
+        continue;
+      }
+
+      for (
+        const player
+        of side.players || []
+      ) {
+        /*
+          Player of the Week is based
+          on STARTERS from winning teams.
+          Bench and IR scores do not count.
+        */
+        if (
+          player.rosterStatus !==
+          "STARTER"
+        ) {
+          continue;
+        }
+
+        winningPlayers.push(
+          player
+        );
+      }
+    }
+  }
+
+  const offensivePositions =
+    new Set([
+      "QB",
+      "RB",
+      "WR",
+      "TE",
+      "K"
+    ]);
+
+  const defensivePositions =
+    new Set([
+      "DL",
+      "LB",
+      "CB",
+      "S",
+      "DB",
+      "DP"
+    ]);
+
+  const offensivePlayers =
+    winningPlayers
+      .filter(
+        player =>
+          offensivePositions.has(
+            player.position
+          )
+      )
+      .sort(
+        (a, b) =>
+          b.points - a.points
+      );
+
+  const defensivePlayers =
+    winningPlayers
+      .filter(
+        player =>
+          defensivePositions.has(
+            player.position
+          )
+      )
+      .sort(
+        (a, b) =>
+          b.points - a.points
+      );
+
+  const formatWinner =
+    player =>
+      player
+        ? {
+            playerId:
+              player.playerId,
+            name:
+              player.name,
+            position:
+              player.position,
+            nflTeam:
+              player.nflTeam,
+            lflTeamId:
+              player.teamId,
+            lflTeam:
+              player.teamName,
+            points:
+              player.points
+          }
+        : null;
+
+  const completedGames =
+    games.filter(
+      game =>
+        game.winnerTeamId
+    ).length;
+
+  return {
+    week:
+      Number(reportWeek),
+
+    status:
+      games.length === 0
+        ? "NO_DATA"
+        : completedGames ===
+            games.length
+          ? "FINAL"
+          : "IN_PROGRESS",
+
+    matchupCount:
+      games.length,
+
+    completedMatchups:
+      completedGames,
+
+    offensivePlayerOfWeek:
+      formatWinner(
+        offensivePlayers[0]
+      ),
+
+    defensivePlayerOfWeek:
+      formatWinner(
+        defensivePlayers[0]
+      ),
+
+    cashMoneyTeam:
+      teamScores.length
+        ? teamScores[0]
+        : null,
+
+    garbageTeam:
+      teamScores.length
+        ? teamScores[
+            teamScores.length - 1
+          ]
+        : null,
+
+    powerRankings:
+      buildPowerRankings(
+        teams
+      ),
+
+    teamScores,
+
+    matchups:
+      games
+  };
+}
 
 exports.handler =
 async function (event = {}) {
@@ -884,7 +1415,6 @@ async function (event = {}) {
     const espnSwid =
       process.env.ESPN_SWID;
 
-
     if (
       !espnS2 ||
       !espnSwid
@@ -899,22 +1429,6 @@ async function (event = {}) {
         }
       );
     }
-
-
-    /*
-      OPTIONAL SECURITY
-
-      Later, if we create a Netlify
-      environment variable named:
-
-      ZOO_GM_API_KEY
-
-      this function will automatically
-      require that value in an
-      x-zoo-gm-key request header.
-
-      No code change will be needed.
-    */
 
     const requiredApiKey =
       process.env
@@ -944,10 +1458,8 @@ async function (event = {}) {
       }
     }
 
-
     const cookieHeader =
       `espn_s2=${espnS2}; SWID=${espnSwid}`;
-
 
     /*
       CORE LFL SNAPSHOT
@@ -972,7 +1484,6 @@ async function (event = {}) {
         }
       );
 
-
     if (
       Number(core.id) !==
       LEAGUE_ID
@@ -982,7 +1493,6 @@ async function (event = {}) {
       );
     }
 
-
     const scoringPeriodId =
       Number(
         core.scoringPeriodId ||
@@ -990,7 +1500,6 @@ async function (event = {}) {
           ?.currentScoringPeriod ||
         1
       );
-
 
     const matchupPeriodId =
       Number(
@@ -1001,9 +1510,27 @@ async function (event = {}) {
         scoringPeriodId
       );
 
+    /*
+      Commish Report week can be
+      requested with ?week=1, ?week=2, etc.
+    */
+
+    const requestedWeek =
+      Number(
+        event
+          ?.queryStringParameters
+          ?.week
+      );
+
+    const reportWeek =
+      Number.isInteger(
+        requestedWeek
+      ) &&
+      requestedWeek > 0
+        ? requestedWeek
+        : matchupPeriodId;
 
     const warnings = [];
-
 
     /*
       NFL TEAM / BYE-WEEK INFO
@@ -1014,13 +1541,8 @@ async function (event = {}) {
         `${ESPN_BASE}?view=proTeamSchedules_wl`
       );
 
-
     /*
       ALL AVAILABLE PLAYERS
-
-      FREE AGENTS + WAIVERS
-
-      Sorted by ESPN ownership.
     */
 
     const availableRequest =
@@ -1059,6 +1581,31 @@ async function (event = {}) {
         }
       );
 
+    /*
+      COMMISH REPORT BOXSCORE
+    */
+
+    const boxscoreRequest =
+      fetchJson(
+
+        leagueUrl(
+          [
+            "mBoxscore",
+            "mMatchupScore"
+          ],
+          {
+            scoringPeriodId:
+              reportWeek,
+
+            matchupPeriodId:
+              reportWeek
+          }
+        ),
+
+        {
+          cookieHeader
+        }
+      );
 
     /*
       CURRENT SCORING PERIOD
@@ -1098,7 +1645,6 @@ async function (event = {}) {
         }
       );
 
-
     /*
       PENDING TRANSACTIONS
     */
@@ -1120,7 +1666,6 @@ async function (event = {}) {
         }
       );
 
-
     /*
       RUN OPTIONAL ESPN CALLS
       AT THE SAME TIME
@@ -1130,17 +1675,18 @@ async function (event = {}) {
       seasonResult,
       availableResult,
       transactionsResult,
-      pendingResult
+      pendingResult,
+      boxscoreResult
     ] =
       await Promise.allSettled(
         [
           seasonRequest,
           availableRequest,
           transactionsRequest,
-          pendingRequest
+          pendingRequest,
+          boxscoreRequest
         ]
       );
-
 
     const seasonData =
       seasonResult.status ===
@@ -1157,7 +1703,6 @@ async function (event = {}) {
       );
     }
 
-
     const availableData =
       availableResult.status ===
       "fulfilled"
@@ -1172,7 +1717,6 @@ async function (event = {}) {
         "Available players unavailable"
       );
     }
-
 
     const transactionsData =
       transactionsResult.status ===
@@ -1189,7 +1733,6 @@ async function (event = {}) {
       );
     }
 
-
     const pendingData =
       pendingResult.status ===
       "fulfilled"
@@ -1205,6 +1748,20 @@ async function (event = {}) {
       );
     }
 
+    const boxscoreData =
+      boxscoreResult.status ===
+      "fulfilled"
+        ? boxscoreResult.value
+        : {};
+
+    if (
+      boxscoreResult.status ===
+      "rejected"
+    ) {
+      warnings.push(
+        `Commish Report boxscore unavailable for Week ${reportWeek}`
+      );
+    }
 
     /*
       NORMALIZE ESPN DATA
@@ -1216,12 +1773,10 @@ async function (event = {}) {
         []
       );
 
-
     const proTeamMap =
       buildProTeamMap(
         seasonData
       );
-
 
     const teams =
       (
@@ -1242,7 +1797,6 @@ async function (event = {}) {
             b.teamId
         );
 
-
     const teamById =
       new Map(
         teams.map(
@@ -1252,7 +1806,6 @@ async function (event = {}) {
           ]
         )
       );
-
 
     /*
       FIND ZOO AUTOMATICALLY
@@ -1284,13 +1837,11 @@ async function (event = {}) {
 
       null;
 
-
     const availablePlayers =
       normalizeAvailablePlayers(
         availableData,
         proTeamMap
       );
-
 
     const playerById =
       buildPlayerLookup(
@@ -1299,28 +1850,29 @@ async function (event = {}) {
       );
 
     const watchList =
-  ESPN_WATCH_LIST_IDS
-    .map(playerId => {
-      const player =
-        playerById.get(
-          Number(playerId)
-        );
+      ESPN_WATCH_LIST_IDS
+        .map(playerId => {
+          const player =
+            playerById.get(
+              Number(playerId)
+            );
 
-      if (!player) {
-        return {
-          playerId: Number(playerId),
-          name: `Player ${playerId}`,
-          position: "",
-          nflTeam: "",
-          found: false
-        };
-      }
+          if (!player) {
+            return {
+              playerId: Number(playerId),
+              name: `Player ${playerId}`,
+              position: "",
+              nflTeam: "",
+              found: false
+            };
+          }
 
-      return {
-        ...player,
-        found: true
-      };
-    });
+          return {
+            ...player,
+            found: true
+          };
+        });
+
     /*
       NORMALIZE TRANSACTIONS
     */
@@ -1351,7 +1903,6 @@ async function (event = {}) {
             )
         );
 
-
     const pendingTransactions =
       (
         pendingData
@@ -1378,7 +1929,6 @@ async function (event = {}) {
             )
         );
 
-
     /*
       CURRENT WEEK MATCHUPS
     */
@@ -1390,7 +1940,6 @@ async function (event = {}) {
         matchupPeriodId,
         teamById
       );
-
 
     const zooMatchup =
       zooTeam
@@ -1411,14 +1960,23 @@ async function (event = {}) {
 
         : null;
 
+    /*
+      BUILD COMMISH REPORT
+    */
+
+    const commishReport =
+      buildCommishReport({
+        boxscoreData,
+        coreSchedule:
+          core.schedule || [],
+        teams,
+        teamById,
+        proTeamMap,
+        reportWeek
+      });
 
     /*
       RESPONSE MODE
-
-      ?mode=health
-      gives a small test response.
-
-      Default gives full Zoo GM data.
     */
 
     const mode =
@@ -1428,7 +1986,6 @@ async function (event = {}) {
           ?.mode ||
         "full"
       ).toLowerCase();
-
 
     const summary = {
 
@@ -1455,6 +2012,11 @@ async function (event = {}) {
       scoringPeriodId,
 
       matchupPeriodId,
+
+      reportWeek,
+
+      commishReportStatus:
+        commishReport.status,
 
       teamCount:
         teams.length,
@@ -1497,7 +2059,6 @@ async function (event = {}) {
           .toISOString()
     };
 
-
     if (
       mode === "health" ||
       mode === "summary"
@@ -1508,7 +2069,6 @@ async function (event = {}) {
       );
     }
 
-
     /*
       FULL ZOO GM SNAPSHOT
     */
@@ -1518,7 +2078,6 @@ async function (event = {}) {
       {
 
         ...summary,
-
 
         zoo:
           zooTeam
@@ -1540,24 +2099,19 @@ async function (event = {}) {
               }
             : null,
 
-
         teams,
-
 
         matchups,
 
+        commishReport,
 
         availablePlayers,
 
+        watchList,
 
-watchList,
-
-
-transactions,
-
+        transactions,
 
         pendingTransactions,
-
 
         leagueSettings: {
 
@@ -1613,14 +2167,12 @@ transactions,
       }
     );
 
-
     const statusCode =
       Number(
         error.status
       ) === 401
         ? 401
         : 500;
-
 
     return jsonResponse(
       statusCode,
