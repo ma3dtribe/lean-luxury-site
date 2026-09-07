@@ -855,21 +855,6 @@
     </div>
   </section>
 
-  <section class="panel decision-panel">
-
-    <div class="panel-header">
-      <h2>Zoo Roster Decisions</h2>
-      <span class="news-time">Top 3 most expendable · cross-position waiver comparison</span>
-    </div>
-
-    <div class="panel-body">
-      <div class="decision-grid" id="expendabilityGrid">
-        <div class="empty">Ranking Zoo roster flexibility...</div>
-      </div>
-    </div>
-
-  </section>
-
   <div class="main-grid">
 
     <main>
@@ -969,6 +954,22 @@
 
   </div>
 
+  <section class="panel decision-panel">
+
+    <div class="panel-header">
+      <h2>Zoo Roster Decisions</h2>
+      <span class="news-time">Top 3 most expendable · cross-position waiver comparison</span>
+    </div>
+
+    <div class="panel-body">
+      <div class="decision-grid" id="expendabilityGrid">
+        <div class="empty">Ranking Zoo roster flexibility...</div>
+      </div>
+    </div>
+
+  </section>
+
+
   <section class="panel zoo-player-updates">
     <div class="panel-header">
       <h2>Zoo Player Updates</h2>
@@ -978,6 +979,28 @@
       <div id="zooPlayerUpdates" class="zoo-updates-grid">
         <div class="empty">Checking the feeds for Zoo player news...</div>
       </div>
+    </div>
+  </section>
+
+  <section class="panel suggested-watch-panel">
+    <div class="panel-header">
+      <h2>Suggested Watch List</h2>
+      <span class="news-time">Top available players Zoo GM thinks you may be missing</span>
+    </div>
+    <div class="panel-body table-wrap watch-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Pos</th>
+            <th>Zoo Value</th>
+            <th>Why</th>
+          </tr>
+        </thead>
+        <tbody id="suggestedWatchBody">
+          <tr><td colspan="4">Scanning available LFL players...</td></tr>
+        </tbody>
+      </table>
     </div>
   </section>
 
@@ -1621,6 +1644,51 @@
     }).join("");
   }
 
+  function renderSuggestedWatchList() {
+    const body = document.getElementById("suggestedWatchBody");
+    if (!body) return;
+
+    const suggested =
+      xData?.suggestedWatchList ||
+      xData?.suggestedWatchListIntelligence ||
+      xData?.suggestedWatchlist ||
+      [];
+
+    if (!suggested.length) {
+      body.innerHTML = '<tr><td colspan="4" class="empty">No strong new watch-list suggestions right now.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = suggested.slice(0, 12).map(player => {
+      const score = Number(
+        player.zooValueScore ??
+        player.priorityScore ??
+        player.acquisitionScore ??
+        player.score ??
+        0
+      );
+
+      const reasons = Array.isArray(player.reasons)
+        ? player.reasons.slice(0, 2).join(" · ")
+        : (player.reason || player.why || player.recommendation || "Zoo-value opportunity");
+
+      const team = player.nflTeam || player.proTeam || player.team || "";
+      const status = player.injuryStatus || player.availabilityStatus || "";
+
+      return `
+        <tr>
+          <td>
+            <strong>${esc(player.name || "—")}</strong>
+            ${(team || status) ? `<div class="news-time">${esc([team, status].filter(Boolean).join(" · "))}</div>` : ""}
+          </td>
+          <td>${esc(player.position || "—")}</td>
+          <td class="priority-score">${score}</td>
+          <td>${esc(reasons)}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
   function renderZooPlayerUpdates() {
     const container = document.getElementById("zooPlayerUpdates");
     if (!container) return;
@@ -1737,6 +1805,7 @@
     renderRoster();
     renderWatchList();
     renderZooPlayerUpdates();
+    renderSuggestedWatchList();
     renderMatchup();
   }
 
