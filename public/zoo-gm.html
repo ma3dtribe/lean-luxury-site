@@ -355,7 +355,6 @@
       color: var(--red);
     }
 
-
     .brief-panel {
       border-color: rgba(66, 211, 146, .35);
     }
@@ -465,6 +464,68 @@
       color: var(--muted);
     }
 
+    .commish-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .commish-controls select {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 10px;
+      font-weight: bold;
+    }
+
+    .commish-status {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    .commish-awards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .commish-award {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 13px;
+    }
+
+    .commish-award-title {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 7px;
+    }
+
+    .commish-award-name {
+      font-size: 17px;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .commish-award-detail {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .commish-note {
+      color: var(--yellow);
+      font-size: 12px;
+      margin-bottom: 14px;
+    }
+
     @media (max-width: 1050px) {
       .summary-grid {
         grid-template-columns: repeat(3, 1fr);
@@ -475,6 +536,10 @@
       }
 
       .brief-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .commish-awards {
         grid-template-columns: repeat(2, 1fr);
       }
     }
@@ -498,6 +563,10 @@
       }
 
       .brief-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .commish-awards {
         grid-template-columns: 1fr;
       }
 
@@ -566,7 +635,6 @@
 
   </div>
 
-
   <section class="panel brief-panel">
 
     <div class="panel-header">
@@ -614,6 +682,70 @@
 
       <div class="brief-items" id="briefItems">
         <div class="empty">Building Zoo GM Brief...</div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <section class="panel">
+
+    <div class="panel-header">
+      <h2>Commish Report</h2>
+
+      <div class="commish-controls">
+        <label for="commishWeek" class="news-time">Week</label>
+        <select id="commishWeek" aria-label="Commish Report Week"></select>
+        <span id="commishStatus" class="commish-status">Loading...</span>
+      </div>
+    </div>
+
+    <div class="panel-body">
+
+      <div id="commishNote" class="commish-note" style="display:none;"></div>
+
+      <div class="commish-awards">
+        <div class="commish-award">
+          <div class="commish-award-title">🏆 Offensive Player of the Week</div>
+          <div class="commish-award-name" id="offensivePOTW">—</div>
+          <div class="commish-award-detail" id="offensivePOTWDetail">—</div>
+        </div>
+
+        <div class="commish-award">
+          <div class="commish-award-title">🛡️ Defensive Player of the Week</div>
+          <div class="commish-award-name" id="defensivePOTW">—</div>
+          <div class="commish-award-detail" id="defensivePOTWDetail">—</div>
+        </div>
+
+        <div class="commish-award">
+          <div class="commish-award-title">💰 Cash Money Team</div>
+          <div class="commish-award-name" id="cashMoneyTeam">—</div>
+          <div class="commish-award-detail" id="cashMoneyDetail">—</div>
+        </div>
+
+        <div class="commish-award">
+          <div class="commish-award-title">🗑️ Garbage Team</div>
+          <div class="commish-award-name" id="garbageTeam">—</div>
+          <div class="commish-award-detail" id="garbageDetail">—</div>
+        </div>
+      </div>
+
+      <div class="summary-label" style="margin-bottom:8px;">Power Rankings · Wins, then Points For</div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Team</th>
+              <th>Record</th>
+              <th>PF</th>
+            </tr>
+          </thead>
+          <tbody id="powerRankingsBody">
+            <tr><td colspan="4">Loading...</td></tr>
+          </tbody>
+        </table>
       </div>
 
     </div>
@@ -727,13 +859,23 @@
   </div>
 
 </div>
+
 <script>
-  const ESPN_URL = "/.netlify/functions/zoo-gm-espn?zoo-gm-live=4";
-const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=3";
+  const ESPN_URL_BASE = "/.netlify/functions/zoo-gm-espn?zoo-gm-live=5";
+  const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=3";
 
   let espnData = null;
   let xData = null;
   let activeFilter = "relevant";
+  let selectedReportWeek = null;
+
+  function getEspnUrl() {
+    if (!selectedReportWeek) {
+      return ESPN_URL_BASE;
+    }
+
+    return `${ESPN_URL_BASE}&week=${encodeURIComponent(selectedReportWeek)}`;
+  }
 
   function esc(value) {
     return String(value ?? "")
@@ -1090,6 +1232,115 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=3";
     }).join("");
   }
 
+  function renderCommishReport() {
+    const report = espnData?.commishReport || {};
+    const week = Number(
+      report.week ||
+      espnData?.reportWeek ||
+      espnData?.matchupPeriodId ||
+      1
+    );
+
+    selectedReportWeek = week;
+
+    const selector = document.getElementById("commishWeek");
+
+    const maxWeek = Math.max(
+      1,
+      Number(espnData?.matchupPeriodId || week)
+    );
+
+    const optionHtml = [];
+
+    for (let value = 1; value <= maxWeek; value += 1) {
+      optionHtml.push(
+        `<option value="${value}"${value === week ? " selected" : ""}>${value}</option>`
+      );
+    }
+
+    selector.innerHTML = optionHtml.join("");
+    selector.value = String(week);
+
+    document.getElementById("commishStatus").textContent =
+      `Week ${week} · ${report.status || "IN PROGRESS"}`;
+
+    const note = document.getElementById("commishNote");
+
+    if (report.status === "FINAL") {
+      note.style.display = "none";
+      note.textContent = "";
+    } else {
+      note.style.display = "block";
+      note.textContent =
+        "This week is still in progress. Commish Report awards are provisional until every LFL matchup is final.";
+    }
+
+    const offense = report.offensivePlayerOfWeek;
+    const defense = report.defensivePlayerOfWeek;
+    const cash = report.cashMoneyTeam;
+    const garbage = report.garbageTeam;
+
+    document.getElementById("offensivePOTW").textContent =
+      offense?.name || "—";
+
+    document.getElementById("offensivePOTWDetail").textContent =
+      offense
+        ? `${offense.position} · ${offense.lflTeam || offense.teamName || ""} · ${Number(offense.points || 0).toFixed(2)} pts`
+        : "No qualifying player yet";
+
+    document.getElementById("defensivePOTW").textContent =
+      defense?.name || "—";
+
+    document.getElementById("defensivePOTWDetail").textContent =
+      defense
+        ? `${defense.position} · ${defense.lflTeam || defense.teamName || ""} · ${Number(defense.points || 0).toFixed(2)} pts`
+        : "No qualifying player yet";
+
+    document.getElementById("cashMoneyTeam").textContent =
+      cash?.teamName || "—";
+
+    document.getElementById("cashMoneyDetail").textContent =
+      cash
+        ? `${Number(cash.points || 0).toFixed(2)} pts`
+        : "No team score yet";
+
+    document.getElementById("garbageTeam").textContent =
+      garbage?.teamName || "—";
+
+    document.getElementById("garbageDetail").textContent =
+      garbage
+        ? `${Number(garbage.points || 0).toFixed(2)} pts`
+        : "No team score yet";
+
+    const rankingsBody =
+      document.getElementById("powerRankingsBody");
+
+    const rankings =
+      report.powerRankings || [];
+
+    if (!rankings.length) {
+      rankingsBody.innerHTML =
+        '<tr><td colspan="4" class="empty">No standings data.</td></tr>';
+      return;
+    }
+
+    rankingsBody.innerHTML = rankings.map(team => {
+      const record =
+        Number(team.ties || 0) > 0
+          ? `${team.wins}-${team.losses}-${team.ties}`
+          : `${team.wins}-${team.losses}`;
+
+      return `
+        <tr>
+          <td><strong>${Number(team.rank || 0)}</strong></td>
+          <td><strong>${esc(team.teamName)}</strong></td>
+          <td>${esc(record)}</td>
+          <td>${Number(team.pointsFor || 0).toFixed(2)}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
   function renderRoster() {
     const body = document.getElementById("rosterBody");
     const roster = getZooRoster();
@@ -1227,6 +1478,7 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=3";
     renderSummary();
     renderBrief();
     renderNews();
+    renderCommishReport();
     renderRoster();
     renderWatchList();
     renderMatchup();
@@ -1234,6 +1486,7 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=3";
 
   async function loadZooGM() {
     const status = document.getElementById("status");
+
     const refreshButton =
       document.querySelector(".refresh-area button");
 
@@ -1245,7 +1498,7 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=3";
     try {
       const [espnResponse, xResponse] =
         await Promise.all([
-          fetch(ESPN_URL, {
+          fetch(getEspnUrl(), {
             cache: "no-store"
           }),
 
@@ -1305,6 +1558,13 @@ const X_URL = "/.netlify/functions/zoo-gm-x-feed?zoo-gm-live=3";
       refreshButton.disabled = false;
     }
   }
+
+  document.getElementById("commishWeek").addEventListener("change", event => {
+    selectedReportWeek =
+      Number(event.target.value || 1);
+
+    loadZooGM();
+  });
 
   document.querySelectorAll(".filter").forEach(button => {
     button.addEventListener("click", () => {
