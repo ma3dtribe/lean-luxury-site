@@ -605,30 +605,38 @@ function buildPlayerAliases(
     return [];
   }
 
-  aliases.add(
-    original
-  );
+  const addAlias = value => {
+    const alias = String(value || "").replace(/\s+/g, " ").trim();
+    if (alias.length >= 4) aliases.add(alias);
+  };
 
-  const cleaned =
+  addAlias(original);
+
+  const noSuffix =
     original
       .replace(
         /\b(Jr\.?|Sr\.?|II|III|IV|V)\b/gi,
         ""
       )
-      .replace(
-        /[-–—]/g,
-        " "
-      )
-      .replace(
-        /\s+/g,
-        " "
-      )
+      .replace(/\s+/g, " ")
       .trim();
 
-  if (cleaned) {
-    aliases.add(
-      cleaned
-    );
+  addAlias(noSuffix);
+  addAlias(noSuffix.replace(/[-–—]/g, " "));
+  addAlias(noSuffix.replace(/[’']/g, ""));
+  addAlias(noSuffix.replace(/[’']/g, "").replace(/[-–—]/g, " "));
+
+  const parts = noSuffix.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    const first = parts[0];
+    const last = parts[parts.length - 1];
+
+    // Common reporter shorthand such as "J Daniels" or "J. Daniels".
+    // Keep the last name reasonably long to reduce false matches.
+    if (last.length >= 5) {
+      addAlias(`${first.charAt(0)} ${last}`);
+      addAlias(`${first.charAt(0)}. ${last}`);
+    }
   }
 
   return [
@@ -3327,6 +3335,132 @@ function buildBrief(
   };
 }
 
+function getZooUpdateEvent(
+  primaryEvent = "GENERAL_NEWS",
+  eventTypes = [],
+  text = ""
+) {
+  const n = normalize(text);
+
+  if (primaryEvent === "DEPTH_CHART") {
+    if (/(named starter|starter|starting|first team|first-team|qb1|rb1|wr1|te1)/.test(n)) {
+      return "START";
+    }
+    if (/(benched|backup|second team|second-team)/.test(n)) {
+      return "ROLE";
+    }
+  }
+
+  if (primaryEvent === "ROLE_WORKLOAD") return "ROLE";
+  if (primaryEvent === "TRANSACTION") return "TRANSACTION";
+  if (primaryEvent === "INACTIVE") return "INACTIVE";
+  if (primaryEvent === "INJURY") return "INJURY";
+  if (primaryEvent === "PRACTICE") return "PRACTICE";
+  if (primaryEvent === "PERFORMANCE_ANALYSIS") return "PERFORMANCE";
+  if (primaryEvent === "FANTASY_STRATEGY") return "FANTASY";
+
+  if (eventTypes.includes("DEPTH_CHART")) return "ROLE";
+  if (eventTypes.includes("ROLE_WORKLOAD")) return "ROLE";
+  return "UPDATE";
+}
+
+function getZooUpdateRecommendation(
+  post = {},
+  player = {}
+) {
+  const i = post.intelligence || {};
+  const event = getZooUpdateEvent(
+    i.primaryEvent,
+    i.eventTypes || [],
+    `${post.title || ""} ${post.text || ""}`
+  );
+  const n = normalize(`${post.title || ""} ${post.text || ""}`);
+  const lineup = normalize(player.lineupStatus || "");
+  const isStarter = lineup && !/(bench|be|ir)/.test(lineup);
+
+  if (event === "INACTIVE" || /(ruled out|will not play|not expected to play)/.test(n)) {
+    return isStarter ? "CHECK LINEUP" : "HOLD";
+  }
+
+  if (event === "INJURY") {
+    if (/(doubtful|out|injured reserve| ir |pup)/.test(` ${n} `)) {
+      return isStarter ? "CHECK LINEUP" : "MONITOR";
+    }
+    return "MONITOR";
+  }
+
+  if (event === "PRACTICE") {
+    if (/(did not practice|missed practice|limited practice|limited participant)/.test(n)) {
+      return isStarter ? "MONITOR LINEUP" : "MONITOR";
+    }
+    if (/(full practice|full participant|returned to practice|practicing|practiced|back at practice)/.test(n)) {
+      return "HOLD";
+    }
+  }
+
+  if (event === "START" || event === "ROLE") return "MONITOR ROLE";
+  if (event === "TRANSACTION") return "REVIEW IMPACT";
+  return i.recommendation || "HOLD";
+}
+
+function buildZooPlayerUpdates(
+  posts = [],
+  playerCatalog = [],
+  windowHours = 12
+) {
+  const cutoff = Date.now() - (windowHours * 60 * 60 * 1000);
+  const zooByName = new Map(
+    playerCatalog
+      .filter(player => player.ownershipStatus === "ZOO")
+      .map(player => [normalize(player.name), player])
+  );
+
+  const latestByPlayerEvent = new Map();
+
+  for (const post of posts) {
+    const published = new Date(post.publishedAt || 0).getTime();
+    if (!Number.isFinite(published) || published < cutoff) continue;
+
+    const i = post.intelligence || {};
+    const directNames = Array.isArray(i.directZooPlayers) ? i.directZooPlayers : [];
+    if (!directNames.length) continue;
+
+    const event = getZooUpdateEvent(
+      i.primaryEvent,
+      i.eventTypes || [],
+      `${post.title || ""} ${post.text || ""}`
+    );
+
+    for (const playerName of directNames) {
+      const player = zooByName.get(normalize(playerName));
+      if (!player) continue;
+
+      const key = `${normalize(player.name)}|${event}`;
+      if (latestByPlayerEvent.has(key)) continue;
+
+      latestByPlayerEvent.set(key, {
+        playerId: player.playerId || "",
+        player: player.name,
+        position: player.position || "",
+        nflTeam: player.nflTeam || "",
+        lineupStatus: player.lineupStatus || "",
+        event,
+        recommendation: getZooUpdateRecommendation(post, player),
+        whatHappened: post.text || post.title || "Update",
+        source: post.author || post.handle || "X Source",
+        publishedAt: post.publishedAt || "",
+        link: post.link || "",
+        sourceAuthority: i.sourceAuthority || {},
+        zooRelevance: Number(i.zooRelevance || 0),
+        actionTier: i.actionTier || "FYI"
+      });
+    }
+  }
+
+  return Array.from(latestByPlayerEvent.values())
+    .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+}
+
 function buildPostIntelligence(
   post,
   playerCatalog
@@ -3919,6 +4053,13 @@ async function () {
           }
         );
 
+    const zooPlayerUpdates =
+      buildZooPlayerUpdates(
+        posts,
+        playerCatalog,
+        12
+      );
+
     const brief =
       buildBrief(
         posts
@@ -4163,6 +4304,7 @@ async function () {
           watchListIntelligence,
           suggestedWatchList,
           expendability,
+          zooPlayerUpdates,
           posts
         })
     };
