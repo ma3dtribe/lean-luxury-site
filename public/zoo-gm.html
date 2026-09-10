@@ -816,6 +816,129 @@
       .intelligence-control-body .filter { min-width:calc(50% - 5px); }
     }
 
+
+    /* Zoo GM final command-center upgrade */
+    .priority-panel {
+      border-color: rgba(255, 92, 92, .34);
+    }
+
+    .priority-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .priority-card {
+      background: #0d1218;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .priority-card.urgent {
+      border-left: 4px solid var(--red);
+    }
+
+    .priority-card.important {
+      border-left: 4px solid var(--orange);
+    }
+
+    .priority-card.watch {
+      border-left: 4px solid var(--yellow);
+    }
+
+    .priority-card.good {
+      border-left: 4px solid var(--green);
+    }
+
+    .priority-card-title {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .priority-card-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .priority-card-action {
+      margin-top: 9px;
+      font-weight: 900;
+      color: var(--green);
+      font-size: 12px;
+    }
+
+    .decision-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .decision-row {
+      background: #0d1218;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 12px;
+    }
+
+    .decision-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .decision-row-name {
+      font-weight: 900;
+    }
+
+    .decision-row-detail {
+      color: #cbd4dd;
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 5px;
+    }
+
+    .transaction-scroll {
+      max-height: 520px;
+      overflow: auto;
+    }
+
+    .transaction-team {
+      font-weight: 900;
+    }
+
+    .transaction-summary {
+      color: #dce4eb;
+      line-height: 1.4;
+    }
+
+    .game-day-banner {
+      display: none;
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      border-radius: 9px;
+      border: 1px solid rgba(255, 209, 102, .35);
+      background: rgba(255, 209, 102, .08);
+      color: var(--yellow);
+      font-weight: 800;
+    }
+
+    .game-day-banner.active {
+      display: block;
+    }
+
+    .section-note {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .priority-grid { grid-template-columns: 1fr; }
+    }
+
 </style>
 </head>
 
@@ -852,6 +975,22 @@
       <button class="filter" data-filter="watch"><span>Watch List</span><span class="filter-count" data-count="watch">—</span></button>
       <button class="filter" data-filter="opponent"><span>Opponent</span><span class="filter-count" data-count="opponent">—</span></button>
       <button class="filter active" data-filter="all"><span>All</span><span class="filter-count" data-count="all">—</span></button>
+    </div>
+  </section>
+
+  <div id="gameDayBanner" class="game-day-banner">
+    🏈 GAME-DAY MODE · Prioritize lineup alerts, late injury news, inactive reports and replacement options.
+  </div>
+
+  <section class="panel priority-panel">
+    <div class="panel-header">
+      <h2>GM Action Center</h2>
+      <span class="news-time" id="actionCenterStatus">Checking lineup and roster decisions...</span>
+    </div>
+    <div class="panel-body">
+      <div class="priority-grid" id="actionCenterGrid">
+        <div class="empty">Building Zoo priorities...</div>
+      </div>
     </div>
   </section>
 
@@ -953,6 +1092,52 @@
     </aside>
 
   </div>
+
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Add / Drop Decisions</h2>
+      <span class="news-time">Best available upgrades against Zoo's current roster</span>
+    </div>
+    <div class="panel-body">
+      <div id="addDropDecisions" class="decision-list">
+        <div class="empty">Comparing available players...</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Opportunity & Opponent Alerts</h2>
+      <span class="news-time">Depth-chart opportunities and opponent-impacting changes</span>
+    </div>
+    <div class="panel-body">
+      <div id="opportunityOpponentAlerts" class="decision-list">
+        <div class="empty">Scanning opportunities and opponent news...</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>LFL Recent Activity</h2>
+      <span class="news-time" id="transactionFeedStatus">Executed adds, drops, waivers and trades</span>
+    </div>
+    <div class="panel-body table-wrap transaction-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Team</th>
+            <th>Move</th>
+          </tr>
+        </thead>
+        <tbody id="transactionFeedBody">
+          <tr><td colspan="3">Loading league activity...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
   <section class="panel decision-panel">
 
@@ -1804,9 +1989,208 @@
     `;
   }
 
+
+  function severityClass(value) {
+    const raw = String(value || "").toUpperCase();
+    if (raw.includes("URGENT") || raw.includes("ACT NOW")) return "urgent";
+    if (raw.includes("IMPORTANT")) return "important";
+    if (raw.includes("WATCH") || raw.includes("MONITOR")) return "watch";
+    return "good";
+  }
+
+  function renderGameDayMode() {
+    const banner = document.getElementById("gameDayBanner");
+    if (!banner) return;
+
+    const now = new Date();
+    const isSunday = now.getDay() === 0;
+    const urgentLineup = (xData?.lineupAlerts || []).some(
+      alert => String(alert.severity || "").toUpperCase() === "URGENT"
+    );
+
+    banner.classList.toggle("active", isSunday || urgentLineup);
+  }
+
+  function renderActionCenter() {
+    const grid = document.getElementById("actionCenterGrid");
+    const status = document.getElementById("actionCenterStatus");
+    if (!grid) return;
+
+    const lineupAlerts = xData?.lineupAlerts || [];
+    const replacements = xData?.replacementRecommendations || [];
+    const cards = [];
+
+    lineupAlerts.slice(0, 4).forEach(alert => {
+      cards.push({
+        severity: alert.severity || "IMPORTANT",
+        title: alert.player || "Lineup Alert",
+        meta: [
+          alert.position,
+          alert.reason,
+          alert.source ? `Source: ${alert.source}` : ""
+        ].filter(Boolean).join(" · "),
+        action: alert.action || "REVIEW LINEUP"
+      });
+    });
+
+    replacements.slice(0, 4).forEach(item => {
+      const replacement = item.bestReplacement || {};
+      cards.push({
+        severity: item.severity || "IMPORTANT",
+        title: item.problemPlayer || "Replacement Needed",
+        meta: [
+          item.problemPosition,
+          item.problemStatus,
+          replacement.name ? `Best option: ${replacement.name}${replacement.position ? ` (${replacement.position})` : ""}` : ""
+        ].filter(Boolean).join(" · "),
+        action: item.recommendation || "REVIEW REPLACEMENT"
+      });
+    });
+
+    if (!cards.length) {
+      grid.innerHTML = `
+        <div class="priority-card good">
+          <div class="priority-card-title">No urgent Zoo actions</div>
+          <div class="priority-card-meta">No lineup or replacement alerts are active right now.</div>
+          <div class="priority-card-action">HOLD</div>
+        </div>
+      `;
+      if (status) status.textContent = "No urgent lineup or replacement actions";
+      return;
+    }
+
+    grid.innerHTML = cards.slice(0, 6).map(card => `
+      <div class="priority-card ${severityClass(card.severity)}">
+        <div class="priority-card-title">${esc(card.title)}</div>
+        <div class="priority-card-meta">${esc(card.meta)}</div>
+        <div class="priority-card-action">${esc(card.action)}</div>
+      </div>
+    `).join("");
+
+    if (status) {
+      const urgent = cards.filter(card => severityClass(card.severity) === "urgent").length;
+      status.textContent = urgent
+        ? `${urgent} urgent action${urgent === 1 ? "" : "s"}`
+        : `${cards.length} active decision${cards.length === 1 ? "" : "s"}`;
+    }
+  }
+
+  function renderAddDropDecisions() {
+    const container = document.getElementById("addDropDecisions");
+    if (!container) return;
+
+    const decisions = xData?.addDropDecisions || [];
+
+    if (!decisions.length) {
+      container.innerHTML = '<div class="empty">No add/drop upgrade clears Zoo GM thresholds right now.</div>';
+      return;
+    }
+
+    container.innerHTML = decisions.slice(0, 8).map(item => {
+      const add = item.addPlayer || item.availablePlayer || item.add || {};
+      const drop = item.dropPlayer || item.currentPlayer || item.drop || {};
+      const addName = add.name || item.addPlayerName || item.player || "Available player";
+      const dropName = drop.name || item.dropPlayerName || item.replacementFor || "Zoo roster player";
+      const gain = Number(item.scoreGain ?? item.valueGain ?? item.delta ?? 0);
+      const recommended = item.recommended ?? item.makeMove ?? item.isUpgrade;
+      const action = item.recommendation ||
+        (recommended === false ? "HOLD" : `ADD ${addName} · DROP ${dropName}`);
+
+      return `
+        <div class="decision-row">
+          <div class="decision-row-top">
+            <div class="decision-row-name">${esc(addName)} → over ${esc(dropName)}</div>
+            <span class="action-tier ${recommended === false ? "FYI" : "ACT-NOW"}">${esc(action)}</span>
+          </div>
+          <div class="decision-row-detail">
+            ${gain ? `Zoo value gain: +${gain} · ` : ""}
+            ${esc(item.reason || item.why || item.summary || "Cross-position roster-value comparison")}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderOpportunityOpponentAlerts() {
+    const container = document.getElementById("opportunityOpponentAlerts");
+    if (!container) return;
+
+    const opportunity = (xData?.opportunityAlerts || []).map(item => ({
+      ...item,
+      _kind: "OPPORTUNITY"
+    }));
+
+    const opponent = (xData?.opponentActionableUpdates || []).map(item => ({
+      ...item,
+      _kind: "OPPONENT"
+    }));
+
+    const combined = [...opportunity, ...opponent];
+
+    if (!combined.length) {
+      container.innerHTML = '<div class="empty">No actionable opportunity or opponent alerts right now.</div>';
+      return;
+    }
+
+    container.innerHTML = combined.slice(0, 10).map(item => {
+      const name = item.player || item.playerName || item.name || item.title || item._kind;
+      const detail = item.reason || item.summary || item.whatHappened || item.text || item.description || "";
+      const action = item.recommendation || item.action || (item._kind === "OPPONENT" ? "MONITOR OPPONENT" : "MONITOR");
+
+      return `
+        <div class="decision-row">
+          <div class="decision-row-top">
+            <div class="decision-row-name">${esc(name)}</div>
+            <span class="tag ${item._kind === "OPPONENT" ? "opponent" : "available"}">${esc(item._kind)}</span>
+          </div>
+          <div class="decision-row-detail">${esc(detail)}</div>
+          <div class="priority-card-action">${esc(action)}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderTransactionFeed() {
+    const body = document.getElementById("transactionFeedBody");
+    const status = document.getElementById("transactionFeedStatus");
+    if (!body) return;
+
+    const feed = espnData?.transactionFeed || [];
+
+    if (status) {
+      status.textContent = `${feed.length} executed move${feed.length === 1 ? "" : "s"} loaded`;
+    }
+
+    if (!feed.length) {
+      body.innerHTML = '<tr><td colspan="3" class="empty">No recent LFL roster transactions.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = feed.slice(0, 40).map(item => {
+      const when = formatTime(item.processDateIso || item.processDate || "");
+      const team = item.teamName || "LFL";
+      const move = item.summary ||
+        (Array.isArray(item.items)
+          ? item.items.map(entry => entry.summary || entry.description || entry.playerName || entry.name || "").filter(Boolean).join(" · ")
+          : "") ||
+        item.type ||
+        "Roster transaction";
+
+      return `
+        <tr>
+          <td class="news-time">${esc(when || "—")}</td>
+          <td class="transaction-team">${esc(team)}</td>
+          <td class="transaction-summary">${esc(move)}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
   function renderAll() {
     renderSummary();
     renderBrief();
+    renderGameDayMode();
+    renderActionCenter();
     renderNews();
     renderCommishReport();
     renderExpendability();
@@ -1814,6 +2198,9 @@
     renderWatchList();
     renderZooPlayerUpdates();
     renderSuggestedWatchList();
+    renderAddDropDecisions();
+    renderOpportunityOpponentAlerts();
+    renderTransactionFeed();
     renderMatchup();
   }
 
