@@ -2760,10 +2760,22 @@ function teammateOpportunityContext(player = {}, posts = [], playerCatalog = [])
   );
 
   for (const teammate of teammates) {
-    const teammatePosts = recentPostsForPlayer(posts, teammate.name, 72);
-    if (!teammatePosts.length) continue;
-
     const teammateQuality = playerMarketQuality(teammate);
+    const teammateEspnStatus = normalize(teammate.injuryStatus || teammate.status || "active");
+    const teammateAvailable = !/(out|injured reserve|\bir\b|pup|physically unable|suspended|doubtful)/.test(teammateEspnStatus);
+    const qualityGap = teammateQuality - playerQuality;
+
+    // ESPN itself is a fallback opportunity signal. A clearly higher-value, active
+    // teammate at the same position narrows the backup's path even when RSS misses
+    // the return-to-practice tweet. This is especially meaningful at RB.
+    if (teammateAvailable && qualityGap >= (position === "RB" ? 18 : 28)) {
+      const espnPenalty = position === "RB" ? -16 : -10;
+      adjustment = Math.min(adjustment, espnPenalty);
+      notes.push(`${teammate.name} is active and materially ahead in ESPN market/role signals, reducing ${player.name}'s opportunity`);
+      relatedPlayers.push(teammate.name);
+    }
+
+    const teammatePosts = recentPostsForPlayer(posts, teammate.name, 72);
 
     for (const post of teammatePosts.slice(0, 6)) {
       const combined = `${post.title || ""} ${post.text || ""}`;
@@ -2827,6 +2839,35 @@ function isZooStarter(player = {}) {
   return !/(^BE$|BENCH|IR|INJURED RESERVE)/.test(slot);
 }
 
+function inferEmptyStartingPositions(roster = []) {
+  const starters = roster.filter(isZooStarter);
+  const counts = countRosterPositions(starters, { includeIR: true });
+  const missing = [];
+
+  const fixedRequirements = {
+    QB: 1,
+    RB: 2,
+    WR: 2,
+    TE: 1,
+    LB: 3,
+    DL: 1,
+    CB: 1,
+    S: 1,
+    K: 1
+  };
+
+  for (const [position, required] of Object.entries(fixedRequirements)) {
+    const current = Number(counts[position] || 0);
+    for (let i = current; i < required; i += 1) missing.push(position);
+  }
+
+  // LFL has one RB/WR flex in addition to 2 RB + 2 WR.
+  const rbWrStarters = Number(counts.RB || 0) + Number(counts.WR || 0);
+  if (rbWrStarters < 5) missing.push("RB_WR");
+
+  return missing;
+}
+
 function buildStartingLineupAlerts(espnData = {}, posts = []) {
   const roster = getZooRoster(espnData);
   const alerts = [];
@@ -2876,20 +2917,30 @@ function buildStartingLineupAlerts(espnData = {}, posts = []) {
   const expectedStarterCount = Number(LFL_CONFIG.starters || 14);
   const actualStarterCount = roster.filter(isZooStarter).length;
   if (actualStarterCount < expectedStarterCount) {
-    alerts.push({
-      playerId: null,
-      player: "EMPTY STARTING POSITION",
-      position: "",
-      nflTeam: "",
-      lineupStatus: "",
-      availabilityStatus: "EMPTY",
-      severity: "URGENT",
-      action: "SET LINEUP",
-      reason: `Zoo has ${actualStarterCount} of ${expectedStarterCount} starting slots filled`,
-      source: "ESPN",
-      publishedAt: "",
-      link: ""
-    });
+    const missingPositions = inferEmptyStartingPositions(roster);
+    const missingCount = Math.max(1, expectedStarterCount - actualStarterCount);
+    const slots = missingPositions.length
+      ? missingPositions.slice(0, missingCount)
+      : Array(missingCount).fill("UNKNOWN");
+
+    for (const position of slots) {
+      alerts.push({
+        playerId: null,
+        player: position === "UNKNOWN" ? "EMPTY STARTING POSITION" : `EMPTY ${position} STARTER`,
+        position,
+        nflTeam: "",
+        lineupStatus: "",
+        availabilityStatus: "EMPTY",
+        severity: "URGENT",
+        action: "SET LINEUP",
+        reason: position === "UNKNOWN"
+          ? `Zoo has ${actualStarterCount} of ${expectedStarterCount} starting slots filled`
+          : `Zoo has an empty ${position} starting slot (${actualStarterCount} of ${expectedStarterCount} starters filled)`,
+        source: "ESPN",
+        publishedAt: "",
+        link: ""
+      });
+    }
   }
 
   const priority = { URGENT: 3, IMPORTANT: 2, WATCH: 1 };
@@ -2899,7 +2950,7 @@ function buildStartingLineupAlerts(espnData = {}, posts = []) {
 function replacementPoolForPosition(roster = [], position = "") {
   const p = canonicalPosition(position);
   const eligible = new Set([p]);
-  if (p === "RB" || p === "WR") {
+  if (p === "RB" || p === "WR" || p === "RB_WR") {
     eligible.add("RB");
     eligible.add("WR");
   }
@@ -2922,7 +2973,7 @@ function buildReplacementRecommendations(
   const results = [];
 
   for (const alert of lineupAlerts) {
-    if (!alert.playerId || !alert.position) continue;
+    if (!alert.position || alert.position === "UNKNOWN") continue;
 
     const bench = replacementPoolForPosition(roster, alert.position)
       .map(player => ({
@@ -2939,7 +2990,7 @@ function buildReplacementRecommendations(
       .filter(player => {
         const p = canonicalPosition(player.position);
         return p === alert.position || (
-          ["RB", "WR"].includes(alert.position) &&
+          ["RB", "WR", "RB_WR"].includes(alert.position) &&
           ["RB", "WR"].includes(p)
         );
       })
@@ -2958,7 +3009,7 @@ function buildReplacementRecommendations(
       .filter(player => {
         const p = canonicalPosition(player.position);
         return p === alert.position || (
-          ["RB", "WR"].includes(alert.position) &&
+          ["RB", "WR", "RB_WR"].includes(alert.position) &&
           ["RB", "WR"].includes(p)
         );
       })
@@ -2980,8 +3031,12 @@ function buildReplacementRecommendations(
       problemStatus: alert.availabilityStatus,
       severity: alert.severity,
       recommendation: best
-        ? `${alert.player} ${alert.availabilityStatus} → ${best.source === "ZOO BENCH" ? "START" : "CONSIDER"} ${best.name}`
-        : `${alert.player} ${alert.availabilityStatus} → NO CLEAR REPLACEMENT`,
+        ? alert.availabilityStatus === "EMPTY"
+          ? `${alert.position} EMPTY → ${best.source === "ZOO BENCH" ? "START" : "CONSIDER"} ${best.name}`
+          : `${alert.player} ${alert.availabilityStatus} → ${best.source === "ZOO BENCH" ? "START" : "CONSIDER"} ${best.name}`
+        : alert.availabilityStatus === "EMPTY"
+          ? `${alert.position} EMPTY → NO CLEAR REPLACEMENT`
+          : `${alert.player} ${alert.availabilityStatus} → NO CLEAR REPLACEMENT`,
       bestReplacement: best,
       noWaiverMoveNeeded: Boolean(best && best.source === "ZOO BENCH")
     });
@@ -3010,6 +3065,9 @@ function buildAddDropDecisions(
   const decisions = [];
 
   for (const add of available.slice(0, 10)) {
+    const watchRecommendation = normalize(add.watchRecommendation || add.recommendation || "");
+    if (watchRecommendation === "ignore") continue;
+
     let bestPair = null;
 
     for (const drop of drops) {
