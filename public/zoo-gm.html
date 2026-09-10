@@ -1118,27 +1118,6 @@
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-header">
-      <h2>LFL Recent Activity</h2>
-      <span class="news-time" id="transactionFeedStatus">Executed adds, drops, waivers and trades</span>
-    </div>
-    <div class="panel-body table-wrap transaction-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>When</th>
-            <th>Team</th>
-            <th>Move</th>
-          </tr>
-        </thead>
-        <tbody id="transactionFeedBody">
-          <tr><td colspan="3">Loading league activity...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
   <section class="panel decision-panel">
 
     <div class="panel-header">
@@ -1880,16 +1859,98 @@
     const container = document.getElementById("zooPlayerUpdates");
     if (!container) return;
 
-    const cutoff = Date.now() - (12 * 60 * 60 * 1000);
-    const updates = (xData?.zooPlayerUpdates || [])
+    const WINDOW_MS = 12 * 60 * 60 * 1000;
+    const cutoff = Date.now() - WINDOW_MS;
+    const CACHE_KEY = "zooGMPlayerUpdates12h";
+
+    const updateTime = update =>
+      new Date(update?.publishedAt || update?.post?.publishedAt || 0).getTime();
+
+    const normalizeName = value =>
+      String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+
+    const currentUpdates = Array.isArray(xData?.zooPlayerUpdates)
+      ? xData.zooPlayerUpdates
+      : [];
+
+    // Fallback: detect literal mentions of current Zoo players in recent X posts.
+    // This catches a direct player tweet even if the backend classification misses it.
+    const zooRoster = getZooRoster();
+    const postFallbackUpdates = [];
+
+    for (const post of (xData?.posts || [])) {
+      const published = new Date(post?.publishedAt || 0).getTime();
+      if (!Number.isFinite(published) || published < cutoff) continue;
+
+      const combined = normalizeName(`${post?.title || ""} ${post?.text || ""}`);
+      if (!combined) continue;
+
+      for (const rosterPlayer of zooRoster) {
+        const playerName = normalizeName(rosterPlayer?.name);
+        if (!playerName || !combined.includes(playerName)) continue;
+
+        const intelligence = post?.intelligence || {};
+        postFallbackUpdates.push({
+          playerId: rosterPlayer.playerId || "",
+          player: rosterPlayer.name,
+          position: rosterPlayer.position || "",
+          nflTeam: rosterPlayer.nflTeam || "",
+          event: intelligence.primaryEvent || "UPDATE",
+          primaryEvent: intelligence.primaryEvent || "UPDATE",
+          recommendation: intelligence.recommendation || intelligence.actionTier || "MONITOR",
+          whatHappened: post.text || post.title || "Update",
+          source: post.author || post.handle || "X Source",
+          author: post.author || post.handle || "X Source",
+          publishedAt: post.publishedAt || "",
+          link: post.link || "",
+          guid: post.guid || "",
+          direct: true
+        });
+      }
+    }
+
+    let cachedUpdates = [];
+    try {
+      const parsed = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
+      if (Array.isArray(parsed)) cachedUpdates = parsed;
+    } catch (error) {
+      console.warn("Zoo player update cache could not be read", error);
+    }
+
+    const merged = [
+      ...currentUpdates,
+      ...postFallbackUpdates,
+      ...cachedUpdates
+    ]
       .filter(update => {
-        const published = new Date(update.publishedAt || update.post?.publishedAt || 0).getTime();
+        const published = updateTime(update);
         return Number.isFinite(published) && published >= cutoff;
       })
-      .sort((a, b) => new Date(b.publishedAt || b.post?.publishedAt || 0).getTime() - new Date(a.publishedAt || a.post?.publishedAt || 0).getTime());
+      .sort((a, b) => updateTime(b) - updateTime(a));
+
+    const seen = new Set();
+    const updates = merged.filter(update => {
+      const post = update.post || update;
+      const player = normalizeName(update.player || update.playerName || update.name || "Zoo Player");
+      const sourceId = String(update.guid || post.guid || update.link || post.link || "");
+      const story = normalizeName(update.whatHappened || update.summary || update.text || post.text || post.title || "").slice(0, 180);
+      const key = sourceId ? `${player}|${sourceId}` : `${player}|${story}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(updates.slice(0, 30)));
+    } catch (error) {
+      console.warn("Zoo player update cache could not be saved", error);
+    }
 
     if (!updates.length) {
-      container.innerHTML = '<div class="empty">No direct Zoo player updates in the last 12 hours.</div>';
+      container.innerHTML = '<div class="empty">No direct Zoo player updates detected in the last 12 hours.</div>';
       return;
     }
 
@@ -1898,7 +1959,7 @@
       const player = update.player || update.playerName || update.name || "Zoo Player";
       const event = update.event || update.primaryEvent || post.intelligence?.primaryEvent || "UPDATE";
       const recommendation = update.recommendation || post.intelligence?.recommendation || post.intelligence?.actionTier || "MONITOR";
-      const author = update.author || post.author || "X Source";
+      const author = update.author || update.source || post.author || "X Source";
       const publishedAt = update.publishedAt || post.publishedAt || "";
       const story = update.whatHappened || update.summary || update.text || post.text || post.title || "Update";
 
@@ -2150,42 +2211,6 @@
     }).join("");
   }
 
-  function renderTransactionFeed() {
-    const body = document.getElementById("transactionFeedBody");
-    const status = document.getElementById("transactionFeedStatus");
-    if (!body) return;
-
-    const feed = espnData?.transactionFeed || [];
-
-    if (status) {
-      status.textContent = `${feed.length} executed move${feed.length === 1 ? "" : "s"} loaded`;
-    }
-
-    if (!feed.length) {
-      body.innerHTML = '<tr><td colspan="3" class="empty">No recent LFL roster transactions.</td></tr>';
-      return;
-    }
-
-    body.innerHTML = feed.slice(0, 40).map(item => {
-      const when = formatTime(item.processDateIso || item.processDate || "");
-      const team = item.teamName || "LFL";
-      const move = item.summary ||
-        (Array.isArray(item.items)
-          ? item.items.map(entry => entry.summary || entry.description || entry.playerName || entry.name || "").filter(Boolean).join(" · ")
-          : "") ||
-        item.type ||
-        "Roster transaction";
-
-      return `
-        <tr>
-          <td class="news-time">${esc(when || "—")}</td>
-          <td class="transaction-team">${esc(team)}</td>
-          <td class="transaction-summary">${esc(move)}</td>
-        </tr>
-      `;
-    }).join("");
-  }
-
   function renderAll() {
     renderSummary();
     renderBrief();
@@ -2200,7 +2225,6 @@
     renderSuggestedWatchList();
     renderAddDropDecisions();
     renderOpportunityOpponentAlerts();
-    renderTransactionFeed();
     renderMatchup();
   }
 
