@@ -2,7 +2,7 @@ const SEASON_ID = 2026;
 const LEAGUE_ID = 261539;
 const ZOO_TEAM_NAME = process.env.ZOO_TEAM_NAME || "Zoo";
 
-const ESPN_WATCH_LIST_IDS = [
+const FALLBACK_ESPN_WATCH_LIST_IDS = [
   4870795,
   4567104,
   4569603,
@@ -812,6 +812,114 @@ function normalizeTransaction(
   };
 }
 
+function uniqueNumericIds(values = []) {
+  return [
+    ...new Set(
+      (values || [])
+        .map(value => Number(value))
+        .filter(value => Number.isInteger(value) && value > 0)
+    )
+  ];
+}
+
+function extractWatchListIds(source) {
+  const candidates = [];
+
+  function walk(value, path = []) {
+    if (!value || typeof value !== "object") return;
+
+    if (Array.isArray(value)) {
+      for (const item of value) walk(item, path);
+      return;
+    }
+
+    for (const [key, child] of Object.entries(value)) {
+      const nextPath = [...path, key];
+      const keyText = String(key || "").toLowerCase();
+      const pathText = nextPath.join(".").toLowerCase();
+
+      if (keyText.includes("watch") || pathText.includes("watchlist") || pathText.includes("watch_list")) {
+        if (Array.isArray(child)) {
+          const ids = uniqueNumericIds(
+            child.flatMap(item => {
+              if (typeof item === "number" || typeof item === "string") return [item];
+              if (item && typeof item === "object") {
+                return [item.playerId, item.id, item.player?.id, item.playerPoolEntry?.player?.id];
+              }
+              return [];
+            })
+          );
+          if (ids.length && ids.length <= 500) candidates.push(ids);
+        } else if (child && typeof child === "object") {
+          const ids = uniqueNumericIds([child.playerId, child.id, child.player?.id, child.playerPoolEntry?.player?.id]);
+          if (ids.length) candidates.push(ids);
+        }
+      }
+
+      walk(child, nextPath);
+    }
+  }
+
+  walk(source);
+  return uniqueNumericIds(candidates.flat());
+}
+
+function buildWatchList(ids = [], playerById = new Map()) {
+  return uniqueNumericIds(ids).map(playerId => {
+    const player = playerById.get(Number(playerId));
+    if (!player) {
+      return {
+        playerId: Number(playerId),
+        name: `Player ${playerId}`,
+        position: "",
+        nflTeam: "",
+        found: false
+      };
+    }
+    return { ...player, found: true };
+  });
+}
+
+function describeTransactionItem(item = {}) {
+  const type = String(item.type || "").toUpperCase();
+  const player = item.playerName || `Player ${item.playerId || ""}`;
+  if (type.includes("ADD")) return `${item.toTeamName || "Team"} added ${player}`;
+  if (type.includes("DROP")) return `${item.fromTeamName || "Team"} dropped ${player}`;
+  if (item.fromTeamName && item.toTeamName) return `${player}: ${item.fromTeamName} → ${item.toTeamName}`;
+  return `${type || "MOVE"} ${player}`.trim();
+}
+
+function buildTransactionFeed(transactions = []) {
+  const feed = [];
+  for (const transaction of transactions || []) {
+    const type = String(transaction.type || "").toUpperCase();
+    const items = transaction.items || [];
+    const addItems = items.filter(item => String(item.type || "").toUpperCase().includes("ADD"));
+    const dropItems = items.filter(item => String(item.type || "").toUpperCase().includes("DROP"));
+    let feedType = transaction.type || "TRANSACTION";
+    if (type.includes("TRADE")) feedType = "TRADE";
+    else if (type.includes("WAIVER")) feedType = "WAIVER";
+    else if (addItems.length && dropItems.length) feedType = "ADD/DROP";
+    else if (addItems.length) feedType = "ADD";
+    else if (dropItems.length) feedType = "DROP";
+
+    feed.push({
+      transactionId: transaction.transactionId,
+      type: feedType,
+      teamId: transaction.teamId,
+      teamName: transaction.teamName,
+      status: transaction.status,
+      scoringPeriodId: transaction.scoringPeriodId,
+      processDate: transaction.processDate,
+      processDateIso: transaction.processDateIso,
+      bidAmount: transaction.bidAmount,
+      summary: items.map(describeTransactionItem).filter(Boolean).join(" | "),
+      items
+    });
+  }
+  return feed.sort((a,b) => Number(b.processDate || 0) - Number(a.processDate || 0));
+}
+
 function normalizeAvailablePlayers(
   data,
   proTeamMap
@@ -1582,6 +1690,68 @@ async function (event = {}) {
       );
 
     /*
+      LIVE ESPN WATCH LIST
+
+      ESPN does not publish a stable Watch List API contract.
+      The authenticated web app exposes personalized data through
+      modular/navigation views. We inspect those views for
+      watch-list player IDs and fall back to the last known list
+      only when ESPN does not expose them.
+    */
+
+    const watchListRequest =
+      fetchJson(
+        leagueUrl(
+          [
+            "mTeam",
+            "mSettings",
+            "mNav",
+            "modular"
+          ],
+          {
+            scoringPeriodId
+          }
+        ),
+        {
+          cookieHeader
+        }
+      );
+
+    /*
+      RECENT LFL TRANSACTION HISTORY
+
+      This request intentionally does not restrict the response
+      to only the current scoring period. The current-period call
+      below remains available as a fallback.
+    */
+
+    const transactionHistoryRequest =
+      fetchJson(
+        leagueUrl(
+          [
+            "mTransactions2"
+          ]
+        ),
+        {
+          cookieHeader,
+          fantasyFilter: {
+            transactions: {
+              filterType: {
+                value: [
+                  "FREEAGENT",
+                  "FREE_AGENT",
+                  "WAIVER",
+                  "WAIVER_ERROR",
+                  "TRADE",
+                  "TRADE_ACCEPTED"
+                ]
+              }
+            }
+          }
+        }
+      );
+
+    /*
       COMMISH REPORT BOXSCORE
     */
 
@@ -1676,7 +1846,9 @@ async function (event = {}) {
       availableResult,
       transactionsResult,
       pendingResult,
-      boxscoreResult
+      boxscoreResult,
+      watchListResult,
+      transactionHistoryResult
     ] =
       await Promise.allSettled(
         [
@@ -1684,7 +1856,9 @@ async function (event = {}) {
           availableRequest,
           transactionsRequest,
           pendingRequest,
-          boxscoreRequest
+          boxscoreRequest,
+          watchListRequest,
+          transactionHistoryRequest
         ]
       );
 
@@ -1761,6 +1935,26 @@ async function (event = {}) {
       warnings.push(
         `Commish Report boxscore unavailable for Week ${reportWeek}`
       );
+    }
+
+    const watchListData =
+      watchListResult.status ===
+      "fulfilled"
+        ? watchListResult.value
+        : {};
+
+    if (watchListResult.status === "rejected") {
+      warnings.push("Live ESPN Watch List view unavailable; using fallback Watch List");
+    }
+
+    const transactionHistoryData =
+      transactionHistoryResult.status ===
+      "fulfilled"
+        ? transactionHistoryResult.value
+        : {};
+
+    if (transactionHistoryResult.status === "rejected") {
+      warnings.push("Full transaction history unavailable; using current scoring-period transactions");
     }
 
     /*
@@ -1849,39 +2043,53 @@ async function (event = {}) {
         availablePlayers
       );
 
+    const liveWatchListIds =
+      extractWatchListIds(
+        watchListData
+      );
+
+    const watchListSource =
+      liveWatchListIds.length
+        ? "ESPN LIVE"
+        : "FALLBACK";
+
+    const watchListIds =
+      liveWatchListIds.length
+        ? liveWatchListIds
+        : FALLBACK_ESPN_WATCH_LIST_IDS;
+
     const watchList =
-      ESPN_WATCH_LIST_IDS
-        .map(playerId => {
-          const player =
-            playerById.get(
-              Number(playerId)
-            );
+      buildWatchList(
+        watchListIds,
+        playerById
+      );
 
-          if (!player) {
-            return {
-              playerId: Number(playerId),
-              name: `Player ${playerId}`,
-              position: "",
-              nflTeam: "",
-              found: false
-            };
-          }
-
-          return {
-            ...player,
-            found: true
-          };
-        });
+    if (!liveWatchListIds.length) {
+      warnings.push(
+        "ESPN did not expose personalized Watch List IDs in this response; fallback Watch List is active"
+      );
+    }
 
     /*
       NORMALIZE TRANSACTIONS
     */
 
-    const transactions =
+    const rawTransactions =
       (
-        transactionsData
+        transactionHistoryData
           .transactions ||
         []
+      ).length
+        ? transactionHistoryData.transactions
+        : (
+            transactionsData
+              .transactions ||
+            []
+          );
+
+    const transactions =
+      (
+        rawTransactions
       )
         .map(
           transaction =>
@@ -1928,6 +2136,11 @@ async function (event = {}) {
               0
             )
         );
+
+    const transactionFeed =
+      buildTransactionFeed(
+        transactions
+      );
 
     /*
       CURRENT WEEK MATCHUPS
@@ -2041,6 +2254,17 @@ async function (event = {}) {
       pendingTransactionCount:
         pendingTransactions.length,
 
+      watchListCount:
+        watchList.length,
+
+      watchListSource,
+
+      liveWatchListDetected:
+        liveWatchListIds.length > 0,
+
+      transactionFeedCount:
+        transactionFeed.length,
+
       zooTeamId:
         zooTeam
           ?.teamId ||
@@ -2109,7 +2333,16 @@ async function (event = {}) {
 
         watchList,
 
+        watchListMeta: {
+          source: watchListSource,
+          liveDetected: liveWatchListIds.length > 0,
+          livePlayerIds: liveWatchListIds,
+          fallbackUsed: !liveWatchListIds.length
+        },
+
         transactions,
+
+        transactionFeed,
 
         pendingTransactions,
 
