@@ -891,17 +891,45 @@ function describeTransactionItem(item = {}) {
 
 function buildTransactionFeed(transactions = []) {
   const feed = [];
+
   for (const transaction of transactions || []) {
     const type = String(transaction.type || "").toUpperCase();
+    const status = String(transaction.status || "").toUpperCase();
     const items = transaction.items || [];
-    const addItems = items.filter(item => String(item.type || "").toUpperCase().includes("ADD"));
-    const dropItems = items.filter(item => String(item.type || "").toUpperCase().includes("DROP"));
-    let feedType = transaction.type || "TRANSACTION";
-    if (type.includes("TRADE")) feedType = "TRADE";
-    else if (type.includes("WAIVER")) feedType = "WAIVER";
-    else if (addItems.length && dropItems.length) feedType = "ADD/DROP";
-    else if (addItems.length) feedType = "ADD";
-    else if (dropItems.length) feedType = "DROP";
+
+    // Zoo GM Recent Activity should only show completed fantasy roster moves.
+    // Exclude lineup/IR changes, pending/canceled/failed waivers, trade proposals,
+    // trade-uphold/admin records, draft activity, and other league-manager noise.
+    if (status !== "EXECUTED") continue;
+    if (!["FREEAGENT", "WAIVER", "TRADE_ACCEPT"].includes(type)) continue;
+    if (type === "TRADE_ACCEPT" && !items.length) continue;
+
+    const addItems = items.filter(item =>
+      String(item.type || "").toUpperCase().includes("ADD")
+    );
+    const dropItems = items.filter(item =>
+      String(item.type || "").toUpperCase().includes("DROP")
+    );
+
+    let feedType = "TRANSACTION";
+
+    if (type === "TRADE_ACCEPT") {
+      feedType = "TRADE";
+    } else if (type === "WAIVER") {
+      feedType = addItems.length && dropItems.length
+        ? "WAIVER ADD/DROP"
+        : addItems.length
+          ? "WAIVER ADD"
+          : dropItems.length
+            ? "WAIVER DROP"
+            : "WAIVER";
+    } else if (addItems.length && dropItems.length) {
+      feedType = "ADD/DROP";
+    } else if (addItems.length) {
+      feedType = "ADD";
+    } else if (dropItems.length) {
+      feedType = "DROP";
+    }
 
     feed.push({
       transactionId: transaction.transactionId,
@@ -917,7 +945,10 @@ function buildTransactionFeed(transactions = []) {
       items
     });
   }
-  return feed.sort((a,b) => Number(b.processDate || 0) - Number(a.processDate || 0));
+
+  return feed.sort(
+    (a, b) => Number(b.processDate || 0) - Number(a.processDate || 0)
+  );
 }
 
 function normalizeAvailablePlayers(
