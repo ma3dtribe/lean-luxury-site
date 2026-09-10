@@ -1720,36 +1720,79 @@ async function (event = {}) {
     /*
       RECENT LFL TRANSACTION HISTORY
 
-      This request intentionally does not restrict the response
-      to only the current scoring period. The current-period call
-      below remains available as a fallback.
+      ESPN requires scoringPeriodId for mTransactions2.
+      Pull the current scoring period plus the previous three
+      periods and merge them into one recent-activity feed.
     */
 
+    const transactionFilterTypes = [
+      "FREEAGENT",
+      "WAIVER",
+      "WAIVER_ERROR",
+      "TRADE_ACCEPT",
+      "TRADE_UPHOLD",
+      "TRADE_PROPOSAL",
+      "TRADE_DECLINE",
+      "TRADE_VETO",
+      "TRADE_ERROR",
+      "ROSTER",
+      "FUTURE_ROSTER",
+      "RETRO_ROSTER"
+    ];
+
+    const transactionPeriods =
+      [...new Set([
+        scoringPeriodId,
+        scoringPeriodId - 1,
+        scoringPeriodId - 2,
+        scoringPeriodId - 3
+      ])]
+        .filter(period => period > 0);
+
     const transactionHistoryRequest =
-      fetchJson(
-        leagueUrl(
-          [
-            "mTransactions2"
-          ]
-        ),
-        {
-          cookieHeader,
-          fantasyFilter: {
-            transactions: {
-              filterType: {
-                value: [
-                  "FREEAGENT",
-                  "FREE_AGENT",
-                  "WAIVER",
-                  "WAIVER_ERROR",
-                  "TRADE",
-                  "TRADE_ACCEPTED"
-                ]
-              }
-            }
-          }
-        }
-      );
+      (async () => {
+        const results =
+          await Promise.allSettled(
+            transactionPeriods.map(
+              period =>
+                fetchJson(
+                  leagueUrl(
+                    [
+                      "mTransactions2"
+                    ],
+                    {
+                      scoringPeriodId: period
+                    }
+                  ),
+                  {
+                    cookieHeader,
+                    fantasyFilter: {
+                      transactions: {
+                        filterType: {
+                          value: transactionFilterTypes
+                        }
+                      }
+                    }
+                  }
+                )
+            )
+          );
+
+        return {
+          transactions:
+            results
+              .filter(result => result.status === "fulfilled")
+              .flatMap(result => result.value?.transactions || []),
+          failedPeriods:
+            results
+              .map((result, index) => ({
+                result,
+                period: transactionPeriods[index]
+              }))
+              .filter(item => item.result.status === "rejected")
+              .map(item => item.period)
+        };
+      })();
 
     /*
       COMMISH REPORT BOXSCORE
@@ -1801,14 +1844,7 @@ async function (event = {}) {
             transactions: {
 
               filterType: {
-                value: [
-                  "FREEAGENT",
-                  "FREE_AGENT",
-                  "WAIVER",
-                  "WAIVER_ERROR",
-                  "TRADE",
-                  "TRADE_ACCEPTED"
-                ]
+                value: transactionFilterTypes
               }
             }
           }
@@ -1954,7 +1990,11 @@ async function (event = {}) {
         : {};
 
     if (transactionHistoryResult.status === "rejected") {
-      warnings.push("Full transaction history unavailable; using current scoring-period transactions");
+      warnings.push("Recent transaction history unavailable; using current scoring-period transactions");
+    } else if (transactionHistoryData.failedPeriods?.length) {
+      warnings.push(
+        `Transaction history unavailable for scoring period(s): ${transactionHistoryData.failedPeriods.join(", ")}`
+      );
     }
 
     /*
@@ -2087,9 +2127,18 @@ async function (event = {}) {
             []
           );
 
+    const uniqueRawTransactions =
+      [...new Map(
+        rawTransactions.map(transaction => [
+          transaction.id ||
+            `${transaction.processDate || transaction.proposedDate || 0}-${transaction.teamId || 0}-${transaction.type || ""}`,
+          transaction
+        ])
+      ).values()];
+
     const transactions =
       (
-        rawTransactions
+        uniqueRawTransactions
       )
         .map(
           transaction =>
