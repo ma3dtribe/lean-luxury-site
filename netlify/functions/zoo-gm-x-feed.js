@@ -53,25 +53,46 @@ const INTELLIGENCE_SOURCES = [
 // function again.
 const EXPERT_RANKINGS_URL = process.env.ZOO_GM_EXPERT_RANKINGS_URL || "";
 
-// If no rankings URL is configured, this block is the manual weekly fallback.
-// Expected format:
-// {
-//   week: 1,
-//   experts: [
-//     { name: "Jamey Eisenberg", rankings: { QB: ["Player A"], RB: [...], WR: [...], TE: [...], LB: [...], DL: [...], CB: [...], S: [...] } }
-//   ]
-// }
+// Live ranking pages supplied for Zoo GM. These are fetched in parallel with
+// short timeouts and reduced to only players who can affect a Zoo decision.
+const EXPERT_RANKING_SOURCES = [
+  {
+    key: "cbs",
+    name: "CBS Sports",
+    url: "https://www.cbssports.com/fantasy/football/rankings/ppr/flex/",
+    positions: ["RB", "WR", "TE"]
+  },
+  {
+    key: "fantasypros_rankings",
+    name: "FantasyPros",
+    url: "https://www.fantasypros.com/nfl/rankings/ppr-rb.php",
+    positions: ["RB"]
+  },
+  {
+    key: "espn_rankings",
+    name: "ESPN",
+    url: "https://www.espn.com/fantasy/football/story/_/page/FFPreseasonRank26RB/nfl-fantasy-football-draft-rankings-2026-rb-running-back",
+    positions: ["RB"]
+  },
+  {
+    key: "fabiano",
+    name: "Michael Fabiano",
+    url: "https://www.si.com/fantasy/player-rankings",
+    positions: ["QB", "RB", "WR", "TE"]
+  }
+];
+
+// Manual fallback remains available if a ranking page changes its markup.
 const INLINE_WEEKLY_EXPERT_RANKINGS = {
   week: 1,
   experts: []
 };
 
 const EXPECTED_EXPERTS = [
-  "Jamey Eisenberg",
-  "Heath Cummings",
-  "Michael Fabiano",
+  "CBS Sports",
+  "FantasyPros",
   "ESPN",
-  "FantasyPros"
+  "Michael Fabiano"
 ];
 
 const FANTASYPROS_API_KEY = process.env.FANTASYPROS_API_KEY || "";
@@ -1636,6 +1657,41 @@ function positionsAreRelated(
   return false;
 }
 
+function hasRoleChangingContext(text = "", eventTypes = []) {
+  const n = normalize(text);
+
+  const severePhrases = [
+    "ruled out",
+    "inactive",
+    "will not play",
+    "not expected to play",
+    "injured reserve",
+    "placed on ir",
+    "expected to miss",
+    "will miss",
+    "season ending",
+    "season-ending",
+    "out for the season",
+    "suspended",
+    "released",
+    "waived",
+    "traded",
+    "benched",
+    "named starter",
+    "starting in place",
+    "depth chart",
+    "workload increase",
+    "expanded role",
+    "featured role"
+  ];
+
+  if (severePhrases.some(phrase => n.includes(normalize(phrase)))) return true;
+
+  return eventTypes.some(type =>
+    ["INACTIVE", "TRANSACTION", "DEPTH_CHART"].includes(type)
+  );
+}
+
 function buildContextImpact(
   text = "",
   playerMatches = [],
@@ -1645,7 +1701,8 @@ function buildContextImpact(
   if (
     !hasActionableEvent(
       eventTypes
-    )
+    ) ||
+    !hasRoleChangingContext(text, eventTypes)
   ) {
     return [];
   }
@@ -4701,16 +4758,30 @@ function sourceFocusCatalog(playerCatalog = []) {
   return [...merged.values()];
 }
 
-function buildSourceContext(blocks = [], index = 0) {
-  const parts = [];
-  const start = Math.max(0, index - 1);
-  const end = Math.min(blocks.length - 1, index + 2);
+function samePlayerSet(a = [], b = []) {
+  const aKeys = new Set(a.map(player => normalize(player.name)).filter(Boolean));
+  const bKeys = new Set(b.map(player => normalize(player.name)).filter(Boolean));
+  if (!aKeys.size || !bKeys.size) return false;
+  return [...bKeys].every(key => aKeys.has(key));
+}
 
-  for (let i = start; i <= end; i += 1) {
-    if (blocks[i]) parts.push(blocks[i]);
+function buildPlayerNewsContext(blocks = [], index = 0, direct = [], focusPlayers = []) {
+  const parts = [blocks[index]];
+
+  // Player-news pages often place headline, timestamp and analysis in adjacent
+  // elements. Walk forward only, stopping as soon as the next player story begins.
+  for (let offset = 1; offset <= 3; offset += 1) {
+    const candidate = blocks[index + offset];
+    if (!candidate) break;
+
+    const candidatePlayers = findMatchingLeaguePlayers(candidate, focusPlayers);
+    if (candidatePlayers.length && !samePlayerSet(direct, candidatePlayers)) break;
+
+    parts.push(candidate);
+    if (parts.join(" ").length >= 900) break;
   }
 
-  return parts.join(" ").slice(0, 1600);
+  return parts.join(" ").slice(0, 1000);
 }
 
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
@@ -4725,19 +4796,17 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
   for (let index = 0; index < blocks.length; index += 1) {
     const block = blocks[index];
     const direct = findMatchingLeaguePlayers(block, focusPlayers);
-
     if (!direct.length) continue;
 
-    const context = buildSourceContext(blocks, index);
-    const contextMatches = findMatchingLeaguePlayers(context, focusPlayers);
+    const context = source.type === "PLAYER_NEWS"
+      ? buildPlayerNewsContext(blocks, index, direct, focusPlayers)
+      : block.slice(0, 1000);
 
+    // Only the player(s) named in the story anchor the item. Teammate impact is
+    // evaluated later and only for genuine role-changing events.
     const playerNames = [
-      ...new Set(
-        [...direct, ...contextMatches]
-          .map(player => player.name)
-          .filter(Boolean)
-      )
-    ].slice(0, 6);
+      ...new Set(direct.map(player => player.name).filter(Boolean))
+    ].slice(0, 4);
 
     if (!playerNames.length) continue;
 
@@ -4746,7 +4815,7 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
         ? parseNewsTimestamp(context, pagePublishedAt)
         : (pagePublishedAt || new Date().toISOString());
 
-    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(context).slice(0, 260)}`;
+    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(context).slice(0, 220)}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
@@ -4763,7 +4832,7 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
       sourceLabel: source.label
     });
 
-    if (items.length >= 35) break;
+    if (items.length >= 24) break;
   }
 
   return items;
@@ -4855,32 +4924,171 @@ function normalizeExpertRankingsPayload(payload = {}) {
   };
 }
 
-async function loadExpertRankings() {
+function rankingFocusCatalog(playerCatalog = []) {
+  // Rank only decision-relevant players to keep page parsing cheap and useful.
+  return sourceFocusCatalog(playerCatalog).filter(player =>
+    ["QB", "RB", "WR", "TE", "LB", "DL", "CB", "S", "K"].includes(
+      canonicalPosition(player.position)
+    )
+  );
+}
+
+function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
+  const allowed = new Set((source.positions || []).map(canonicalPosition));
+  const focus = rankingFocusCatalog(playerCatalog).filter(player =>
+    !allowed.size || allowed.has(canonicalPosition(player.position))
+  );
+
+  // Ranking tables differ across publishers. The first occurrence of a player's
+  // full name in the cleaned ranking page is a stable lightweight ordering signal.
+  const page = ` ${normalize(cleanSourceText(String(html || "").slice(0, 650000))) } `;
+  const ordered = [];
+
+  for (const player of focus) {
+    const aliases = buildPlayerAliases(player.name)
+      .map(normalize)
+      .filter(alias => alias && alias.includes(" "));
+
+    let bestIndex = -1;
+    for (const alias of aliases) {
+      const index = page.indexOf(` ${alias} `);
+      if (index >= 0 && (bestIndex < 0 || index < bestIndex)) bestIndex = index;
+    }
+
+    if (bestIndex >= 0) {
+      ordered.push({
+        name: player.name,
+        position: canonicalPosition(player.position),
+        index: bestIndex
+      });
+    }
+  }
+
+  ordered.sort((a, b) => a.index - b.index);
+
+  const rankings = {};
+  const seen = new Set();
+
+  for (const item of ordered) {
+    const key = `${item.position}:${normalize(item.name)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    if (!rankings[item.position]) rankings[item.position] = [];
+    if (rankings[item.position].length < 100) rankings[item.position].push(item.name);
+  }
+
+  return rankings;
+}
+
+async function fetchExpertRankingSource(source = {}, playerCatalog = []) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
+
+  try {
+    const response = await fetch(source.url, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.1; +https://ma3dtribe.com)",
+        "Accept": "text/html,application/xhtml+xml"
+      },
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`${source.name} rankings request failed: ${response.status}`);
+    }
+
+    const html = await response.text();
+    const rankings = rankingsFromPage(source, html, playerCatalog);
+    const playerCount = Object.values(rankings).reduce((sum, names) => sum + names.length, 0);
+
+    if (!playerCount) throw new Error(`${source.name} rankings contained no matched players`);
+
+    return {
+      ok: true,
+      source,
+      expert: {
+        name: source.name,
+        rankings
+      },
+      playerCount
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      source,
+      error: error.message || String(error),
+      playerCount: 0
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function loadExpertRankings(playerCatalog = []) {
+  // Optional structured JSON still takes precedence when configured.
   if (EXPERT_RANKINGS_URL) {
     try {
       const remote = await fetchJson(
         EXPERT_RANKINGS_URL,
         "Zoo GM expert rankings",
-        { timeoutMs: 4000 }
+        { timeoutMs: 3000 }
       );
 
       const normalized = normalizeExpertRankingsPayload(remote);
       if (normalized.experts.length) {
         return {
           ...normalized,
-          source: "REMOTE",
-          expectedExperts: EXPECTED_EXPERTS
+          source: "REMOTE JSON",
+          expectedExperts: EXPECTED_EXPERTS,
+          sourceStatus: []
         };
       }
     } catch (error) {
-      console.warn("Expert rankings URL unavailable:", error.message);
+      console.warn("Expert rankings JSON unavailable:", error.message);
     }
+  }
+
+  const results = await Promise.all(
+    EXPERT_RANKING_SOURCES.map(source =>
+      fetchExpertRankingSource(source, playerCatalog)
+    )
+  );
+
+  const experts = results
+    .filter(result => result.ok && result.expert)
+    .map(result => result.expert);
+
+  if (experts.length) {
+    return {
+      week: INLINE_WEEKLY_EXPERT_RANKINGS.week,
+      experts,
+      source: "LIVE WEB",
+      expectedExperts: EXPECTED_EXPERTS,
+      sourceStatus: results.map(result => ({
+        key: result.source.key,
+        name: result.source.name,
+        url: result.source.url,
+        ok: result.ok,
+        playerCount: result.playerCount || 0,
+        error: result.ok ? "" : result.error
+      }))
+    };
   }
 
   return {
     ...normalizeExpertRankingsPayload(INLINE_WEEKLY_EXPERT_RANKINGS),
     source: "INLINE",
-    expectedExperts: EXPECTED_EXPERTS
+    expectedExperts: EXPECTED_EXPERTS,
+    sourceStatus: results.map(result => ({
+      key: result.source.key,
+      name: result.source.name,
+      url: result.source.url,
+      ok: result.ok,
+      playerCount: result.playerCount || 0,
+      error: result.ok ? "" : result.error
+    }))
   };
 }
 
@@ -5022,7 +5230,9 @@ async function () {
       );
 
     const expertRankings =
-      await loadExpertRankings();
+      await loadExpertRankings(
+        playerCatalog
+      );
 
     const expertRankingConsensus =
       buildExpertRankingConsensus(
@@ -5424,7 +5634,7 @@ async function () {
               "NBC Sports Rotoworld + FantasyPros",
 
             weeklyIdp:
-              "Footballguys + FantasyPros + SI",
+              "Footballguys + FantasyPros + SI reference layer",
 
             expertRankings:
               expertRankings.experts.length
@@ -5444,6 +5654,7 @@ async function () {
             source: expertRankings.source,
             expertsLoaded: expertRankings.experts.map(expert => expert.name),
             expectedExperts: expertRankings.expectedExperts,
+            sourceStatus: expertRankings.sourceStatus || [],
             consensus: expertRankingConsensus
           },
 
