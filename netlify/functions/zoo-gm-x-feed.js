@@ -4,6 +4,8 @@ const ESPN_ENDPOINT = "https://ma3dtribe.com/.netlify/functions/zoo-gm-espn";
 // ZOO GM INTELLIGENCE SOURCES
 // X/RSS.app has been retired. These sources now provide the live-news and
 // weekly-analysis layer that feeds the same Zoo GM decision engine.
+// Stability mode: live runtime scraping is limited to NBC + FantasyPros player news.
+// Weekly IDP articles stay configured as reference inputs and your expert rankings remain active.
 // -----------------------------------------------------------------------------
 const INTELLIGENCE_SOURCES = [
   {
@@ -26,7 +28,7 @@ const INTELLIGENCE_SOURCES = [
     url: process.env.ZOO_GM_FOOTBALLGUYS_URL ||
       "https://www.footballguys.com/article/2026-idp-start-sit-studs-duds-week01",
     type: "WEEKLY_IDP",
-    enabled: true
+    enabled: false
   },
   {
     key: "fantasypros_idp",
@@ -34,7 +36,7 @@ const INTELLIGENCE_SOURCES = [
     url: process.env.ZOO_GM_FANTASYPROS_IDP_URL ||
       "https://www.fantasypros.com/2026/09/fantasy-football-idp-start-sit-lineup-advice-week-1-2026/",
     type: "WEEKLY_IDP",
-    enabled: true
+    enabled: false
   },
   {
     key: "si_idp",
@@ -42,7 +44,7 @@ const INTELLIGENCE_SOURCES = [
     url: process.env.ZOO_GM_SI_IDP_URL ||
       "https://www.si.com/onsi/fantasy/rankings/fantasy-football-idp-rankings-week-1-arvell-reese-raises-intrigue-with-dl-lb-eligibility",
     type: "WEEKLY_IDP_RANKINGS",
-    enabled: true
+    enabled: false
   }
 ];
 
@@ -4670,9 +4672,11 @@ function parseNewsTimestamp(text = "", fallback = "") {
 }
 
 function sourceFocusCatalog(playerCatalog = []) {
+  // Runtime news matching is intentionally focused on players who can drive
+  // a Zoo decision now: Zoo, Watch List, weekly opponent, and top free agents.
+  // Other LFL rosters remain available through the ESPN intelligence layer.
   const protectedPlayers = playerCatalog.filter(player =>
     player.ownershipStatus === "ZOO" ||
-    player.ownershipStatus === "LFL OWNED" ||
     player.onWatchList ||
     player.opponentThisWeek
   );
@@ -4682,7 +4686,7 @@ function sourceFocusCatalog(playerCatalog = []) {
     .sort((a, b) =>
       playerMarketQuality(b) - playerMarketQuality(a)
     )
-    .slice(0, 150);
+    .slice(0, 75);
 
   const merged = new Map();
 
@@ -4712,7 +4716,7 @@ function buildSourceContext(blocks = [], index = 0) {
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
   // Keep external-source parsing bounded so one large page can never stall
   // the Netlify function. Recent news is normally near the top of the page.
-  const blocks = extractHtmlBlocks(String(html || "").slice(0, 1500000)).slice(0, 900);
+  const blocks = extractHtmlBlocks(String(html || "").slice(0, 400000)).slice(0, 250);
   const focusPlayers = sourceFocusCatalog(playerCatalog);
   const pagePublishedAt = extractPagePublishedAt(html);
   const items = [];
@@ -4759,7 +4763,7 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
       sourceLabel: source.label
     });
 
-    if (items.length >= 80) break;
+    if (items.length >= 35) break;
   }
 
   return items;
@@ -4767,7 +4771,7 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
 
 async function fetchSourcePage(source = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 6500);
+  const timer = setTimeout(() => controller.abort(), 3500);
 
   try {
     const response = await fetch(source.url, {
@@ -4811,7 +4815,7 @@ async function fetchFantasyProsApiNews() {
         headers: {
           "x-api-key": FANTASYPROS_API_KEY
         },
-        timeoutMs: 6500
+        timeoutMs: 4000
       }
     );
 
@@ -4857,7 +4861,7 @@ async function loadExpertRankings() {
       const remote = await fetchJson(
         EXPERT_RANKINGS_URL,
         "Zoo GM expert rankings",
-        { timeoutMs: 6500 }
+        { timeoutMs: 4000 }
       );
 
       const normalized = normalizeExpertRankingsPayload(remote);
@@ -4985,7 +4989,7 @@ async function () {
       await fetchJson(
         ESPN_ENDPOINT,
         "Zoo GM ESPN",
-        { timeoutMs: 10000 }
+        { timeoutMs: 8000 }
       );
 
     if (
