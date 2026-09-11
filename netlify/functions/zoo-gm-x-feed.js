@@ -1,5 +1,78 @@
-const RSS_FEED_URL = "https://rss.app/feeds/MN6OehHIKqSDETrP.xml";
 const ESPN_ENDPOINT = "https://ma3dtribe.com/.netlify/functions/zoo-gm-espn";
+
+// -----------------------------------------------------------------------------
+// ZOO GM INTELLIGENCE SOURCES
+// X/RSS.app has been retired. These sources now provide the live-news and
+// weekly-analysis layer that feeds the same Zoo GM decision engine.
+// -----------------------------------------------------------------------------
+const INTELLIGENCE_SOURCES = [
+  {
+    key: "nbcsports",
+    label: "NBC Sports Rotoworld",
+    url: "https://www.nbcsports.com/fantasy/football/player-news",
+    type: "PLAYER_NEWS",
+    enabled: true
+  },
+  {
+    key: "fantasypros",
+    label: "FantasyPros Player News",
+    url: "https://www.fantasypros.com/nfl/player-news.php",
+    type: "PLAYER_NEWS",
+    enabled: true
+  },
+  {
+    key: "footballguys",
+    label: "Footballguys IDP",
+    url: process.env.ZOO_GM_FOOTBALLGUYS_URL ||
+      "https://www.footballguys.com/article/2026-idp-start-sit-studs-duds-week01",
+    type: "WEEKLY_IDP",
+    enabled: true
+  },
+  {
+    key: "fantasypros_idp",
+    label: "FantasyPros IDP Start/Sit",
+    url: process.env.ZOO_GM_FANTASYPROS_IDP_URL ||
+      "https://www.fantasypros.com/2026/09/fantasy-football-idp-start-sit-lineup-advice-week-1-2026/",
+    type: "WEEKLY_IDP",
+    enabled: true
+  },
+  {
+    key: "si_idp",
+    label: "SI Fantasy IDP Rankings",
+    url: process.env.ZOO_GM_SI_IDP_URL ||
+      "https://www.si.com/onsi/fantasy/rankings/fantasy-football-idp-rankings-week-1-arvell-reese-raises-intrigue-with-dl-lb-eligibility",
+    type: "WEEKLY_IDP_RANKINGS",
+    enabled: true
+  }
+];
+
+// Optional: later we can point this at a JSON file generated from your weekly
+// Jamey / Heath / Fabiano / ESPN / FantasyPros rankings without changing this
+// function again.
+const EXPERT_RANKINGS_URL = process.env.ZOO_GM_EXPERT_RANKINGS_URL || "";
+
+// If no rankings URL is configured, this block is the manual weekly fallback.
+// Expected format:
+// {
+//   week: 1,
+//   experts: [
+//     { name: "Jamey Eisenberg", rankings: { QB: ["Player A"], RB: [...], WR: [...], TE: [...], LB: [...], DL: [...], CB: [...], S: [...] } }
+//   ]
+// }
+const INLINE_WEEKLY_EXPERT_RANKINGS = {
+  week: 1,
+  experts: []
+};
+
+const EXPECTED_EXPERTS = [
+  "Jamey Eisenberg",
+  "Heath Cummings",
+  "Michael Fabiano",
+  "ESPN",
+  "FantasyPros"
+];
+
+const FANTASYPROS_API_KEY = process.env.FANTASYPROS_API_KEY || "";
 
 const URGENT_KEYWORDS = [
   "ruled out", "did not practice", "limited practice", "full practice", "practicing", "practiced",
@@ -232,6 +305,11 @@ const SOURCE_TIER_2 = new Set([
 ]);
 
 const SOURCE_TIER_FANTASY = new Set([
+  "nbcsports",
+  "fantasypros",
+  "fantasypros_idp",
+  "footballguys",
+  "si_idp",
   "fantasypts",
   "fantasypros",
   "fantasyproshub",
@@ -4456,30 +4534,445 @@ function buildPostIntelligence(
   };
 }
 
+// -----------------------------------------------------------------------------
+// NON-X SOURCE INGESTION
+// -----------------------------------------------------------------------------
+function decodeHtmlEntities(text = "") {
+  return decodeXml(
+    String(text)
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&#8217;/g, "'")
+      .replace(/&#8211;/g, "-")
+      .replace(/&#8212;/g, "-")
+      .replace(/&hellip;/gi, "...")
+  );
+}
+
+function cleanSourceText(text = "") {
+  return decodeHtmlEntities(
+    String(text)
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractHtmlBlocks(html = "") {
+  const blocks = [];
+  const seen = new Set();
+
+  const add = raw => {
+    const text = cleanSourceText(raw);
+    const key = normalize(text);
+    if (text.length < 18 || key.length < 18 || seen.has(key)) return;
+    seen.add(key);
+    blocks.push(text);
+  };
+
+  for (const match of String(html).matchAll(
+    /<(h1|h2|h3|h4|h5|p|li|blockquote|time)[^>]*>([\s\S]*?)<\/\1>/gi
+  )) {
+    add(match[2]);
+  }
+
+  // Fallback for pages whose useful content is rendered in div-based cards.
+  if (blocks.length < 20) {
+    const plain = cleanSourceText(html);
+    for (const chunk of plain.split(/(?<=[.!?])\s+(?=[A-Z0-9])/)) {
+      add(chunk);
+    }
+  }
+
+  return blocks.slice(0, 1600);
+}
+
+function extractPagePublishedAt(html = "") {
+  const text = String(html || "");
+
+  const jsonDate =
+    text.match(/"datePublished"\s*:\s*"([^"]+)"/i) ||
+    text.match(/"dateModified"\s*:\s*"([^"]+)"/i);
+
+  if (jsonDate && jsonDate[1]) {
+    const time = new Date(jsonDate[1]).getTime();
+    if (Number.isFinite(time)) return new Date(time).toISOString();
+  }
+
+  const timeTag = text.match(/<time[^>]+datetime=["']([^"']+)["']/i);
+  if (timeTag && timeTag[1]) {
+    const time = new Date(timeTag[1]).getTime();
+    if (Number.isFinite(time)) return new Date(time).toISOString();
+  }
+
+  return "";
+}
+
+function parseNewsTimestamp(text = "", fallback = "") {
+  const raw = String(text || "");
+  const match = raw.match(
+    /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,\s+([A-Z][a-z]{2})\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?\s+(\d{1,2}):(\d{2})\s*(am|pm)\s*(EDT|EST|CDT|CST|MDT|MST|PDT|PST)?\b/i
+  );
+
+  if (!match) return fallback || "";
+
+  const monthMap = {
+    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11
+  };
+
+  const month = monthMap[
+    match[1].charAt(0).toUpperCase() +
+    match[1].slice(1, 3).toLowerCase()
+  ];
+
+  if (month == null) return fallback || "";
+
+  const year = Number(match[3] || 2026);
+  let hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const ampm = String(match[6]).toLowerCase();
+
+  if (ampm === "pm" && hour !== 12) hour += 12;
+  if (ampm === "am" && hour === 12) hour = 0;
+
+  const zone = String(match[7] || "EDT").toUpperCase();
+  const offsets = {
+    EDT: "-04:00", EST: "-05:00",
+    CDT: "-05:00", CST: "-06:00",
+    MDT: "-06:00", MST: "-07:00",
+    PDT: "-07:00", PST: "-08:00"
+  };
+
+  const mm = String(month + 1).padStart(2, "0");
+  const dd = String(Number(match[2])).padStart(2, "0");
+  const hh = String(hour).padStart(2, "0");
+  const min = String(minute).padStart(2, "0");
+
+  const iso = `${year}-${mm}-${dd}T${hh}:${min}:00${offsets[zone] || "-04:00"}`;
+  const time = new Date(iso).getTime();
+
+  return Number.isFinite(time)
+    ? new Date(time).toISOString()
+    : (fallback || "");
+}
+
+function sourceFocusCatalog(playerCatalog = []) {
+  const protectedPlayers = playerCatalog.filter(player =>
+    player.ownershipStatus === "ZOO" ||
+    player.ownershipStatus === "LFL OWNED" ||
+    player.onWatchList ||
+    player.opponentThisWeek
+  );
+
+  const available = playerCatalog
+    .filter(player => player.ownershipStatus === "AVAILABLE")
+    .sort((a, b) =>
+      playerMarketQuality(b) - playerMarketQuality(a)
+    )
+    .slice(0, 450);
+
+  const merged = new Map();
+
+  for (const player of [...protectedPlayers, ...available]) {
+    const key = player.playerId
+      ? `id:${player.playerId}`
+      : `name:${normalize(player.name)}`;
+
+    if (!merged.has(key)) merged.set(key, player);
+  }
+
+  return [...merged.values()];
+}
+
+function buildSourceContext(blocks = [], index = 0) {
+  const parts = [];
+  const start = Math.max(0, index - 1);
+  const end = Math.min(blocks.length - 1, index + 2);
+
+  for (let i = start; i <= end; i += 1) {
+    if (blocks[i]) parts.push(blocks[i]);
+  }
+
+  return parts.join(" ").slice(0, 1600);
+}
+
+function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
+  const blocks = extractHtmlBlocks(html);
+  const focusPlayers = sourceFocusCatalog(playerCatalog);
+  const pagePublishedAt = extractPagePublishedAt(html);
+  const items = [];
+  const seen = new Set();
+
+  for (let index = 0; index < blocks.length; index += 1) {
+    const block = blocks[index];
+    const direct = findMatchingLeaguePlayers(block, focusPlayers);
+
+    if (!direct.length) continue;
+
+    const context = buildSourceContext(blocks, index);
+    const contextMatches = findMatchingLeaguePlayers(context, focusPlayers);
+
+    const playerNames = [
+      ...new Set(
+        [...direct, ...contextMatches]
+          .map(player => player.name)
+          .filter(Boolean)
+      )
+    ].slice(0, 6);
+
+    if (!playerNames.length) continue;
+
+    const publishedAt =
+      source.type === "PLAYER_NEWS"
+        ? parseNewsTimestamp(context, pagePublishedAt)
+        : (pagePublishedAt || new Date().toISOString());
+
+    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(context).slice(0, 260)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    items.push({
+      author: source.label,
+      handle: source.key,
+      text: context,
+      title: `${source.label}: ${playerNames.join(", ")}`,
+      link: source.url,
+      publishedAt,
+      guid: key,
+      sourceType: source.type,
+      sourceKey: source.key,
+      sourceLabel: source.label
+    });
+
+    if (items.length >= 80) break;
+  }
+
+  return items;
+}
+
+async function fetchSourcePage(source = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+
+  try {
+    const response = await fetch(source.url, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.0; +https://ma3dtribe.com)",
+        "Accept": "text/html,application/xhtml+xml",
+        "Cache-Control": "no-cache"
+      },
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`${source.label} request failed: ${response.status}`);
+    }
+
+    return {
+      ok: true,
+      source,
+      html: await response.text()
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      source,
+      error: error.message || String(error)
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchFantasyProsApiNews() {
+  if (!FANTASYPROS_API_KEY) return [];
+
+  try {
+    const data = await fetchJson(
+      "https://api.fantasypros.com/v2/json/nfl/news?limit=100",
+      "FantasyPros API",
+      {
+        headers: {
+          "x-api-key": FANTASYPROS_API_KEY
+        }
+      }
+    );
+
+    return (data.items || []).map(item => ({
+      author: "FantasyPros",
+      handle: "fantasypros",
+      text: cleanSourceText(item.desc || item.description || item.title || ""),
+      title: item.title || "FantasyPros Player News",
+      link: item.link || "https://www.fantasypros.com/nfl/player-news.php",
+      publishedAt: item.created || item.created_formated || "",
+      guid: `fantasypros-api-${item.id || normalize(item.title || "")}`,
+      sourceType: "PLAYER_NEWS",
+      sourceKey: "fantasypros",
+      sourceLabel: "FantasyPros Player News"
+    }));
+  } catch (error) {
+    console.warn("FantasyPros API unavailable:", error.message);
+    return [];
+  }
+}
+
+function normalizeExpertRankingsPayload(payload = {}) {
+  if (!payload || typeof payload !== "object") {
+    return {
+      week: null,
+      experts: []
+    };
+  }
+
+  const experts = Array.isArray(payload.experts)
+    ? payload.experts.filter(expert => expert && expert.name && expert.rankings)
+    : [];
+
+  return {
+    week: payload.week ?? payload.scoringPeriodId ?? null,
+    experts
+  };
+}
+
+async function loadExpertRankings() {
+  if (EXPERT_RANKINGS_URL) {
+    try {
+      const remote = await fetchJson(
+        EXPERT_RANKINGS_URL,
+        "Zoo GM expert rankings"
+      );
+
+      const normalized = normalizeExpertRankingsPayload(remote);
+      if (normalized.experts.length) {
+        return {
+          ...normalized,
+          source: "REMOTE",
+          expectedExperts: EXPECTED_EXPERTS
+        };
+      }
+    } catch (error) {
+      console.warn("Expert rankings URL unavailable:", error.message);
+    }
+  }
+
+  return {
+    ...normalizeExpertRankingsPayload(INLINE_WEEKLY_EXPERT_RANKINGS),
+    source: "INLINE",
+    expectedExperts: EXPECTED_EXPERTS
+  };
+}
+
+function buildExpertRankingConsensus(expertRankings = {}, playerCatalog = []) {
+  const byPlayer = new Map();
+
+  for (const expert of expertRankings.experts || []) {
+    for (const [position, names] of Object.entries(expert.rankings || {})) {
+      if (!Array.isArray(names)) continue;
+
+      names.forEach((name, index) => {
+        const key = normalize(name);
+        if (!key) return;
+
+        const current = byPlayer.get(key) || {
+          name,
+          position: canonicalPosition(position),
+          ranks: [],
+          experts: []
+        };
+
+        current.ranks.push(index + 1);
+        current.experts.push({
+          expert: expert.name,
+          rank: index + 1
+        });
+
+        byPlayer.set(key, current);
+      });
+    }
+  }
+
+  const catalogByName = new Map(
+    playerCatalog.map(player => [normalize(player.name), player])
+  );
+
+  return [...byPlayer.values()]
+    .map(item => {
+      const avg = item.ranks.length
+        ? item.ranks.reduce((sum, rank) => sum + rank, 0) / item.ranks.length
+        : 999;
+
+      const player = catalogByName.get(normalize(item.name)) || {};
+
+      return {
+        ...item,
+        averageRank: Math.round(avg * 100) / 100,
+        expertCount: item.ranks.length,
+        playerId: player.playerId || "",
+        nflTeam: player.nflTeam || "",
+        ownershipStatus: player.ownershipStatus || "UNKNOWN",
+        lflTeam: player.lflTeam || "",
+        onWatchList: Boolean(player.onWatchList),
+        opponentThisWeek: Boolean(player.opponentThisWeek)
+      };
+    })
+    .sort((a, b) => {
+      if (a.position !== b.position) {
+        return a.position.localeCompare(b.position);
+      }
+      return a.averageRank - b.averageRank;
+    });
+}
+
+function buildExpertRankingItems(consensus = [], week = null) {
+  const now = new Date().toISOString();
+
+  return consensus.slice(0, 300).map(item => ({
+    author: "Zoo GM Expert Consensus",
+    handle: "expert_consensus",
+    text:
+      `${item.name} is consensus ${item.position}${item.averageRank} ` +
+      `across ${item.expertCount} expert ranking${item.expertCount === 1 ? "" : "s"} ` +
+      `for Week ${week || "current"}.`,
+    title: `Expert Consensus: ${item.name}`,
+    link: "",
+    publishedAt: now,
+    guid: `expert-${week || "current"}-${normalize(item.position)}-${normalize(item.name)}`,
+    sourceType: "EXPERT_RANKING",
+    sourceKey: "expert_consensus",
+    sourceLabel: "Zoo GM Expert Consensus"
+  }));
+}
+
+function dedupeSourceItems(items = []) {
+  const seen = new Set();
+  const output = [];
+
+  for (const item of items) {
+    const key =
+      normalize(item.guid || "") ||
+      `${normalize(item.sourceKey || item.author || "")}|${normalize(item.title || "")}|${normalize(item.text || "").slice(0, 220)}`;
+
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    output.push(item);
+  }
+
+  return output;
+}
+
 exports.handler =
 async function () {
   try {
-    const [
-      xml,
-      espnData
-    ] =
-      await Promise.all([
-        fetchText(
-          `${RSS_FEED_URL}?zgm=${Date.now()}`,
-          "RSS feed",
-          {
-            headers: {
-              "Cache-Control": "no-cache",
-              "Pragma": "no-cache"
-            }
-          }
-        ),
-
-        fetchJson(
-          ESPN_ENDPOINT,
-          "Zoo GM ESPN"
-        )
-      ]);
+    const espnData =
+      await fetchJson(
+        ESPN_ENDPOINT,
+        "Zoo GM ESPN"
+      );
 
     if (
       !espnData ||
@@ -4510,79 +5003,73 @@ async function () {
         watchList
       );
 
-    const rawPosts = [
-      ...xml.matchAll(
-        /<item>([\s\S]*?)<\/item>/gi
-      )
-    ].map(
-      match => {
-        const item =
-          match[1];
+    const expertRankings =
+      await loadExpertRankings();
 
-        const rawTitle =
-          getTag(
-            item,
-            "title"
-          );
+    const expertRankingConsensus =
+      buildExpertRankingConsensus(
+        expertRankings,
+        playerCatalog
+      );
 
-        const rawDescription =
-          getTag(
-            item,
-            "description"
-          );
+    const sourceResults =
+      await Promise.all(
+        INTELLIGENCE_SOURCES
+          .filter(source => source.enabled)
+          .map(fetchSourcePage)
+      );
 
-        return {
-          author:
-            getAuthorFromTitle(
-              stripHtml(
-                rawTitle
-              )
-            ),
+    const sourceStatus =
+      sourceResults.map(result => ({
+        key: result.source.key,
+        label: result.source.label,
+        type: result.source.type,
+        url: result.source.url,
+        ok: result.ok,
+        error: result.ok ? "" : result.error
+      }));
 
-          handle:
-            stripHtml(
-              getTag(
-                item,
-                "dc:creator"
-              )
-            ),
+    const scrapedItems = [];
 
-          text:
-            stripHtml(
-              rawDescription
-            ),
+    for (const result of sourceResults) {
+      if (!result.ok) continue;
 
-          title:
-            stripHtml(
-              rawTitle
-            ),
+      scrapedItems.push(
+        ...extractItemsFromSource(
+          result.source,
+          result.html,
+          playerCatalog
+        )
+      );
+    }
 
-          link:
-            stripHtml(
-              getTag(
-                item,
-                "link"
-              )
-            ),
+    const fantasyProsApiItems =
+      await fetchFantasyProsApiNews();
 
-          publishedAt:
-            stripHtml(
-              getTag(
-                item,
-                "pubDate"
-              )
-            ),
-
-          guid:
-            stripHtml(
-              getTag(
-                item,
-                "guid"
-              )
+    // If the official FantasyPros API is configured, prefer it over scraped
+    // FantasyPros player-news cards while still keeping the weekly article.
+    const filteredScrapedItems =
+      fantasyProsApiItems.length
+        ? scrapedItems.filter(item =>
+            !(
+              item.sourceKey === "fantasypros" &&
+              item.sourceType === "PLAYER_NEWS"
             )
-        };
-      }
-    );
+          )
+        : scrapedItems;
+
+    const expertRankingItems =
+      buildExpertRankingItems(
+        expertRankingConsensus,
+        expertRankings.week
+      );
+
+    const rawPosts =
+      dedupeSourceItems([
+        ...fantasyProsApiItems,
+        ...filteredScrapedItems,
+        ...expertRankingItems
+      ]);
 
     const posts =
       rawPosts
@@ -4713,6 +5200,18 @@ async function () {
     const summary = {
       postsReviewed:
         posts.length,
+
+      intelligenceItemsReviewed:
+        posts.length,
+
+      sourcesAttempted:
+        sourceStatus.length,
+
+      sourcesOnline:
+        sourceStatus.filter(source => source.ok).length,
+
+      expertsLoaded:
+        expertRankings.experts.length,
 
       relevantPosts:
         brief.relevantPosts,
@@ -4900,17 +5399,34 @@ async function () {
             true,
 
           source:
-            "Zoo GM Fantasy X List",
+            "Zoo GM Fantasy Intelligence",
 
           dataSources: {
-            xFeed:
-              "RSS.app",
+            playerNews:
+              "NBC Sports Rotoworld + FantasyPros",
+
+            weeklyIdp:
+              "Footballguys + FantasyPros + SI",
+
+            expertRankings:
+              expertRankings.experts.length
+                ? `${expertRankings.experts.length} weekly expert sets`
+                : "Awaiting weekly expert rankings",
 
             espnLeague:
               "Live Zoo GM ESPN Sync",
 
             watchList:
               "ESPN Watch List"
+          },
+
+          sourceStatus,
+          expertRankings: {
+            week: expertRankings.week,
+            source: expertRankings.source,
+            expertsLoaded: expertRankings.experts.map(expert => expert.name),
+            expectedExperts: expertRankings.expectedExperts,
+            consensus: expertRankingConsensus
           },
 
           summary,
@@ -4934,7 +5450,7 @@ async function () {
     error
   ) {
     console.error(
-      "Zoo GM X Feed Error:",
+      "Zoo GM Intelligence Error:",
       error
     );
 
@@ -4956,7 +5472,7 @@ async function () {
             false,
 
           error:
-            "Unable to retrieve or analyze Zoo GM X feed.",
+            "Unable to retrieve or analyze Zoo GM intelligence.",
 
           detail:
             error.message
