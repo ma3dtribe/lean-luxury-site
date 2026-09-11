@@ -616,33 +616,42 @@ async function fetchText(
   label,
   options = {}
 ) {
-  const response =
-    await fetch(
-      url,
-      {
-        method:
-          options.method ||
-          "GET",
+  const controller = new AbortController();
+  const timeoutMs = Number(options.timeoutMs || 8000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-        headers: {
-          "User-Agent":
-            "Zoo-GM/1.0",
+  try {
+    const response =
+      await fetch(
+        url,
+        {
+          method:
+            options.method ||
+            "GET",
 
-          ...(
-            options.headers ||
-            {}
-          )
+          headers: {
+            "User-Agent":
+              "Zoo-GM/1.0",
+
+            ...(
+              options.headers ||
+              {}
+            )
+          },
+          signal: controller.signal
         }
-      }
-    );
+      );
 
-  if (!response.ok) {
-    throw new Error(
-      `${label} request failed: ${response.status}`
-    );
+    if (!response.ok) {
+      throw new Error(
+        `${label} request failed: ${response.status}`
+      );
+    }
+
+    return await response.text();
+  } finally {
+    clearTimeout(timer);
   }
-
-  return response.text();
 }
 
 async function fetchJson(
@@ -4673,7 +4682,7 @@ function sourceFocusCatalog(playerCatalog = []) {
     .sort((a, b) =>
       playerMarketQuality(b) - playerMarketQuality(a)
     )
-    .slice(0, 450);
+    .slice(0, 150);
 
   const merged = new Map();
 
@@ -4701,7 +4710,9 @@ function buildSourceContext(blocks = [], index = 0) {
 }
 
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
-  const blocks = extractHtmlBlocks(html);
+  // Keep external-source parsing bounded so one large page can never stall
+  // the Netlify function. Recent news is normally near the top of the page.
+  const blocks = extractHtmlBlocks(String(html || "").slice(0, 1500000)).slice(0, 900);
   const focusPlayers = sourceFocusCatalog(playerCatalog);
   const pagePublishedAt = extractPagePublishedAt(html);
   const items = [];
@@ -4756,7 +4767,7 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
 
 async function fetchSourcePage(source = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12000);
+  const timer = setTimeout(() => controller.abort(), 6500);
 
   try {
     const response = await fetch(source.url, {
@@ -4799,7 +4810,8 @@ async function fetchFantasyProsApiNews() {
       {
         headers: {
           "x-api-key": FANTASYPROS_API_KEY
-        }
+        },
+        timeoutMs: 6500
       }
     );
 
@@ -4844,7 +4856,8 @@ async function loadExpertRankings() {
     try {
       const remote = await fetchJson(
         EXPERT_RANKINGS_URL,
-        "Zoo GM expert rankings"
+        "Zoo GM expert rankings",
+        { timeoutMs: 6500 }
       );
 
       const normalized = normalizeExpertRankingsPayload(remote);
@@ -4971,7 +4984,8 @@ async function () {
     const espnData =
       await fetchJson(
         ESPN_ENDPOINT,
-        "Zoo GM ESPN"
+        "Zoo GM ESPN",
+        { timeoutMs: 10000 }
       );
 
     if (
