@@ -107,6 +107,34 @@ const EXPECTED_EXPERTS = [
 
 const FANTASYPROS_API_KEY = process.env.FANTASYPROS_API_KEY || "";
 
+// -----------------------------------------------------------------------------
+// PERFORMANCE CACHE
+// Netlify may reuse a warm function instance. Keep short-lived news and response
+// caches plus a longer weekly-ranking cache so repeated dashboard opens do not
+// re-download/re-parse the same large pages. These are best-effort only; a cold
+// start still works normally.
+// -----------------------------------------------------------------------------
+const RUNTIME_CACHE = {
+  finalResponse: null,
+  finalResponseAt: 0,
+  sourcePages: new Map(),
+  expertRankings: new Map(),
+  fantasyProsApi: { value: null, at: 0 }
+};
+
+const PLAYER_ALIAS_CACHE = new Map();
+const CATALOG_NAME_INDEX_CACHE = new WeakMap();
+const CACHE_TTL = Object.freeze({
+  finalResponseMs: 45 * 1000,
+  playerNewsMs: 90 * 1000,
+  expertRankingsMs: 15 * 60 * 1000,
+  fantasyProsApiMs: 90 * 1000
+});
+
+function cacheFresh(at = 0, ttlMs = 0) {
+  return Boolean(at) && (Date.now() - at) < ttlMs;
+}
+
 const URGENT_KEYWORDS = [
   "ruled out", "did not practice", "limited practice", "full practice", "practicing", "practiced",
   "injured reserve", "inactive", "injured", "injury", "questionable",
@@ -764,34 +792,56 @@ function buildPlayerAliases(
   ];
 }
 
+function normalizedPlayerAliases(playerName = "") {
+  const key = normalize(playerName);
+  if (!key) return [];
+  if (PLAYER_ALIAS_CACHE.has(key)) return PLAYER_ALIAS_CACHE.get(key);
+
+  const aliases = buildPlayerAliases(playerName)
+    .map(alias => normalize(alias))
+    .filter(alias => alias && alias.length >= 4);
+
+  const unique = [...new Set(aliases)];
+  PLAYER_ALIAS_CACHE.set(key, unique);
+  return unique;
+}
+
+function normalizedTextContainsPlayer(normalizedText = "", playerName = "") {
+  if (!normalizedText) return false;
+  return normalizedPlayerAliases(playerName).some(alias =>
+    normalizedText.includes(` ${alias} `)
+  );
+}
+
 function textContainsPlayer(
   text = "",
   playerName = ""
 ) {
-  const normalizedText =
-    ` ${normalize(text)} `;
+  return normalizedTextContainsPlayer(` ${normalize(text)} `, playerName);
+}
 
-  return buildPlayerAliases(
-    playerName
-  ).some(
-    alias => {
-      const normalizedAlias =
-        normalize(
-          alias
-        );
+function catalogPlayersForNames(playerCatalog = [], names = []) {
+  if (!Array.isArray(playerCatalog) || !playerCatalog.length || !Array.isArray(names)) return [];
 
-      if (
-        !normalizedAlias ||
-        normalizedAlias.length < 4
-      ) {
-        return false;
-      }
-
-      return normalizedText.includes(
-        ` ${normalizedAlias} `
-      );
+  let index = CATALOG_NAME_INDEX_CACHE.get(playerCatalog);
+  if (!index) {
+    index = new Map();
+    for (const player of playerCatalog) {
+      if (player && player.name) index.set(normalize(player.name), player);
     }
-  );
+    CATALOG_NAME_INDEX_CACHE.set(playerCatalog, index);
+  }
+
+  const output = [];
+  const seen = new Set();
+  for (const name of names) {
+    const key = normalize(name);
+    const player = index.get(key);
+    if (!player || seen.has(key)) continue;
+    seen.add(key);
+    output.push(player);
+  }
+  return output;
 }
 
 function clamp(
@@ -1257,12 +1307,13 @@ function findMatchingLeaguePlayers(
   text = "",
   playerCatalog = []
 ) {
-  return playerCatalog.filter(
-    player =>
-      textContainsPlayer(
-        text,
-        player.name
-      )
+  // Normalize a story ONCE. The old implementation normalized the same story
+  // again for every player in the catalog, which was the largest CPU hotspot.
+  const normalizedText = ` ${normalize(text)} `;
+  if (!normalizedText.trim()) return [];
+
+  return playerCatalog.filter(player =>
+    player && player.name && normalizedTextContainsPlayer(normalizedText, player.name)
   );
 }
 
@@ -4188,11 +4239,10 @@ function buildPostIntelligence(
   const combinedText =
     `${post.title} ${post.text}`;
 
-  const playerMatches =
-    findMatchingLeaguePlayers(
-      combinedText,
-      playerCatalog
-    );
+  const anchoredPlayers = catalogPlayersForNames(playerCatalog, post.playerNames || []);
+  const playerMatches = anchoredPlayers.length
+    ? anchoredPlayers
+    : findMatchingLeaguePlayers(combinedText, playerCatalog);
 
   const eventTypes =
     detectEventTypes(
@@ -4210,13 +4260,14 @@ function buildPostIntelligence(
       post.author
     );
 
-  const contextImpact =
-    buildContextImpact(
-      combinedText,
-      playerMatches,
-      playerCatalog,
-      eventTypes
-    );
+  const contextImpact = post.sourceType === "EXPERT_RANKING"
+    ? []
+    : buildContextImpact(
+        combinedText,
+        playerMatches,
+        playerCatalog,
+        eventTypes
+      );
 
   const fantasyKeywords =
     findKeywords(
@@ -4848,7 +4899,8 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
       guid: key,
       sourceType: source.type,
       sourceKey: source.key,
-      sourceLabel: source.label
+      sourceLabel: source.label,
+      playerNames
     });
 
     if (items.length >= 25) break;
@@ -4858,16 +4910,20 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
 }
 
 async function fetchSourcePage(source = {}) {
+  const cached = RUNTIME_CACHE.sourcePages.get(source.url);
+  if (cached && cacheFresh(cached.at, CACHE_TTL.playerNewsMs)) {
+    return { ...cached.value, cached: true };
+  }
+
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3500);
+  const timer = setTimeout(() => controller.abort(), 2800);
 
   try {
     const response = await fetch(source.url, {
       method: "GET",
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.0; +https://ma3dtribe.com)",
-        "Accept": "text/html,application/xhtml+xml",
-        "Cache-Control": "no-cache"
+        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/3.0; +https://ma3dtribe.com)",
+        "Accept": "text/html,application/xhtml+xml"
       },
       signal: controller.signal
     });
@@ -4876,16 +4932,14 @@ async function fetchSourcePage(source = {}) {
       throw new Error(`${source.label} request failed: ${response.status}`);
     }
 
-    return {
-      ok: true,
-      source,
-      html: await response.text()
-    };
+    const value = { ok: true, source, html: await response.text() };
+    RUNTIME_CACHE.sourcePages.set(source.url, { value, at: Date.now() });
+    return value;
   } catch (error) {
     return {
       ok: false,
       source,
-      error: error.message || String(error)
+      error: error.name === "AbortError" ? "timeout" : (error.message || String(error))
     };
   } finally {
     clearTimeout(timer);
@@ -4895,19 +4949,24 @@ async function fetchSourcePage(source = {}) {
 async function fetchFantasyProsApiNews() {
   if (!FANTASYPROS_API_KEY) return [];
 
+  if (
+    Array.isArray(RUNTIME_CACHE.fantasyProsApi.value) &&
+    cacheFresh(RUNTIME_CACHE.fantasyProsApi.at, CACHE_TTL.fantasyProsApiMs)
+  ) {
+    return RUNTIME_CACHE.fantasyProsApi.value;
+  }
+
   try {
     const data = await fetchJson(
       "https://api.fantasypros.com/v2/json/nfl/news?limit=100",
       "FantasyPros API",
       {
-        headers: {
-          "x-api-key": FANTASYPROS_API_KEY
-        },
-        timeoutMs: 4000
+        headers: { "x-api-key": FANTASYPROS_API_KEY },
+        timeoutMs: 2800
       }
     );
 
-    return (data.items || []).map(item => ({
+    const items = (data.items || []).map(item => ({
       author: "FantasyPros",
       handle: "fantasypros",
       text: cleanSourceText(item.desc || item.description || item.title || ""),
@@ -4919,6 +4978,9 @@ async function fetchFantasyProsApiNews() {
       sourceKey: "fantasypros",
       sourceLabel: "FantasyPros Player News"
     }));
+
+    RUNTIME_CACHE.fantasyProsApi = { value: items, at: Date.now() };
+    return items;
   } catch (error) {
     console.warn("FantasyPros API unavailable:", error.message);
     return [];
@@ -4943,65 +5005,83 @@ function normalizeExpertRankingsPayload(payload = {}) {
   };
 }
 
-function rankingFocusCatalog(playerCatalog = []) {
-  // Weekly expert rankings must be built from the FULL league player catalog,
-  // not only Zoo/Watch/available players. That allows the news layer to monitor
-  // the true Top 50 RB/WR/LB and Top 15 QB/TE even when those players are
-  // rostered by other LFL teams.
-  return playerCatalog.filter(player =>
-    player &&
-    player.name &&
-    ["QB", "RB", "WR", "TE", "LB", "DL", "CB", "S", "K"].includes(
-      canonicalPosition(player.position)
-    )
-  );
+function rankingFocusCatalog(playerCatalog = [], allowedPositions = []) {
+  // We only need enough candidates to reliably identify the weekly Top 50/15
+  // universe. Restricting the matcher prevents thousands of unnecessary string
+  // scans while still leaving a generous buffer around every requested cutoff.
+  const allowed = new Set((allowedPositions || []).map(canonicalPosition).filter(Boolean));
+  const limits = {
+    QB: 80, RB: 160, WR: 160, TE: 80, K: 60,
+    LB: 160, DL: 120, CB: 120, S: 120
+  };
+
+  const grouped = new Map();
+  for (const player of playerCatalog) {
+    if (!player || !player.name) continue;
+    const position = canonicalPosition(player.position);
+    if (!limits[position]) continue;
+    if (allowed.size && !allowed.has(position)) continue;
+    if (!grouped.has(position)) grouped.set(position, []);
+    grouped.get(position).push(player);
+  }
+
+  const output = [];
+  for (const [position, players] of grouped.entries()) {
+    players.sort((a, b) => playerMarketQuality(b) - playerMarketQuality(a));
+    output.push(...players.slice(0, limits[position]));
+  }
+  return output;
 }
 
 function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
-  const allowed = new Set((source.positions || []).map(canonicalPosition));
-  const focus = rankingFocusCatalog(playerCatalog).filter(player =>
-    !allowed.size || allowed.has(canonicalPosition(player.position))
+  const allowedPositions = (source.positions || []).map(canonicalPosition).filter(Boolean);
+  const focus = rankingFocusCatalog(playerCatalog, allowedPositions);
+  if (!focus.length) return {};
+
+  const page = ` ${normalize(cleanSourceText(String(html || "").slice(0, 400000)))} `;
+  if (!page.trim()) return {};
+
+  // Build one alias matcher and scan the ranking page once. The prior version
+  // called page.indexOf() for every player on every page, producing billions of
+  // character comparisons on a cold start.
+  const aliasMap = new Map();
+  for (const player of focus) {
+    for (const alias of normalizedPlayerAliases(player.name)) {
+      if (!alias.includes(" ") || alias.length < 6) continue;
+      if (!aliasMap.has(alias)) aliasMap.set(alias, player);
+    }
+  }
+
+  const aliases = [...aliasMap.keys()].sort((a, b) => b.length - a.length);
+  if (!aliases.length) return {};
+
+  const regex = new RegExp(
+    `(?:^|\\s)(${aliases.map(escapeRegExp).join("|")})(?=\\s|$|[.-])`,
+    "g"
   );
 
-  // Ranking tables differ across publishers. The first occurrence of a player's
-  // full name in the cleaned ranking page is a stable lightweight ordering signal.
-  const page = ` ${normalize(cleanSourceText(String(html || "").slice(0, 650000))) } `;
   const ordered = [];
-
-  for (const player of focus) {
-    const aliases = buildPlayerAliases(player.name)
-      .map(normalize)
-      .filter(alias => alias && alias.includes(" "));
-
-    let bestIndex = -1;
-    for (const alias of aliases) {
-      const index = page.indexOf(` ${alias} `);
-      if (index >= 0 && (bestIndex < 0 || index < bestIndex)) bestIndex = index;
-    }
-
-    if (bestIndex >= 0) {
-      ordered.push({
-        name: player.name,
-        position: canonicalPosition(player.position),
-        index: bestIndex
-      });
-    }
+  const seenPlayers = new Set();
+  let match;
+  while ((match = regex.exec(page)) !== null) {
+    const alias = match[1];
+    const player = aliasMap.get(alias);
+    if (!player) continue;
+    const position = canonicalPosition(player.position);
+    const key = `${position}:${normalize(player.name)}`;
+    if (seenPlayers.has(key)) continue;
+    seenPlayers.add(key);
+    ordered.push({ name: player.name, position, index: match.index });
+    if (ordered.length >= 600) break;
   }
 
   ordered.sort((a, b) => a.index - b.index);
 
   const rankings = {};
-  const seen = new Set();
-
   for (const item of ordered) {
-    const key = `${item.position}:${normalize(item.name)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-
     if (!rankings[item.position]) rankings[item.position] = [];
     if (rankings[item.position].length < 100) rankings[item.position].push(item.name);
   }
-
   return rankings;
 }
 
@@ -5112,6 +5192,12 @@ async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 
 }
 
 async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
+  const weekKey = String(Number(currentWeek) || 1);
+  const cached = RUNTIME_CACHE.expertRankings.get(weekKey);
+  if (cached && cacheFresh(cached.at, CACHE_TTL.expertRankingsMs)) {
+    return { ...cached.value, cached: true };
+  }
+
   if (EXPERT_RANKINGS_URL) {
     try {
       const remote = await fetchJson(
@@ -5122,12 +5208,14 @@ async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
 
       const normalized = normalizeExpertRankingsPayload(remote);
       if (normalized.experts.length) {
-        return {
+        const value = {
           ...normalized,
           source: "REMOTE JSON",
           expectedExperts: EXPECTED_EXPERTS,
           sourceStatus: []
         };
+        RUNTIME_CACHE.expertRankings.set(weekKey, { value, at: Date.now() });
+        return value;
       }
     } catch (error) {
       console.warn("Expert rankings JSON unavailable:", error.message);
@@ -5146,7 +5234,7 @@ async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
     .map(result => result.expert);
 
   if (experts.length) {
-    return {
+    const value = {
       week,
       experts,
       source: "LIVE WEEKLY WEB",
@@ -5164,9 +5252,11 @@ async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
         ESPN_WEEKLY_RANKINGS_STATUS
       ]
     };
+    RUNTIME_CACHE.expertRankings.set(weekKey, { value, at: Date.now() });
+    return value;
   }
 
-  return {
+  const value = {
     ...normalizeExpertRankingsPayload(INLINE_WEEKLY_EXPERT_RANKINGS),
     week,
     source: "INLINE",
@@ -5184,6 +5274,8 @@ async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
       ESPN_WEEKLY_RANKINGS_STATUS
     ]
   };
+  RUNTIME_CACHE.expertRankings.set(weekKey, { value, at: Date.now() });
+  return value;
 }
 
 function buildExpertRankingConsensus(expertRankings = {}, playerCatalog = []) {
@@ -5313,18 +5405,31 @@ function applyRankedNewsUniverse(playerCatalog = [], consensus = []) {
 
 function filterNewsItemsToUniverse(items = [], playerCatalog = []) {
   const focus = sourceFocusCatalog(playerCatalog);
-  return (items || []).filter(item =>
-    findMatchingLeaguePlayers(
+  const output = [];
+
+  for (const item of items || []) {
+    const matches = findMatchingLeaguePlayers(
       `${item.title || ""} ${item.text || ""}`,
       focus
-    ).length > 0
-  );
+    );
+    if (!matches.length) continue;
+    output.push({
+      ...item,
+      playerNames: [...new Set(matches.map(player => player.name).filter(Boolean))].slice(0, 5)
+    });
+  }
+  return output;
 }
 
 function buildExpertRankingItems(consensus = [], week = null) {
   const now = new Date().toISOString();
+  const decisionRelevant = consensus.filter(item => {
+    const limit = NEWS_RANK_LIMITS[item.position] || 0;
+    const rankedPriority = limit && Number(item.averageRank || 999) <= limit;
+    return rankedPriority || item.ownershipStatus === "ZOO" || item.onWatchList || item.opponentThisWeek;
+  });
 
-  return consensus.slice(0, 300).map(item => ({
+  return decisionRelevant.slice(0, 220).map(item => ({
     author: "Zoo GM Expert Consensus",
     handle: "expert_consensus",
     text:
@@ -5337,7 +5442,8 @@ function buildExpertRankingItems(consensus = [], week = null) {
     guid: `expert-${week || "current"}-${normalize(item.position)}-${normalize(item.name)}`,
     sourceType: "EXPERT_RANKING",
     sourceKey: "expert_consensus",
-    sourceLabel: "Zoo GM Expert Consensus"
+    sourceLabel: "Zoo GM Expert Consensus",
+    playerNames: [item.name]
   }));
 }
 
@@ -5360,12 +5466,36 @@ function dedupeSourceItems(items = []) {
 
 exports.handler =
 async function () {
+  const runStartedAt = Date.now();
+
+  if (
+    RUNTIME_CACHE.finalResponse &&
+    cacheFresh(RUNTIME_CACHE.finalResponseAt, CACHE_TTL.finalResponseMs)
+  ) {
+    return {
+      ...RUNTIME_CACHE.finalResponse,
+      headers: {
+        ...(RUNTIME_CACHE.finalResponse.headers || {}),
+        "X-Zoo-GM-Cache": "HIT"
+      }
+    };
+  }
+
   try {
+    // Start independent public-source requests immediately so their network
+    // time overlaps the ESPN fetch and weekly ranking work.
+    const sourceResultsPromise = Promise.all(
+      INTELLIGENCE_SOURCES
+        .filter(source => source.enabled)
+        .map(fetchSourcePage)
+    );
+    const fantasyProsApiPromise = fetchFantasyProsApiNews();
+
     const espnData =
       await fetchJson(
         ESPN_ENDPOINT,
         "Zoo GM ESPN",
-        { timeoutMs: 8000 }
+        { timeoutMs: 6500 }
       );
 
     if (
@@ -5425,12 +5555,7 @@ async function () {
         expertRankingConsensus
       );
 
-    const sourceResults =
-      await Promise.all(
-        INTELLIGENCE_SOURCES
-          .filter(source => source.enabled)
-          .map(fetchSourcePage)
-      );
+    const sourceResults = await sourceResultsPromise;
 
     const sourceStatus =
       sourceResults.map(result => ({
@@ -5458,7 +5583,7 @@ async function () {
 
     const fantasyProsApiItems =
       filterNewsItemsToUniverse(
-        await fetchFantasyProsApiNews(),
+        await fantasyProsApiPromise,
         playerCatalog
       );
 
@@ -5805,23 +5930,14 @@ async function () {
             position,
             rankedNewsUniverse.filter(player => player.position === position).length
           ])
-        )
+        ),
+
+      runtimeMs: Date.now() - runStartedAt,
+      rankingCacheHit: Boolean(expertRankings.cached),
+      newsPagesCached: sourceResults.filter(result => result.cached).length
     };
 
-    return {
-      statusCode:
-        200,
-
-      headers: {
-        "Content-Type":
-          "application/json",
-
-        "Cache-Control":
-          "no-store"
-      },
-
-      body:
-        JSON.stringify({
+    const payload = {
           ok:
             true,
 
@@ -5877,8 +5993,31 @@ async function () {
           opportunityAlerts,
           zooPlayerUpdates,
           posts
-        })
+        };
+
+    const response = {
+      statusCode:
+        200,
+
+      headers: {
+        "Content-Type":
+          "application/json",
+
+        "Cache-Control":
+          "public, max-age=30, s-maxage=30, stale-while-revalidate=120",
+
+        "X-Zoo-GM-Cache":
+          "MISS"
+      },
+
+      body:
+        JSON.stringify(payload)
     };
+
+    RUNTIME_CACHE.finalResponse = response;
+    RUNTIME_CACHE.finalResponseAt = Date.now();
+    return response;
+
 
   } catch (
     error
