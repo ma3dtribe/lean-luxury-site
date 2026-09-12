@@ -59,28 +59,38 @@ const EXPERT_RANKING_SOURCES = [
   {
     key: "cbs",
     name: "CBS Sports",
-    url: "https://www.cbssports.com/fantasy/football/rankings/ppr/flex/",
-    positions: ["RB", "WR", "TE"]
+    pages: [{ url: "https://www.cbssports.com/fantasy/football/rankings/ppr/top200/weekly/", positions: ["QB", "RB", "WR", "TE", "K"] }]
   },
   {
     key: "fantasypros_rankings",
     name: "FantasyPros",
-    url: "https://www.fantasypros.com/nfl/rankings/ppr-rb.php",
-    positions: ["RB"]
-  },
-  {
-    key: "espn_rankings",
-    name: "ESPN",
-    url: "https://www.espn.com/fantasy/football/story/_/page/FFPreseasonRank26RB/nfl-fantasy-football-draft-rankings-2026-rb-running-back",
-    positions: ["RB"]
+    pages: [
+      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-ppr-flex.php", positions: ["RB", "WR", "TE"] },
+      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-qb.php", positions: ["QB"] },
+      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-k.php", positions: ["K"] },
+      { url: "https://www.fantasypros.com/nfl/rankings/idp", positions: ["LB", "DL", "CB", "S"] }
+    ]
   },
   {
     key: "fabiano",
     name: "Michael Fabiano",
-    url: "https://www.si.com/fantasy/player-rankings",
-    positions: ["QB", "RB", "WR", "TE"]
+    dynamicWeekPages: true,
+    positions: ["QB", "RB", "WR", "TE", "K"]
   }
 ];
+
+// ESPN is intentionally not mixed into the weekly consensus until a current
+// weekly ESPN ranking page is discoverable. The preseason RB article supplied
+// earlier is useful draft context, but using it as a weekly ranking would
+// contaminate start/sit decisions.
+const ESPN_WEEKLY_RANKINGS_STATUS = {
+  key: "espn_rankings",
+  name: "ESPN",
+  url: "https://www.espn.com/fantasy/football/",
+  ok: false,
+  playerCount: 0,
+  error: "No reliable current-week ESPN ranking page configured; stale preseason rankings excluded"
+};
 
 // Manual fallback remains available if a ranking page changes its markup.
 const INLINE_WEEKLY_EXPERT_RANKINGS = {
@@ -4729,13 +4739,15 @@ function parseNewsTimestamp(text = "", fallback = "") {
 }
 
 function sourceFocusCatalog(playerCatalog = []) {
-  // Runtime news matching is intentionally focused on players who can drive
-  // a Zoo decision now: Zoo, Watch List, weekly opponent, and top free agents.
-  // Other LFL rosters remain available through the ESPN intelligence layer.
+  // Runtime news matching covers every player who can materially affect Zoo:
+  // Zoo, Watch List, weekly opponent, the expert-ranked news universe, and
+  // the strongest available free agents. Ranked-news limits are applied after
+  // the weekly expert consensus is built: Top 50 RB/WR/LB + Top 15 QB/TE.
   const protectedPlayers = playerCatalog.filter(player =>
     player.ownershipStatus === "ZOO" ||
     player.onWatchList ||
-    player.opponentThisWeek
+    player.opponentThisWeek ||
+    player.newsRanked
   );
 
   const available = playerCatalog
@@ -4758,71 +4770,78 @@ function sourceFocusCatalog(playerCatalog = []) {
   return [...merged.values()];
 }
 
-function samePlayerSet(a = [], b = []) {
-  const aKeys = new Set(a.map(player => normalize(player.name)).filter(Boolean));
-  const bKeys = new Set(b.map(player => normalize(player.name)).filter(Boolean));
-  if (!aKeys.size || !bKeys.size) return false;
-  return [...bKeys].every(key => aKeys.has(key));
-}
+function buildSourceContext(blocks = [], index = 0) {
+  const parts = [];
+  const start = Math.max(0, index - 1);
+  const end = Math.min(blocks.length - 1, index + 1);
 
-function buildPlayerNewsContext(blocks = [], index = 0, direct = [], focusPlayers = []) {
-  const parts = [blocks[index]];
-
-  // Player-news pages often place headline, timestamp and analysis in adjacent
-  // elements. Walk forward only, stopping as soon as the next player story begins.
-  for (let offset = 1; offset <= 3; offset += 1) {
-    const candidate = blocks[index + offset];
-    if (!candidate) break;
-
-    const candidatePlayers = findMatchingLeaguePlayers(candidate, focusPlayers);
-    if (candidatePlayers.length && !samePlayerSet(direct, candidatePlayers)) break;
-
-    parts.push(candidate);
-    if (parts.join(" ").length >= 900) break;
+  for (let i = start; i <= end; i += 1) {
+    if (blocks[i]) parts.push(blocks[i]);
   }
 
-  return parts.join(" ").slice(0, 1000);
+  return parts.join(" ").slice(0, 1200);
+}
+
+function extractFantasyProsStories(html = "") {
+  const plain = cleanSourceText(String(html || "").slice(0, 450000));
+  const marker = /(?:More News\s+)?([A-Z][A-Za-z0-9.'’\- ]{2,55})\s+([^]{0,110}?)\s+(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+([A-Z][a-z]{2})\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{1,2}:\d{2}(?:am|pm))\s+(EDT|EST|CDT|CST|MDT|MST|PDT|PST)\s+By\s+/g;
+  const matches = [...plain.matchAll(marker)].slice(0, 45);
+  const stories = [];
+
+  for (let i = 0; i < matches.length; i += 1) {
+    const current = matches[i];
+    const next = matches[i + 1];
+    const start = current.index || 0;
+    const end = next?.index || Math.min(plain.length, start + 1400);
+    const text = plain.slice(start, Math.min(end, start + 1400)).trim();
+    if (text.length < 60) continue;
+    stories.push(text);
+  }
+
+  return stories;
+}
+
+function extractNbcStories(html = "") {
+  const blocks = extractHtmlBlocks(String(html || "").slice(0, 400000)).slice(0, 220);
+  return blocks.filter(block => block.length >= 45 && block.length <= 1400);
 }
 
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
-  // Keep external-source parsing bounded so one large page can never stall
-  // the Netlify function. Recent news is normally near the top of the page.
-  const blocks = extractHtmlBlocks(String(html || "").slice(0, 400000)).slice(0, 250);
   const focusPlayers = sourceFocusCatalog(playerCatalog);
   const pagePublishedAt = extractPagePublishedAt(html);
   const items = [];
   const seen = new Set();
 
-  for (let index = 0; index < blocks.length; index += 1) {
-    const block = blocks[index];
-    const direct = findMatchingLeaguePlayers(block, focusPlayers);
+  let stories;
+  if (source.key === "fantasypros") {
+    stories = extractFantasyProsStories(html);
+  } else if (source.key === "nbcsports") {
+    stories = extractNbcStories(html);
+  } else {
+    stories = extractHtmlBlocks(String(html || "").slice(0, 350000)).slice(0, 180);
+  }
+
+  for (const story of stories) {
+    const direct = findMatchingLeaguePlayers(story, focusPlayers);
     if (!direct.length) continue;
 
-    const context = source.type === "PLAYER_NEWS"
-      ? buildPlayerNewsContext(blocks, index, direct, focusPlayers)
-      : block.slice(0, 1000);
-
-    // Only the player(s) named in the story anchor the item. Teammate impact is
-    // evaluated later and only for genuine role-changing events.
-    const playerNames = [
-      ...new Set(direct.map(player => player.name).filter(Boolean))
-    ].slice(0, 4);
-
+    // Keep each intelligence item tied only to players actually named in that
+    // individual story. Team/context effects are calculated later by the engine.
+    const playerNames = [...new Set(direct.map(player => player.name).filter(Boolean))].slice(0, 5);
     if (!playerNames.length) continue;
 
-    const publishedAt =
-      source.type === "PLAYER_NEWS"
-        ? parseNewsTimestamp(context, pagePublishedAt)
-        : (pagePublishedAt || new Date().toISOString());
+    const publishedAt = source.type === "PLAYER_NEWS"
+      ? parseNewsTimestamp(story, pagePublishedAt)
+      : (pagePublishedAt || new Date().toISOString());
 
-    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(context).slice(0, 220)}`;
+    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(story).slice(0, 320)}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
     items.push({
       author: source.label,
       handle: source.key,
-      text: context,
+      text: story.slice(0, 1400),
       title: `${source.label}: ${playerNames.join(", ")}`,
       link: source.url,
       publishedAt,
@@ -4832,7 +4851,7 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
       sourceLabel: source.label
     });
 
-    if (items.length >= 24) break;
+    if (items.length >= 25) break;
   }
 
   return items;
@@ -4925,8 +4944,13 @@ function normalizeExpertRankingsPayload(payload = {}) {
 }
 
 function rankingFocusCatalog(playerCatalog = []) {
-  // Rank only decision-relevant players to keep page parsing cheap and useful.
-  return sourceFocusCatalog(playerCatalog).filter(player =>
+  // Weekly expert rankings must be built from the FULL league player catalog,
+  // not only Zoo/Watch/available players. That allows the news layer to monitor
+  // the true Top 50 RB/WR/LB and Top 15 QB/TE even when those players are
+  // rostered by other LFL teams.
+  return playerCatalog.filter(player =>
+    player &&
+    player.name &&
     ["QB", "RB", "WR", "TE", "LB", "DL", "CB", "S", "K"].includes(
       canonicalPosition(player.position)
     )
@@ -4981,53 +5005,113 @@ function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
   return rankings;
 }
 
-async function fetchExpertRankingSource(source = {}, playerCatalog = []) {
+function buildExpertRankingPages(source = {}, week = 1) {
+  if (Array.isArray(source.pages) && source.pages.length) return source.pages;
+
+  if (source.dynamicWeekPages) {
+    const base = `https://www.si.com/fantasy/week-${Number(week) || 1}`;
+    return [
+      { url: `${base}-quarterback-rankings`, positions: ["QB"] },
+      { url: `${base}-running-back-rankings`, positions: ["RB"] },
+      { url: `${base}-wide-receiver-rankings`, positions: ["WR"] },
+      { url: `${base}-tight-end-rankings`, positions: ["TE"] },
+      { url: `${base}-kicker-rankings`, positions: ["K"] }
+    ];
+  }
+
+  return source.url
+    ? [{ url: source.url, positions: source.positions || [] }]
+    : [];
+}
+
+function mergePositionRankings(target = {}, incoming = {}) {
+  for (const [position, names] of Object.entries(incoming || {})) {
+    if (!Array.isArray(names) || !names.length) continue;
+    if (!target[position]) target[position] = [];
+    const seen = new Set(target[position].map(normalize));
+    for (const name of names) {
+      const key = normalize(name);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      target[position].push(name);
+      if (target[position].length >= 100) break;
+    }
+  }
+  return target;
+}
+
+async function fetchExpertRankingPage(source = {}, page = {}, playerCatalog = []) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3000);
+  const timer = setTimeout(() => controller.abort(), 3200);
 
   try {
-    const response = await fetch(source.url, {
+    const response = await fetch(page.url, {
       method: "GET",
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.1; +https://ma3dtribe.com)",
-        "Accept": "text/html,application/xhtml+xml"
+        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.2; +https://ma3dtribe.com)",
+        "Accept": "text/html,application/xhtml+xml",
+        "Cache-Control": "no-cache"
       },
       signal: controller.signal
     });
 
-    if (!response.ok) {
-      throw new Error(`${source.name} rankings request failed: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const html = await response.text();
-    const rankings = rankingsFromPage(source, html, playerCatalog);
+    const rankings = rankingsFromPage(
+      { ...source, positions: page.positions || source.positions || [] },
+      html,
+      playerCatalog
+    );
     const playerCount = Object.values(rankings).reduce((sum, names) => sum + names.length, 0);
+    if (!playerCount) throw new Error("no matched players");
 
-    if (!playerCount) throw new Error(`${source.name} rankings contained no matched players`);
-
-    return {
-      ok: true,
-      source,
-      expert: {
-        name: source.name,
-        rankings
-      },
-      playerCount
-    };
+    return { ok: true, url: page.url, positions: page.positions || [], rankings, playerCount };
   } catch (error) {
     return {
       ok: false,
-      source,
-      error: error.message || String(error),
-      playerCount: 0
+      url: page.url,
+      positions: page.positions || [],
+      rankings: {},
+      playerCount: 0,
+      error: error.name === "AbortError" ? "timeout" : (error.message || String(error))
     };
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function loadExpertRankings(playerCatalog = []) {
-  // Optional structured JSON still takes precedence when configured.
+async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 1) {
+  const pages = buildExpertRankingPages(source, week);
+  const pageResults = await Promise.all(
+    pages.map(page => fetchExpertRankingPage(source, page, playerCatalog))
+  );
+
+  const rankings = {};
+  for (const result of pageResults) {
+    if (result.ok) mergePositionRankings(rankings, result.rankings);
+  }
+
+  const playerCount = Object.values(rankings).reduce((sum, names) => sum + names.length, 0);
+  const ok = playerCount > 0;
+
+  return {
+    ok,
+    source,
+    expert: ok ? { name: source.name, rankings } : null,
+    playerCount,
+    pageStatus: pageResults.map(result => ({
+      url: result.url,
+      positions: result.positions,
+      ok: result.ok,
+      playerCount: result.playerCount,
+      error: result.ok ? "" : result.error
+    })),
+    error: ok ? "" : "No current weekly ranking pages returned matched players"
+  };
+}
+
+async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
   if (EXPERT_RANKINGS_URL) {
     try {
       const remote = await fetchJson(
@@ -5050,9 +5134,10 @@ async function loadExpertRankings(playerCatalog = []) {
     }
   }
 
+  const week = Number(currentWeek) || Number(INLINE_WEEKLY_EXPERT_RANKINGS.week) || 1;
   const results = await Promise.all(
     EXPERT_RANKING_SOURCES.map(source =>
-      fetchExpertRankingSource(source, playerCatalog)
+      fetchExpertRankingSource(source, playerCatalog, week)
     )
   );
 
@@ -5062,33 +5147,42 @@ async function loadExpertRankings(playerCatalog = []) {
 
   if (experts.length) {
     return {
-      week: INLINE_WEEKLY_EXPERT_RANKINGS.week,
+      week,
       experts,
-      source: "LIVE WEB",
+      source: "LIVE WEEKLY WEB",
       expectedExperts: EXPECTED_EXPERTS,
-      sourceStatus: results.map(result => ({
-        key: result.source.key,
-        name: result.source.name,
-        url: result.source.url,
-        ok: result.ok,
-        playerCount: result.playerCount || 0,
-        error: result.ok ? "" : result.error
-      }))
+      sourceStatus: [
+        ...results.map(result => ({
+          key: result.source.key,
+          name: result.source.name,
+          url: result.pageStatus?.[0]?.url || result.source.url || "",
+          ok: result.ok,
+          playerCount: result.playerCount || 0,
+          pageStatus: result.pageStatus || [],
+          error: result.ok ? "" : result.error
+        })),
+        ESPN_WEEKLY_RANKINGS_STATUS
+      ]
     };
   }
 
   return {
     ...normalizeExpertRankingsPayload(INLINE_WEEKLY_EXPERT_RANKINGS),
+    week,
     source: "INLINE",
     expectedExperts: EXPECTED_EXPERTS,
-    sourceStatus: results.map(result => ({
-      key: result.source.key,
-      name: result.source.name,
-      url: result.source.url,
-      ok: result.ok,
-      playerCount: result.playerCount || 0,
-      error: result.ok ? "" : result.error
-    }))
+    sourceStatus: [
+      ...results.map(result => ({
+        key: result.source.key,
+        name: result.source.name,
+        url: result.pageStatus?.[0]?.url || result.source.url || "",
+        ok: result.ok,
+        playerCount: result.playerCount || 0,
+        pageStatus: result.pageStatus || [],
+        error: result.ok ? "" : result.error
+      })),
+      ESPN_WEEKLY_RANKINGS_STATUS
+    ]
   };
 }
 
@@ -5151,6 +5245,80 @@ function buildExpertRankingConsensus(expertRankings = {}, playerCatalog = []) {
       }
       return a.averageRank - b.averageRank;
     });
+}
+
+const NEWS_RANK_LIMITS = Object.freeze({
+  RB: 50,
+  WR: 50,
+  LB: 50,
+  QB: 15,
+  TE: 15
+});
+
+function applyRankedNewsUniverse(playerCatalog = [], consensus = []) {
+  // Reset flags so a warm Netlify invocation never carries stale weekly ranks.
+  for (const player of playerCatalog) {
+    player.newsRanked = false;
+    player.newsConsensusRank = null;
+    player.newsConsensusPosition = "";
+  }
+
+  const catalogByName = new Map(
+    playerCatalog.map(player => [normalize(player.name), player])
+  );
+
+  const grouped = new Map();
+  for (const item of consensus || []) {
+    const position = canonicalPosition(item.position);
+    if (!NEWS_RANK_LIMITS[position]) continue;
+    if (!grouped.has(position)) grouped.set(position, []);
+    grouped.get(position).push(item);
+  }
+
+  const rankedPlayers = [];
+
+  for (const [position, limit] of Object.entries(NEWS_RANK_LIMITS)) {
+    const items = (grouped.get(position) || [])
+      .slice()
+      .sort((a, b) =>
+        (a.averageRank || 999) - (b.averageRank || 999) ||
+        (b.expertCount || 0) - (a.expertCount || 0)
+      )
+      .slice(0, limit);
+
+    items.forEach((item, index) => {
+      const player = catalogByName.get(normalize(item.name));
+      if (!player) return;
+      player.newsRanked = true;
+      player.newsConsensusRank = index + 1;
+      player.newsConsensusPosition = position;
+      rankedPlayers.push({
+        name: player.name,
+        playerId: player.playerId || "",
+        position,
+        consensusRank: index + 1,
+        averageRank: item.averageRank,
+        expertCount: item.expertCount,
+        ownershipStatus: player.ownershipStatus || "UNKNOWN",
+        lflTeam: player.lflTeam || ""
+      });
+    });
+  }
+
+  return rankedPlayers.sort((a, b) => {
+    if (a.position !== b.position) return a.position.localeCompare(b.position);
+    return a.consensusRank - b.consensusRank;
+  });
+}
+
+function filterNewsItemsToUniverse(items = [], playerCatalog = []) {
+  const focus = sourceFocusCatalog(playerCatalog);
+  return (items || []).filter(item =>
+    findMatchingLeaguePlayers(
+      `${item.title || ""} ${item.text || ""}`,
+      focus
+    ).length > 0
+  );
 }
 
 function buildExpertRankingItems(consensus = [], week = null) {
@@ -5229,15 +5397,32 @@ async function () {
         watchList
       );
 
+    const currentWeek = Number(
+      espnData.matchupPeriodId ||
+      espnData.scoringPeriodId ||
+      espnData.currentMatchupPeriodId ||
+      1
+    ) || 1;
+
     const expertRankings =
       await loadExpertRankings(
-        playerCatalog
+        playerCatalog,
+        currentWeek
       );
 
     const expertRankingConsensus =
       buildExpertRankingConsensus(
         expertRankings,
         playerCatalog
+      );
+
+    // Expand live player-news monitoring from Zoo-only relevance to the weekly
+    // expert-ranked universe requested for Zoo GM: Top 50 RB/WR/LB and
+    // Top 15 QB/TE, regardless of which LFL team currently owns the player.
+    const rankedNewsUniverse =
+      applyRankedNewsUniverse(
+        playerCatalog,
+        expertRankingConsensus
       );
 
     const sourceResults =
@@ -5272,7 +5457,10 @@ async function () {
     }
 
     const fantasyProsApiItems =
-      await fetchFantasyProsApiNews();
+      filterNewsItemsToUniverse(
+        await fetchFantasyProsApiNews(),
+        playerCatalog
+      );
 
     // If the official FantasyPros API is configured, prefer it over scraped
     // FantasyPros player-news cards while still keeping the weekly article.
@@ -5606,7 +5794,18 @@ async function () {
         opponentIntelligence.length,
 
       playerCatalogLoaded:
-        playerCatalog.length
+        playerCatalog.length,
+
+      rankedNewsUniverseLoaded:
+        rankedNewsUniverse.length,
+
+      rankedNewsUniverseByPosition:
+        Object.fromEntries(
+          Object.keys(NEWS_RANK_LIMITS).map(position => [
+            position,
+            rankedNewsUniverse.filter(player => player.position === position).length
+          ])
+        )
     };
 
     return {
@@ -5656,6 +5855,12 @@ async function () {
             expectedExperts: expertRankings.expectedExperts,
             sourceStatus: expertRankings.sourceStatus || [],
             consensus: expertRankingConsensus
+          },
+
+          playerNewsUniverse: {
+            rule: "Top 50 RB/WR/LB + Top 15 QB/TE, plus Zoo, Watch List, opponent and top available players",
+            limits: NEWS_RANK_LIMITS,
+            rankedPlayers: rankedNewsUniverse
           },
 
           summary,
