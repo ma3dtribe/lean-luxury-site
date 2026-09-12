@@ -59,7 +59,13 @@ const EXPERT_RANKING_SOURCES = [
   {
     key: "cbs",
     name: "CBS Sports",
-    pages: [{ url: "https://www.cbssports.com/fantasy/football/rankings/ppr/top200/weekly/", positions: ["QB", "RB", "WR", "TE", "K"] }]
+    pages: [
+      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/QB/weekly/", positions: ["QB"] },
+      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/RB/weekly/", positions: ["RB"] },
+      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/WR/weekly/", positions: ["WR"] },
+      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/TE/weekly/", positions: ["TE"] },
+      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/K/weekly/", positions: ["K"] }
+    ]
   },
   {
     key: "fantasypros_rankings",
@@ -101,7 +107,6 @@ const INLINE_WEEKLY_EXPERT_RANKINGS = {
 const EXPECTED_EXPERTS = [
   "CBS Sports",
   "FantasyPros",
-  "ESPN",
   "Michael Fabiano"
 ];
 
@@ -1594,6 +1599,10 @@ function normalizeNflTeam(
       ""
     ).toUpperCase();
 
+  if (["", "FA", "FREE AGENT", "FREE_AGENT", "NONE", "N/A", "NA"].includes(value)) {
+    return "";
+  }
+
   return value === "JAX"
     ? "JAC"
     : value;
@@ -1618,6 +1627,8 @@ function directPositionsForTeam(
     normalizeNflTeam(
       nflTeam
     );
+
+  if (!team) return new Set();
 
   return new Set(
     playerMatches
@@ -2776,6 +2787,10 @@ function buildWatchListIntelligence(
   return results.sort((a, b) => b.priorityScore - a.priorityScore);
 }
 
+function isActiveNflPlayer(player = {}) {
+  return Boolean(normalizeNflTeam(player.nflTeam || ""));
+}
+
 function buildSuggestedWatchList(
   watchList = [],
   espnData = {},
@@ -2790,6 +2805,7 @@ function buildSuggestedWatchList(
   return (espnData.availablePlayers || [])
     .filter(player => {
       if (!player?.name) return false;
+      if (!isActiveNflPlayer(player)) return false;
       const position = canonicalPosition(player.position);
       if (!position || position === "D/ST") return false;
       if (watchedIds.has(String(player.playerId || ""))) return false;
@@ -2879,7 +2895,7 @@ function buildBestAvailableOptions(
   }
 
   return (espnData.availablePlayers || [])
-    .filter(player => player && player.name && canonicalPosition(player.position) !== "D/ST")
+    .filter(player => player && player.name && isActiveNflPlayer(player) && canonicalPosition(player.position) !== "D/ST")
     .map(player => {
       const watchContext =
         watchMap.get(`id:${String(player.playerId || "")}`) ||
@@ -3201,7 +3217,7 @@ function buildReplacementRecommendations(
           ["RB", "WR"].includes(p)
         );
       })
-      .filter(player => player.ownershipStatus === "AVAILABLE" || !player.ownershipStatus)
+      .filter(player => (player.ownershipStatus === "AVAILABLE" || !player.ownershipStatus) && isActiveNflPlayer(player))
       .map(player => ({
         source: "WATCH LIST",
         playerId: player.playerId || null,
@@ -3368,8 +3384,10 @@ function buildOpportunityAlerts(
     if (!Number.isFinite(published) || getPostAgeHours(post.publishedAt) > 24) continue;
 
     const candidates = (i.players || []).filter(player =>
-      player.ownershipStatus === "AVAILABLE" ||
-      availableNames.has(normalize(player.name))
+      isActiveNflPlayer(player) && (
+        player.ownershipStatus === "AVAILABLE" ||
+        availableNames.has(normalize(player.name))
+      )
     );
 
     for (const candidate of candidates) {
@@ -4802,7 +4820,7 @@ function sourceFocusCatalog(playerCatalog = []) {
   );
 
   const available = playerCatalog
-    .filter(player => player.ownershipStatus === "AVAILABLE")
+    .filter(player => player.ownershipStatus === "AVAILABLE" && isActiveNflPlayer(player))
     .sort((a, b) =>
       playerMarketQuality(b) - playerMarketQuality(a)
     )
@@ -5033,6 +5051,60 @@ function rankingFocusCatalog(playerCatalog = [], allowedPositions = []) {
   return output;
 }
 
+
+function cbsAbbreviatedRankingsFromPage(source = {}, html = "", playerCatalog = []) {
+  const allowedPositions = (source.positions || []).map(canonicalPosition).filter(Boolean);
+  const focus = rankingFocusCatalog(playerCatalog, allowedPositions);
+  if (!focus.length) return {};
+
+  const plain = cleanSourceText(String(html || "").slice(0, 500000));
+  if (!plain) return {};
+
+  // CBS displays weekly tables as abbreviated names (for example J. Gibbs),
+  // so full-name matching alone misses them. Build only unambiguous
+  // initial+last-name aliases inside the requested position page.
+  const aliasOwners = new Map();
+  for (const player of focus) {
+    const normalizedName = normalize(player.name || "").replace(/\./g, "");
+    const parts = normalizedName.split(/\s+/).filter(Boolean);
+    if (parts.length < 2) continue;
+    const firstInitial = parts[0][0];
+    const last = parts[parts.length - 1];
+    if (!firstInitial || !last || last.length < 2) continue;
+    const alias = `${firstInitial} ${last}`;
+    if (!aliasOwners.has(alias)) aliasOwners.set(alias, []);
+    aliasOwners.get(alias).push(player);
+  }
+
+  const candidates = [];
+  for (const [alias, owners] of aliasOwners.entries()) {
+    if (owners.length !== 1) continue;
+    const player = owners[0];
+    const [initial, last] = alias.split(" ");
+    const lastPattern = escapeRegExp(last).replace(/\\-/g, "[-\\s]?");
+    const re = new RegExp(`\\b${escapeRegExp(initial)}\\.?\\s+${lastPattern}\\b`, "ig");
+    const match = re.exec(plain);
+    if (!match) continue;
+    candidates.push({
+      name: player.name,
+      position: canonicalPosition(player.position),
+      index: match.index
+    });
+  }
+
+  candidates.sort((a, b) => a.index - b.index);
+  const rankings = {};
+  const seen = new Set();
+  for (const item of candidates) {
+    const key = `${item.position}:${normalize(item.name)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (!rankings[item.position]) rankings[item.position] = [];
+    if (rankings[item.position].length < 100) rankings[item.position].push(item.name);
+  }
+  return rankings;
+}
+
 function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
   const allowedPositions = (source.positions || []).map(canonicalPosition).filter(Boolean);
   const focus = rankingFocusCatalog(playerCatalog, allowedPositions);
@@ -5082,6 +5154,12 @@ function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
     if (!rankings[item.position]) rankings[item.position] = [];
     if (rankings[item.position].length < 100) rankings[item.position].push(item.name);
   }
+
+  if (source.key === "cbs") {
+    const cbsFallback = cbsAbbreviatedRankingsFromPage(source, html, playerCatalog);
+    mergePositionRankings(rankings, cbsFallback);
+  }
+
   return rankings;
 }
 
@@ -5128,7 +5206,7 @@ async function fetchExpertRankingPage(source = {}, page = {}, playerCatalog = []
     const response = await fetch(page.url, {
       method: "GET",
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.2; +https://ma3dtribe.com)",
+        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.3; +https://ma3dtribe.com)",
         "Accept": "text/html,application/xhtml+xml",
         "Cache-Control": "no-cache"
       },
@@ -5248,8 +5326,7 @@ async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
           playerCount: result.playerCount || 0,
           pageStatus: result.pageStatus || [],
           error: result.ok ? "" : result.error
-        })),
-        ESPN_WEEKLY_RANKINGS_STATUS
+        }))
       ]
     };
     RUNTIME_CACHE.expertRankings.set(weekKey, { value, at: Date.now() });
@@ -5324,7 +5401,7 @@ function buildExpertRankingConsensus(expertRankings = {}, playerCatalog = []) {
         averageRank: Math.round(avg * 100) / 100,
         expertCount: item.ranks.length,
         playerId: player.playerId || "",
-        nflTeam: player.nflTeam || "",
+        nflTeam: normalizeNflTeam(player.nflTeam || ""),
         ownershipStatus: player.ownershipStatus || "UNKNOWN",
         lflTeam: player.lflTeam || "",
         onWatchList: Boolean(player.onWatchList),
@@ -5969,6 +6046,7 @@ async function () {
             source: expertRankings.source,
             expertsLoaded: expertRankings.experts.map(expert => expert.name),
             expectedExperts: expertRankings.expectedExperts,
+            note: "ESPN weekly rankings remain excluded until a reliable current-week source is available.",
             sourceStatus: expertRankings.sourceStatus || [],
             consensus: expertRankingConsensus
           },
