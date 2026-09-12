@@ -8,19 +8,17 @@
 
   <style>
     :root {
-      --bg: #090b10;
-      --panel: #11141b;
-      --panel2: #181c25;
-      --border: #262c38;
-      --text: #f3f4f6;
-      --muted: #929baa;
-      --accent: #d7b56d;
-      --accent-soft: rgba(215,181,109,.12);
-      --green: #56c78f;
-      --yellow: #e8c56f;
-      --orange: #e89b5b;
-      --red: #ed6a6a;
-      --blue: #7ca8e8;
+      --bg: #080b0f;
+      --panel: #11161d;
+      --panel2: #171d25;
+      --border: #27313d;
+      --text: #f5f7fa;
+      --muted: #98a5b3;
+      --green: #42d392;
+      --yellow: #ffd166;
+      --orange: #ff9f43;
+      --red: #ff5c5c;
+      --blue: #59a8ff;
     }
 
     * {
@@ -942,439 +940,1323 @@
     }
 
 
-    button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 8px 12px; cursor: pointer; }
-    button:hover { border-color: var(--green); }
-    button:disabled { opacity: .55; cursor: default; }
-    .filter.active { background: var(--green); color: #07100b; border-color: var(--green); font-weight: 700; }
-
-
-    /* 2026 Modern Command Center refresh */
-    body {
-      background:
-        radial-gradient(circle at 12% -8%, rgba(124,168,232,.10), transparent 28%),
-        radial-gradient(circle at 88% 0%, rgba(215,181,109,.08), transparent 24%),
-        linear-gradient(180deg, #0b0d12 0%, #090b10 100%);
-      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      letter-spacing: -.01em;
-    }
-
-    .page { max-width: 1540px; padding: 28px; }
-
-    .topbar {
-      position: sticky; top: 0; z-index: 20;
-      margin: -28px -28px 22px; padding: 18px 28px;
-      background: rgba(9,11,16,.86);
-      backdrop-filter: blur(18px);
-      border-bottom: 1px solid rgba(255,255,255,.07);
-    }
-
-    .brand { width: 100%; display:flex; justify-content:space-between; align-items:center; gap:18px; }
-    .brand-lockup { display:flex; align-items:center; gap:14px; }
-    .brand-mark {
-      width:48px; height:48px; border-radius:14px; display:grid; place-items:center;
-      background: linear-gradient(145deg, rgba(215,181,109,.22), rgba(124,168,232,.09));
-      border:1px solid rgba(215,181,109,.30); font-size:24px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
-    }
-    .brand h1 { font-size: 27px; font-weight: 850; letter-spacing: -.04em; }
-    .eyebrow { color:var(--accent); text-transform:uppercase; letter-spacing:.15em; font-size:10px; font-weight:800; margin-bottom:3px; }
-    .section-note { color:var(--muted); font-size:12px; }
-
-    .refresh-area { display:flex; align-items:center; gap:12px; text-align:left; }
-    .status { margin:0; padding:9px 12px; background:rgba(255,255,255,.035); border-color:rgba(255,255,255,.075); border-radius:999px; font-size:12px; }
-    button {
-      background: var(--accent); color:#14100a; border:0; border-radius:10px; padding:9px 14px;
-      box-shadow:0 5px 18px rgba(0,0,0,.20); font-weight:800;
-    }
-    button:hover { filter:brightness(1.06); opacity:1; }
-
-    .dashboard-grid {
-      display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:16px; align-items:start;
-    }
-    .dashboard-grid > .panel { grid-column:span 6; margin:0; }
-    .dashboard-grid > .section-wide, .dashboard-grid > .priority-panel { grid-column:1 / -1; }
-
-    .panel {
-      background: linear-gradient(180deg, rgba(19,23,31,.96), rgba(15,18,25,.96));
-      border:1px solid rgba(255,255,255,.075); border-radius:16px;
-      box-shadow:0 12px 36px rgba(0,0,0,.18);
-    }
-    .panel:hover { border-color:rgba(255,255,255,.115); }
-    .panel-header { padding:16px 18px 13px; border-bottom:1px solid rgba(255,255,255,.06); }
-    .panel-header h2 { font-size:16px; font-weight:800; letter-spacing:-.02em; }
-    .panel-body { padding:16px 18px 18px; }
-    .priority-panel {
-      background:linear-gradient(135deg, rgba(215,181,109,.11), rgba(17,20,27,.96) 42%);
-      border-color:rgba(215,181,109,.22);
-    }
-
-    .summary-card, .decision-card, .priority-card, .decision-row, .zoo-update-card, .commish-award {
-      background:rgba(255,255,255,.028); border-color:rgba(255,255,255,.07); border-radius:13px;
-      box-shadow:none;
-    }
-    .summary-card:hover, .decision-card:hover, .priority-card:hover, .decision-row:hover, .zoo-update-card:hover {
-      background:rgba(255,255,255,.042); border-color:rgba(215,181,109,.20);
-    }
-    .summary-number { font-size:25px; }
-    .summary-label { color:#9ba5b5; font-size:10px; letter-spacing:.11em; }
-
-    .tag, .filter-count { border-radius:999px; }
-    .filter { border-radius:999px; background:rgba(255,255,255,.035); }
-    .filter.active { background:var(--accent); color:#17120b; border-color:var(--accent); }
-
-    .priority-card-action { color:var(--accent); }
-    a { color:#a9c7f0; }
-
-    .commish-controls { gap:9px; }
-    .commish-controls select {
-      background:rgba(255,255,255,.04); color:var(--text); border:1px solid rgba(255,255,255,.09);
-      border-radius:9px; padding:7px 28px 7px 10px;
-    }
-    .commish-awards { gap:12px; }
-    .commish-award { padding:16px; }
-    .commish-award-title { color:#aab3c0; font-size:11px; text-transform:uppercase; letter-spacing:.07em; }
-    .commish-award-name { font-size:18px; margin-top:7px; }
-    .commish-note { background:rgba(232,197,111,.08); border:1px solid rgba(232,197,111,.18); color:#e8d39a; border-radius:11px; }
-    table { border-collapse:separate; border-spacing:0; }
-    th { color:#8f9aaa; font-size:10px; text-transform:uppercase; letter-spacing:.09em; }
-    td, th { border-bottom-color:rgba(255,255,255,.055); }
-
-    @media (max-width: 1050px) {
-      .dashboard-grid > .panel { grid-column:1 / -1; }
-      .topbar { position:relative; top:auto; }
-    }
-    @media (max-width: 720px) {
-      .page { padding:16px; }
-      .topbar { margin:-16px -16px 16px; padding:16px; }
-      .brand { align-items:flex-start; flex-direction:column; }
-      .refresh-area { width:100%; justify-content:space-between; }
-      .status { flex:1; }
-      .brand h1 { font-size:24px; }
-    }
+    /* Current intelligence additions using the original X-feed layout */
+    .ranking-toolbar { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px; }
+    .ranking-toolbar button { padding:8px 11px; font-size:12px; }
+    .ranking-toolbar button.active { background:var(--green); color:#07110d; border-color:var(--green); }
+    .ranking-table .rank-num { font-weight:900; color:var(--green); white-space:nowrap; }
+    .ranking-table .rank-player { font-weight:800; }
+    .ranking-table .rank-meta { color:var(--muted); font-size:11px; margin-top:2px; }
+    .source-pill { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:4px 7px; margin:2px 3px 2px 0; font-size:10px; color:#cbd5df; }
+    .player-news-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .player-news-card { border:1px solid var(--border); border-radius:10px; background:#0d1218; padding:13px; }
+    .player-news-title { font-weight:900; color:var(--green); margin-bottom:6px; }
+    .player-news-meta { color:var(--muted); font-size:11px; margin-bottom:8px; }
+    .player-news-text { color:#e6edf3; font-size:13px; line-height:1.45; }
+    .player-news-text a { color:var(--blue); text-decoration:none; }
+    .ranking-note { color:var(--muted); font-size:12px; line-height:1.45; }
+    @media (max-width:900px){ .player-news-grid{grid-template-columns:1fr;} }
 
 </style>
 </head>
 
 <body>
+
 <div class="page">
-  <header class="topbar">
+
+  <div class="topbar">
     <div class="brand">
-      <div class="brand-lockup">
-        <div class="brand-mark">🦁</div>
-        <div>
-          <div class="eyebrow">LFL • Zoo Front Office</div>
-          <h1>ZOO GM</h1>
-          <div class="section-note">Live roster, matchup, waiver and league intelligence</div>
-        </div>
-      </div>
-      <div class="refresh-area">
-        <span id="systemStatus" class="status">Loading live league intelligence…</span>
-        <button id="refreshBtn" type="button">Refresh</button>
-      </div>
+      <h1>🦁 ZOO GM</h1>
+      <p>LFL Fantasy Football Command Center</p>
     </div>
-  </header>
 
-  <div id="errorBox" class="error" style="display:none"></div>
-  <main class="dashboard-grid">
-
-  <section class="panel priority-panel" id="actionPanel">
-    <div class="panel-header"><h2>GM Action Center</h2><span id="actionCount" class="filter-count"></span></div>
-    <div class="panel-body"><div id="gmActions" class="priority-grid"></div></div>
-  </section>
-
-  <section class="panel section-wide">
-    <div class="panel-header"><h2>Optimal Starting Lineup</h2><span class="section-note">LFL scoring + weekly rankings + live status</span></div>
-    <div class="panel-body"><div id="optimalLineup" class="decision-grid"></div></div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-header"><h2>Injury & Availability Alerts</h2><span id="injuryCount" class="filter-count"></span></div>
-    <div class="panel-body"><div id="injuryAlerts" class="decision-list"></div></div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-header"><h2>Start / Sit Recommendations</h2><span class="section-note">Only decisions that can improve Zoo</span></div>
-    <div class="panel-body"><div id="startSit" class="decision-list"></div></div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-header"><h2>Add / Drop Decisions</h2><span class="section-note">Always pairs the add with the Zoo cut</span></div>
-    <div class="panel-body"><div id="addDrop" class="decision-list"></div></div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-header"><h2>Watch List Intelligence</h2><span id="watchCount" class="filter-count"></span></div>
-    <div class="panel-body"><div id="watchList" class="decision-grid"></div></div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-header"><h2>Opportunity Players</h2><span class="section-note">Role changes, injuries, usage and emerging value</span></div>
-    <div class="panel-body"><div id="opportunity" class="decision-list"></div></div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-header"><h2>Best Available</h2><span class="section-note">LFL-adjusted waiver pool</span></div>
-    <div class="panel-body"><div id="bestAvailable" class="decision-grid"></div></div>
-  </section>
-
-  <section class="panel section-wide">
-    <div class="panel-header"><h2>Player News</h2><span class="section-note">NBC Sports + FantasyPros • Zoo, Watch List, opponent and ranked-player news</span></div>
-    <div class="panel-body"><div id="zooNews" class="zoo-updates-grid"></div></div>
-  </section>
-
-  <section class="panel section-wide">
-    <div class="panel-header"><h2>Weekly Expert Rankings</h2><span id="expertStatus" class="filter-count"></span></div>
-    <div class="panel-body">
-      <div id="rankingSummary" class="summary-grid"></div>
-      <div class="filters" id="rankingFilters"></div>
-      <div id="expertRankings" class="decision-list"></div>
+    <div class="refresh-area">
+      <button onclick="loadZooGM()">Refresh Intelligence</button>
+      <span id="lastRefresh">Waiting for data...</span>
     </div>
-  </section>
+  </div>
 
-  <section class="panel">
-    <div class="panel-header"><h2>Opponent Intelligence</h2><span id="opponentName" class="filter-count"></span></div>
-    <div class="panel-body"><div id="opponentIntel" class="decision-list"></div></div>
-  </section>
+  <div id="status" class="status">
+    Connecting to Zoo GM intelligence...
+  </div>
 
-  <section class="panel">
-    <div class="panel-header"><h2>Roster Strength & Depth</h2><span class="section-note">Starters, bench, surplus and expendability</span></div>
-    <div class="panel-body"><div id="rosterStrength" class="decision-grid"></div></div>
-  </section>
-
-  <section class="panel section-wide">
-    <div class="panel-header"><h2>Trade Intelligence</h2><span class="section-note">Uses scarcity, rankings, news and roster construction</span></div>
-    <div class="panel-body"><div id="tradeIntel" class="decision-list"></div></div>
-  </section>
-
-
-  <section class="panel section-wide" id="commishReportPanel">
+  <section class="panel intelligence-control-panel">
     <div class="panel-header">
-      <h2>Commish Report</h2>
-      <div class="commish-controls">
-        <label for="commishWeek" class="section-note">Week</label>
-        <select id="commishWeek" aria-label="Commish Report Week"></select>
-        <span id="commishStatus" class="commish-status">Loading…</span>
-      </div>
+      <h2>Live Intelligence</h2>
+      <span class="news-time" id="intelligenceLine">Filter the current Zoo GM intelligence</span>
+    </div>
+    <div class="panel-body intelligence-control-body">
+      <button class="filter" data-filter="relevant"><span>Relevant</span><span class="filter-count" data-count="relevant">—</span></button>
+      <button class="filter" data-filter="act"><span>Act Now</span><span class="filter-count" data-count="act">—</span></button>
+      <button class="filter" data-filter="zoo"><span>Zoo</span><span class="filter-count" data-count="zoo">—</span></button>
+      <button class="filter" data-filter="available"><span>Available</span><span class="filter-count" data-count="available">—</span></button>
+      <button class="filter" data-filter="watch"><span>Watch List</span><span class="filter-count" data-count="watch">—</span></button>
+      <button class="filter" data-filter="opponent"><span>Opponent</span><span class="filter-count" data-count="opponent">—</span></button>
+      <button class="filter active" data-filter="all"><span>All</span><span class="filter-count" data-count="all">—</span></button>
+    </div>
+  </section>
+
+  <div id="gameDayBanner" class="game-day-banner">
+    🏈 GAME-DAY MODE · Prioritize lineup alerts, late injury news, inactive reports and replacement options.
+  </div>
+
+  <section class="panel priority-panel">
+    <div class="panel-header">
+      <h2>GM Action Center</h2>
+      <span class="news-time" id="actionCenterStatus">Checking lineup and roster decisions...</span>
     </div>
     <div class="panel-body">
-      <div id="commishNote" class="commish-note" style="display:none;"></div>
-      <div class="commish-awards">
-        <div class="commish-award"><div class="commish-award-title">🏆 Offensive Player of the Week</div><div class="commish-award-name" id="offensivePOTW">—</div><div class="commish-award-detail" id="offensivePOTWDetail">—</div></div>
-        <div class="commish-award"><div class="commish-award-title">🛡️ Defensive Player of the Week</div><div class="commish-award-name" id="defensivePOTW">—</div><div class="commish-award-detail" id="defensivePOTWDetail">—</div></div>
-        <div class="commish-award"><div class="commish-award-title">💰 Cash Money Team</div><div class="commish-award-name" id="cashMoneyTeam">—</div><div class="commish-award-detail" id="cashMoneyDetail">—</div></div>
-        <div class="commish-award"><div class="commish-award-title">🗑️ Garbage Team</div><div class="commish-award-name" id="garbageTeam">—</div><div class="commish-award-detail" id="garbageDetail">—</div></div>
+      <div class="priority-grid" id="actionCenterGrid">
+        <div class="empty">Building Zoo priorities...</div>
       </div>
-      <div class="summary-label" style="margin:18px 0 8px;">Power Rankings · Wins, then Points For</div>
+    </div>
+  </section>
+
+  <div class="main-grid">
+
+    <main>
+
+      <section class="panel">
+
+        <div class="panel-header">
+          <h2>Intelligence Feed</h2>
+
+          <span class="news-time" id="activeFilterLabel">All intelligence</span>
+        </div>
+
+        <div class="panel-body" id="newsFeed">
+          <div class="empty">Loading intelligence...</div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <aside>
+
+      <section class="panel">
+
+        <div class="panel-header">
+          <h2>This Week</h2>
+        </div>
+
+        <div class="panel-body">
+          <div id="matchup" class="empty">
+            Loading matchup...
+          </div>
+        </div>
+
+      </section>
+
+      <section class="panel">
+
+        <div class="panel-header">
+          <h2>Zoo Roster</h2>
+        </div>
+
+        <div class="panel-body table-wrap">
+
+          <table>
+            <thead>
+              <tr>
+                <th>Slot</th>
+                <th>Player</th>
+                <th>Pos</th>
+              </tr>
+            </thead>
+
+            <tbody id="rosterBody">
+              <tr>
+                <td colspan="3">Loading...</td>
+              </tr>
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+      <section class="panel">
+
+        <div class="panel-header">
+          <h2>Watch List</h2>
+        </div>
+
+        <div class="panel-body table-wrap watch-scroll">
+
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Pos</th>
+                <th>Score</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+
+            <tbody id="watchBody">
+              <tr>
+                <td colspan="4">Loading...</td>
+              </tr>
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+    </aside>
+
+  </div>
+
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Add / Drop Decisions</h2>
+      <span class="news-time">Best available upgrades against Zoo's current roster</span>
+    </div>
+    <div class="panel-body">
+      <div id="addDropDecisions" class="decision-list">
+        <div class="empty">Comparing available players...</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Opportunity & Opponent Alerts</h2>
+      <span class="news-time">Depth-chart opportunities and opponent-impacting changes</span>
+    </div>
+    <div class="panel-body">
+      <div id="opportunityOpponentAlerts" class="decision-list">
+        <div class="empty">Scanning opportunities and opponent news...</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel decision-panel">
+
+    <div class="panel-header">
+      <h2>Zoo Roster Decisions</h2>
+      <span class="news-time">Top 3 most expendable · cross-position waiver comparison</span>
+    </div>
+
+    <div class="panel-body">
+      <div class="decision-grid" id="expendabilityGrid">
+        <div class="empty">Ranking Zoo roster flexibility...</div>
+      </div>
+    </div>
+
+  </section>
+
+
+  <section class="panel zoo-player-updates">
+    <div class="panel-header">
+      <h2>Zoo Player Updates</h2>
+      <span class="news-time">Latest meaningful Zoo roster notes</span>
+    </div>
+    <div class="panel-body">
+      <div id="zooPlayerUpdates" class="zoo-updates-grid">
+        <div class="empty">Checking current intelligence for Zoo player news...</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Player News</h2>
+      <span class="news-time" id="playerNewsStatus">NBC Sports + FantasyPros · ranked players, Zoo, Watch List and opponent</span>
+    </div>
+    <div class="panel-body">
+      <div id="playerNewsGrid" class="player-news-grid">
+        <div class="empty">Loading current player news...</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Weekly Expert Rankings</h2>
+      <span class="news-time" id="expertRankingStatus">Loading current weekly rankings...</span>
+    </div>
+    <div class="panel-body">
+      <div id="rankingToolbar" class="ranking-toolbar"></div>
       <div class="table-wrap">
-        <table>
-          <thead><tr><th>Rank</th><th>Team</th><th>Record</th><th>PF</th></tr></thead>
-          <tbody id="powerRankingsBody"><tr><td colspan="4">Loading…</td></tr></tbody>
+        <table class="ranking-table">
+          <thead><tr><th>Rank</th><th>Player</th><th>Pos</th><th>Team</th><th>Expert Detail</th></tr></thead>
+          <tbody id="expertRankingBody"><tr><td colspan="5">Loading rankings...</td></tr></tbody>
         </table>
       </div>
     </div>
   </section>
 
-  <section class="panel section-wide">
-    <div class="panel-header"><h2>System Status</h2><span class="section-note">Behind-the-scenes source health</span></div>
-    <div class="panel-body"><div id="sourceHealth" class="summary-grid"></div></div>
+  <section class="panel suggested-watch-panel">
+    <div class="panel-header">
+      <h2>GM Suggested Watch Adds</h2>
+      <span class="news-time">Players Zoo GM found who are NOT on your ESPN Watch List</span>
+    </div>
+    <div class="panel-body table-wrap watch-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Pos</th>
+            <th>Zoo Value</th>
+            <th>Status</th>
+            <th>Why</th>
+          </tr>
+        </thead>
+        <tbody id="suggestedWatchBody">
+          <tr><td colspan="5">Scanning available LFL players...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </section>
-  </main>
+
+  <section class="panel">
+
+    <div class="panel-header">
+      <h2>Commish Report</h2>
+
+      <div class="commish-controls">
+        <label for="commishWeek" class="news-time">Week</label>
+        <select id="commishWeek" aria-label="Commish Report Week"></select>
+        <span id="commishStatus" class="commish-status">Loading...</span>
+      </div>
+    </div>
+
+    <div class="panel-body">
+
+      <div id="commishNote" class="commish-note" style="display:none;"></div>
+
+      <div class="commish-awards">
+        <div class="commish-award">
+          <div class="commish-award-title">🏆 Offensive Player of the Week</div>
+          <div class="commish-award-name" id="offensivePOTW">—</div>
+          <div class="commish-award-detail" id="offensivePOTWDetail">—</div>
+        </div>
+
+        <div class="commish-award">
+          <div class="commish-award-title">🛡️ Defensive Player of the Week</div>
+          <div class="commish-award-name" id="defensivePOTW">—</div>
+          <div class="commish-award-detail" id="defensivePOTWDetail">—</div>
+        </div>
+
+        <div class="commish-award">
+          <div class="commish-award-title">💰 Cash Money Team</div>
+          <div class="commish-award-name" id="cashMoneyTeam">—</div>
+          <div class="commish-award-detail" id="cashMoneyDetail">—</div>
+        </div>
+
+        <div class="commish-award">
+          <div class="commish-award-title">🗑️ Garbage Team</div>
+          <div class="commish-award-name" id="garbageTeam">—</div>
+          <div class="commish-award-detail" id="garbageDetail">—</div>
+        </div>
+      </div>
+
+      <div class="summary-label" style="margin-bottom:8px;">Power Rankings · Wins, then Points For</div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Team</th>
+              <th>Record</th>
+              <th>PF</th>
+            </tr>
+          </thead>
+          <tbody id="powerRankingsBody">
+            <tr><td colspan="4">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </section>
+
 </div>
-
 <script>
-(() => {
-  "use strict";
-
-  const ESPN_URL = "/.netlify/functions/zoo-gm-espn";
-  const INTEL_URL = "/.netlify/functions/zoo-gm-x-feed";
-  const POSITIONS = ["QB","RB","WR","TE","K","LB","DL","CB","S"];
+  const ESPN_URL_BASE = "/.netlify/functions/zoo-gm-espn";
+  const X_URL_BASE = "/.netlify/functions/zoo-gm-x-feed";
 
   let espnData = null;
-  let intelData = null;
-  let rankingPosition = "ALL";
+  let xData = null;
+  let activeFilter = "all";
   let selectedReportWeek = null;
+  let rankingPosition = "ALL";
 
-  const $ = id => document.getElementById(id);
-  const arr = value => Array.isArray(value) ? value : [];
-  const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
-  const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[ch]));
-  const text = (...values) => values.find(v => v !== undefined && v !== null && String(v).trim() !== "") ?? "";
-  const normPos = p => String(p || "").toUpperCase().replace("DB","S");
-
-  function empty(message) {
-    return `<div class="empty">${esc(message)}</div>`;
+  function withCacheBust(url) {
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}_=${Date.now()}`;
   }
 
-  function actionClass(action = "") {
-    const a = String(action).toUpperCase();
-    if (/ACT NOW|ADD|START|URGENT/.test(a)) return "URGENT";
-    if (/DROP|SIT|REMOVE|AVOID/.test(a)) return "IMPORTANT";
-    if (/WATCH|HOLD|MONITOR/.test(a)) return "WATCH";
-    return "";
+  function getEspnUrl() {
+    const url = selectedReportWeek
+      ? `${ESPN_URL_BASE}?reportWeek=${encodeURIComponent(selectedReportWeek)}`
+      : ESPN_URL_BASE;
+
+    return withCacheBust(url);
   }
 
-  function tag(label, cls = "") {
-    return label ? `<span class="tag ${cls}">${esc(label)}</span>` : "";
+  function getXUrl() {
+    return withCacheBust(X_URL_BASE);
   }
 
-  function playerName(item = {}) {
-    return text(item.name, item.playerName, item.player, item.addPlayerName, item.addName, item.title, "Player");
+  function esc(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
-  function itemReason(item = {}) {
-    const reasons = arr(item.reasons || item.reason || item.why).filter(Boolean);
-    if (reasons.length) return reasons.join(" • ");
-    return text(item.recommendation, item.detail, item.description, item.summary, item.news, item.text, item.note, item.explanation, "");
+  function formatTime(value) {
+    if (!value) return "";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return date.toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    });
   }
 
-  function decisionCard(item = {}, options = {}) {
-    const name = options.name || playerName(item);
-    const pos = text(item.position, item.pos, item.playerPosition, "");
-    const team = text(item.nflTeam, item.proTeam, item.team, "");
-    const action = options.action || text(item.action, item.recommendationType, item.decision, item.status, "");
-    const score = text(item.score, item.priorityScore, item.valueScore, item.expendabilityScore, item.averageRank, "");
-    const reason = options.reason || itemReason(item);
-    const meta = [pos, team, text(item.ownershipStatus, "")].filter(Boolean).join(" • ");
-    return `<div class="decision-card ${actionClass(action)}">
-      <div class="decision-row-top">
-        <div><div class="decision-name">${esc(name)}</div><div class="decision-meta">${esc(meta)}</div></div>
-        <div>${tag(action, actionClass(action))}${score !== "" ? `<span class="decision-score">${esc(score)}</span>` : ""}</div>
-      </div>
-      ${reason ? `<div class="decision-reasons">${esc(reason)}</div>` : ""}
-    </div>`;
+  function maxRelevance(post) {
+    const i = post.intelligence || {};
+
+    return Math.max(
+      Number(i.fantasyRelevance || 0),
+      Number(i.zooRelevance || 0),
+      Number(i.watchRelevance || 0),
+      Number(i.availableRelevance || 0),
+      Number(i.opponentRelevance || 0)
+    );
   }
 
-  function priorityCard(title, action, detail, score = "") {
-    return `<div class="priority-card ${actionClass(action)}">
-      <div class="priority-card-action">${esc(action || "REVIEW")}</div>
-      <div class="priority-card-title">${esc(title)}</div>
-      ${detail ? `<div class="priority-card-meta">${esc(detail)}</div>` : ""}
-      ${score !== "" ? `<div class="priority-score">${esc(score)}</div>` : ""}
-    </div>`;
+  function rosterStatus(player) {
+    const raw = String(
+      player.rosterStatus ||
+      player.lineupSlot ||
+      ""
+    ).toUpperCase();
+
+    if (raw.includes("IR")) {
+      return {
+        label: "IR",
+        className: "bench"
+      };
+    }
+
+    if (
+      raw.includes("START") ||
+      (
+        raw &&
+        !raw.includes("BENCH") &&
+        !raw.includes("BE")
+      )
+    ) {
+      return {
+        label: player.rosterStatus || player.lineupSlot || "Starter",
+        className: "starter"
+      };
+    }
+
+    return {
+      label: player.rosterStatus || player.lineupSlot || "Bench",
+      className: "bench"
+    };
   }
 
   function getZooRoster() {
-    if (arr(espnData?.zoo?.roster).length) return espnData.zoo.roster;
-    const zooId = espnData?.zooTeamId ?? espnData?.zoo?.teamId;
-    const zoo = arr(espnData?.teams).find(t => String(t.id ?? t.teamId) === String(zooId) || /\bzoo\b/i.test(String(t.name || t.teamName || "")));
-    return arr(zoo?.roster);
-  }
-
-  function rosterSlot(player = {}) {
-    return String(text(player.slot, player.lineupSlot, player.lineupSlotName, player.rosterSlot, "")).toUpperCase();
-  }
-
-  function isBench(player = {}) {
-    const slot = rosterSlot(player);
-    return /BENCH|BE|IR|RESERVE/.test(slot);
-  }
-
-  function getOpponentTeam() {
-    const zooId = String(espnData?.zooTeamId ?? espnData?.zoo?.teamId ?? "");
-    const matchup = arr(espnData?.matchups).find(m => {
-      const homeId = String(m.homeTeamId ?? m.home?.teamId ?? m.home?.id ?? "");
-      const awayId = String(m.awayTeamId ?? m.away?.teamId ?? m.away?.id ?? "");
-      return zooId && (homeId === zooId || awayId === zooId);
-    });
-    if (!matchup) return null;
-    const homeId = String(matchup.homeTeamId ?? matchup.home?.teamId ?? matchup.home?.id ?? "");
-    const oppId = homeId === zooId ? String(matchup.awayTeamId ?? matchup.away?.teamId ?? matchup.away?.id ?? "") : homeId;
-    return arr(espnData?.teams).find(t => String(t.id ?? t.teamId) === oppId) || null;
-  }
-
-  function renderActionCenter() {
-    const actions = [];
-    arr(intelData?.brief?.actions).forEach(x => actions.push({
-      title: playerName(x), action: text(x.action, "REVIEW"), detail: itemReason(x), score: text(x.score, x.priorityScore, "")
-    }));
-    arr(intelData?.lineupAlerts).slice(0, 5).forEach(x => actions.push({
-      title: playerName(x), action: text(x.action, x.recommendation, "LINEUP"), detail: itemReason(x), score: text(x.score, "")
-    }));
-    arr(intelData?.addDropDecisions).slice(0, 5).forEach(x => {
-      const add = text(x.addPlayerName, x.addName, x.add?.name, playerName(x));
-      const drop = text(x.dropPlayerName, x.dropName, x.drop?.name, "");
-      actions.push({title: drop ? `ADD ${add} / DROP ${drop}` : add, action: "ACT NOW", detail: itemReason(x), score: text(x.score, x.priorityScore, "")});
-    });
-    arr(intelData?.opportunityAlerts).filter(x => /ACT NOW|ADD|START/i.test(String(x.action || x.recommendation || ""))).slice(0, 4).forEach(x => actions.push({
-      title: playerName(x), action: text(x.action, "OPPORTUNITY"), detail: itemReason(x), score: text(x.score, "")
-    }));
-
-    const unique = [];
-    const seen = new Set();
-    for (const a of actions) {
-      const key = `${a.title}|${a.action}`.toLowerCase();
-      if (!a.title || seen.has(key)) continue;
-      seen.add(key); unique.push(a);
+    if (espnData?.zoo?.roster) {
+      return espnData.zoo.roster;
     }
-    $("actionCount").textContent = unique.length ? `${unique.length} priorities` : "";
-    $("gmActions").innerHTML = unique.length ? unique.slice(0, 10).map(a => priorityCard(a.title, a.action, a.detail, a.score)).join("") : empty("No urgent Zoo moves right now.");
+
+    const zooId = Number(
+      espnData?.zooTeamId ??
+      espnData?.zoo?.teamId
+    );
+
+    const zooTeam = (espnData?.teams || []).find(
+      team => Number(team.teamId) === zooId
+    );
+
+    return zooTeam?.roster || [];
   }
 
-  function renderOptimalLineup() {
-    const roster = getZooRoster();
-    const alerts = arr(intelData?.lineupAlerts);
-    const replacements = arr(intelData?.replacementRecommendations);
-    const alertByName = new Map(alerts.map(a => [String(playerName(a)).toLowerCase(), a]));
-    const starters = roster.filter(p => !isBench(p));
-    if (!starters.length) {
-      $("optimalLineup").innerHTML = empty("Starting lineup is not available from ESPN right now.");
+  function setFilterCount(name, value) {
+    const el = document.querySelector(`[data-count="${name}"]`);
+    if (el) el.textContent = value ?? 0;
+  }
+
+  function renderSummary() {
+    const posts = xData?.posts || [];
+    const count = filter => posts.filter(post => {
+      const i = post.intelligence || {};
+      if (filter === "relevant") return maxRelevance(post) >= 55 && !i.noise;
+      if (filter === "act") return i.actionTier === "ACT NOW" || i.alertLevel === "URGENT";
+      if (filter === "zoo") return i.zooImpact || (i.zooPlayers || []).length > 0;
+      if (filter === "available") return i.availablePlayerImpact || (i.availablePlayers || []).length > 0;
+      if (filter === "watch") return i.watchListImpact || (i.watchPlayers || []).length > 0;
+      if (filter === "opponent") return i.opponentImpact || (i.opponentPlayers || []).length > 0;
+      return true;
+    }).length;
+
+    setFilterCount("relevant", count("relevant"));
+    setFilterCount("act", count("act"));
+    setFilterCount("zoo", count("zoo"));
+    setFilterCount("available", count("available"));
+    setFilterCount("watch", count("watch"));
+    setFilterCount("opponent", count("opponent"));
+    setFilterCount("all", posts.length);
+
+    const line = document.getElementById("intelligenceLine");
+    if (line) {
+      line.textContent = `${posts.length} X posts analyzed · click a category to filter`;
+    }
+  }
+
+  function renderBrief() {
+    // Legacy brief intentionally replaced by clickable Live Intelligence controls.
+  }
+
+  function postMatchesFilter(post) {
+    const i = post.intelligence || {};
+
+    if (activeFilter === "relevant") {
+      return i.actionTier !== "NOISE";
+    }
+
+    if (activeFilter === "act") {
+      return i.actionTier === "ACT NOW";
+    }
+
+    if (activeFilter === "zoo") {
+      return i.zooImpact ?? i.directZooImpact;
+    }
+
+    if (activeFilter === "available") {
+      return i.availablePlayerImpact;
+    }
+
+    if (activeFilter === "watch") {
+      return i.watchListImpact;
+    }
+
+    if (activeFilter === "opponent") {
+      return i.opponentImpact;
+    }
+
+    return true;
+  }
+
+  function renderNews() {
+    const container = document.getElementById("newsFeed");
+
+    const posts = (xData?.posts || [])
+      .filter(post => String(post?.sourceType || "").toUpperCase() !== "EXPERT_RANKING")
+      .filter(postMatchesFilter)
+      .slice(0, 30);
+
+    if (!posts.length) {
+      container.innerHTML =
+        '<div class="empty">No intelligence matches this filter.</div>';
       return;
     }
-    $("optimalLineup").innerHTML = starters.map(p => {
-      const name = playerName(p);
-      const a = alertByName.get(name.toLowerCase());
-      const replacement = replacements.find(r => String(text(r.currentPlayerName, r.playerName, r.current?.name, "")).toLowerCase() === name.toLowerCase());
-      let reason = a ? itemReason(a) : "Current ESPN starter";
-      if (replacement) reason = itemReason(replacement) || reason;
-      return decisionCard({...p, action: a ? text(a.action, a.recommendation, "REVIEW") : "START", description: reason});
+
+    container.innerHTML = posts.map(post => {
+      const i = post.intelligence || {};
+      const actionTier = i.actionTier || "FYI";
+      const primaryCategory = i.primaryCategory || "FANTASY UPDATE";
+      const recommendation = i.recommendation || "HOLD";
+
+      const tags = [];
+
+      const contextNames = new Set(
+        (i.contextImpact || []).map(player => player.name)
+      );
+
+      (i.zooPlayers || []).forEach(name => {
+        tags.push(
+          `<span class="tag zoo">${esc(name)} · ZOO${contextNames.has(name) ? " · CONTEXT" : ""}</span>`
+        );
+      });
+
+      (i.availablePlayers || []).forEach(name => {
+        tags.push(
+          `<span class="tag available">${esc(name)} · AVAILABLE</span>`
+        );
+      });
+
+      (i.watchPlayers || []).forEach(name => {
+        tags.push(
+          `<span class="tag watch">${esc(name)} · WATCH LIST</span>`
+        );
+      });
+
+      (i.opponentPlayers || []).forEach(name => {
+        tags.push(
+          `<span class="tag opponent">${esc(name)} · OPPONENT</span>`
+        );
+      });
+
+      (i.lflOwnedPlayers || []).forEach(player => {
+        tags.push(
+          `<span class="tag">${esc(player.name)} · ${esc(player.lflTeam || "LFL OWNED")}</span>`
+        );
+      });
+
+      const linkStart = post.link
+        ? `<a href="${esc(post.link)}" target="_blank" rel="noopener">`
+        : "";
+
+      const linkEnd = post.link ? "</a>" : "";
+
+      return `
+        <article class="news-card">
+
+          ${tags.length
+            ? `<div class="tags player-context">${tags.join("")}</div>`
+            : ""
+          }
+
+          <div class="news-top">
+            <div class="news-author">
+              ${esc(post.sourceLabel || post.author || "Fantasy Intelligence")}
+            </div>
+
+            <div class="news-time">
+              ${esc(formatTime(post.publishedAt))}
+            </div>
+          </div>
+
+          <div class="news-text">
+            ${linkStart}
+              ${esc(post.text || post.title || "Fantasy update")}
+            ${linkEnd}
+          </div>
+
+          <div class="meter-row">
+
+            <span class="tag">
+              ${esc(i.primaryEvent || "GENERAL_NEWS")}
+            </span>
+
+            <span class="tag">
+              ${esc(i.sourceAuthority?.tier || "CURATED SOURCE")} · ${Number(i.sourceAuthority?.score || 0)}
+            </span>
+
+            <span class="action-tier ${esc(actionTier.replace(/\s+/g, "-"))}">
+              ${esc(actionTier)}
+            </span>
+
+            <span class="tag">
+              ${esc(primaryCategory)}
+            </span>
+
+            <span class="tag zoo">
+              ${esc(recommendation)}
+            </span>
+
+            <span class="meter">
+              Overall <strong>${maxRelevance(post)}</strong>
+            </span>
+
+            <span class="meter">
+              Fantasy <strong>${Number(i.fantasyRelevance || 0)}</strong>
+            </span>
+
+            <span class="meter">
+              Zoo <strong>${Number(i.zooRelevance || 0)}</strong>
+            </span>
+
+            <span class="meter">
+              Available <strong>${Number(i.availableRelevance || 0)}</strong>
+            </span>
+
+            <span class="meter">
+              Watch <strong>${Number(i.watchRelevance || 0)}</strong>
+            </span>
+
+            <span class="meter">
+              Opponent <strong>${Number(i.opponentRelevance || 0)}</strong>
+            </span>
+
+          </div>
+
+        </article>
+      `;
     }).join("");
   }
 
-  function renderInjuries() {
+  function renderCommishReport() {
+    const report = espnData?.commishReport || {};
+    const week = Number(
+      report.week ||
+      espnData?.reportWeek ||
+      espnData?.matchupPeriodId ||
+      1
+    );
+
+    selectedReportWeek = week;
+
+    const selector = document.getElementById("commishWeek");
+    const maxWeek = Math.max(
+      1,
+      Number(espnData?.matchupPeriodId || week)
+    );
+
+    const optionHtml = [];
+
+    for (let value = 1; value <= maxWeek; value += 1) {
+      optionHtml.push(
+        `<option value="${value}"${value === week ? " selected" : ""}>${value}</option>`
+      );
+    }
+
+    selector.innerHTML = optionHtml.join("");
+    selector.value = String(week);
+
+    document.getElementById("commishStatus").textContent =
+      `Week ${week} · ${report.status || "IN PROGRESS"}`;
+
+    const note = document.getElementById("commishNote");
+
+    if (report.isComplete) {
+      note.style.display = "none";
+      note.textContent = "";
+    } else {
+      note.style.display = "block";
+      note.textContent =
+        "This week is still in progress. Commish Report awards are provisional until every LFL matchup is final.";
+    }
+
+    const offense = report.offensivePlayerOfWeek;
+    const defense = report.defensivePlayerOfWeek;
+    const cash = report.cashMoneyTeam;
+    const garbage = report.garbageTeam;
+
+    document.getElementById("offensivePOTW").textContent =
+      offense?.name || "—";
+
+    document.getElementById("offensivePOTWDetail").textContent =
+      offense
+        ? `${offense.position} · ${offense.teamName} · ${Number(offense.points || 0).toFixed(2)} pts`
+        : "No qualifying player yet";
+
+    document.getElementById("defensivePOTW").textContent =
+      defense?.name || "—";
+
+    document.getElementById("defensivePOTWDetail").textContent =
+      defense
+        ? `${defense.position} · ${defense.teamName} · ${Number(defense.points || 0).toFixed(2)} pts`
+        : "No qualifying player yet";
+
+    document.getElementById("cashMoneyTeam").textContent =
+      cash?.teamName || "—";
+
+    document.getElementById("cashMoneyDetail").textContent =
+      cash
+        ? `${Number(cash.points || 0).toFixed(2)} pts`
+        : "No team score yet";
+
+    document.getElementById("garbageTeam").textContent =
+      garbage?.teamName || "—";
+
+    document.getElementById("garbageDetail").textContent =
+      garbage
+        ? `${Number(garbage.points || 0).toFixed(2)} pts`
+        : "No team score yet";
+
+    const rankingsBody =
+      document.getElementById("powerRankingsBody");
+
+    const rankings =
+      report.powerRankings || [];
+
+    if (!rankings.length) {
+      rankingsBody.innerHTML =
+        '<tr><td colspan="4" class="empty">No standings data.</td></tr>';
+      return;
+    }
+
+    rankingsBody.innerHTML = rankings.map(team => {
+      const record =
+        Number(team.ties || 0) > 0
+          ? `${team.wins}-${team.losses}-${team.ties}`
+          : `${team.wins}-${team.losses}`;
+
+      return `
+        <tr>
+          <td><strong>${Number(team.rank || 0)}</strong></td>
+          <td><strong>${esc(team.teamName)}</strong></td>
+          <td>${esc(record)}</td>
+          <td>${Number(team.pointsFor || 0).toFixed(2)}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+
+
+  function renderExpendability() {
+    const grid = document.getElementById("expendabilityGrid");
+    const top3 = xData?.expendability?.top3 || [];
+
+    if (!grid) return;
+
+    if (!top3.length) {
+      grid.innerHTML = '<div class="empty">No expendability rankings available.</div>';
+      return;
+    }
+
+    grid.innerHTML = top3.map(player => {
+      const replacement = player.bestAvailableReplacement;
+      const reasons = (player.reasons || []).slice(0, 4);
+
+      return `
+        <div class="decision-card">
+          <div class="decision-rank">
+            <span class="decision-rank-label">#${Number(player.rank || 0)} Most Expendable</span>
+            <span class="decision-score">${Number(player.expendabilityScore || 0)}</span>
+          </div>
+
+          <div class="decision-name">${esc(player.name || "—")}</div>
+          <div class="decision-meta">
+            ${esc(player.position || "—")} · ${esc(player.nflTeam || "—")} · ${esc(player.lineupStatus || "—")}
+          </div>
+
+          <div class="decision-meta">
+            Zoo ${esc(player.position || "position")}: ${Number(player.currentPositionCount || 0)} rostered · preferred ${Number(player.preferredPositionCount || 0)}
+          </div>
+
+          <div class="decision-replacement">
+            ${replacement
+              ? `Best available replacement: <strong>${esc(replacement.name)}</strong> · ${esc(replacement.position)} · Score ${Number(replacement.acquisitionScore || 0)}`
+              : "No stronger waiver replacement identified."
+            }
+          </div>
+
+          ${reasons.length
+            ? `<ul class="decision-reasons">${reasons.map(reason => `<li>${esc(reason)}</li>`).join("")}</ul>`
+            : ""
+          }
+        </div>
+      `;
+    }).join("");
+  }
+
+  function rosterGroup(player) {
+    const raw = String(player.rosterStatus || player.lineupSlot || "").toUpperCase();
+    if (raw.includes("IR")) return "IR";
+    if (raw.includes("BENCH") || raw === "BE") return "BENCH";
+    return "STARTERS";
+  }
+
+  function rosterSlotLabel(player) {
+    const raw = String(player.lineupSlot || player.rosterStatus || "").toUpperCase();
+    if (raw.includes("IR")) return "IR";
+    if (raw.includes("BENCH") || raw === "BE") return "BE";
+    if (raw && !raw.includes("START")) return raw.replace("RB_WR", "RB/WR");
+    return String(player.position || "—").toUpperCase();
+  }
+
+  function renderRoster() {
+    const body = document.getElementById("rosterBody");
     const roster = getZooRoster();
-    const injuries = roster.filter(p => {
-      const s = String(text(p.injuryStatus, p.status, p.injury, "")).toUpperCase();
-      return s && !/ACTIVE|HEALTHY|NORMAL/.test(s);
-    });
-    arr(intelData?.lineupAlerts).forEach(a => {
-      const n = playerName(a);
-      if (/OUT|IR|DOUBTFUL|QUESTIONABLE|DTD|INJUR/i.test(JSON.stringify(a)) && !injuries.some(p => playerName(p).toLowerCase() === n.toLowerCase())) injuries.push(a);
-    });
-    $("injuryCount").textContent = injuries.length ? `${injuries.length} alerts` : "";
-    $("injuryAlerts").innerHTML = injuries.length ? injuries.map(p => decisionCard({...p, action: text(p.action, p.injuryStatus, p.status, "CHECK STATUS")})).join("") : empty("No Zoo injury alerts.");
-  }
 
-  function renderStartSit() {
-    const items = [...arr(intelData?.lineupAlerts), ...arr(intelData?.replacementRecommendations)];
-    const filtered = items.filter(x => /START|SIT|REPLACE|BENCH|LINEUP|SWAP/i.test(JSON.stringify(x)));
-    $("startSit").innerHTML = filtered.length ? filtered.slice(0, 16).map(x => decisionCard(x)).join("") : empty("No start/sit change is currently recommended.");
-  }
+    if (!roster.length) {
+      body.innerHTML = '<tr><td colspan="3" class="empty">No roster data.</td></tr>';
+      return;
+    }
 
-  function renderAddDrop() {
-    const items = arr(intelData?.addDropDecisions);
-    $("addDrop").innerHTML = items.length ? items.map(x => {
-      const add = text(x.addPlayerName, x.addName, x.add?.name, playerName(x));
-      const drop = text(x.dropPlayerName, x.dropName, x.drop?.name, "");
-      return decisionCard(x, {name: drop ? `ADD ${add}  →  DROP ${drop}` : `ADD ${add}`, action: text(x.action, "ADD / DROP")});
-    }).join("") : empty("No add/drop move currently clears the action threshold.");
+    const groupOrder = { STARTERS: 0, BENCH: 1, IR: 2 };
+    const positionOrder = { QB:0, RB:1, WR:2, TE:3, LB:4, DL:5, CB:6, S:7, K:8 };
+    const sorted = [...roster].sort((a,b) => {
+      const ga = rosterGroup(a), gb = rosterGroup(b);
+      if (groupOrder[ga] !== groupOrder[gb]) return groupOrder[ga] - groupOrder[gb];
+      return (positionOrder[a.position] ?? 99) - (positionOrder[b.position] ?? 99);
+    });
+
+    let lastGroup = "";
+    const rows = [];
+
+    sorted.forEach(player => {
+      const group = rosterGroup(player);
+      if (group !== lastGroup) {
+        rows.push(`<tr class="roster-section-row"><td colspan="3">${esc(group)}</td></tr>`);
+        lastGroup = group;
+      }
+
+      const team = player.nflTeam || player.proTeam || player.team || "";
+      rows.push(`
+        <tr>
+          <td class="roster-slot">${esc(rosterSlotLabel(player))}</td>
+          <td>
+            <strong>${esc(player.name)}</strong>
+            ${team ? `<div class="roster-player-meta">${esc(team)}</div>` : ""}
+          </td>
+          <td>${esc(player.position)}</td>
+        </tr>
+      `);
+    });
+
+    body.innerHTML = rows.join("");
   }
 
   function renderWatchList() {
-    const items = arr(intelData?.watchListIntelligence);
-    $("watchCount").textContent = items.length ? `${items.length} tracked` : "";
-    $("watchList").innerHTML = items.length ? items.slice(0, 24).map(x => decisionCard(x)).join("") : empty("ESPN Watch List is empty or unavailable.");
+    const body = document.getElementById("watchBody");
+    const watchList = xData?.watchListIntelligence || [];
+
+    if (!watchList.length) {
+      body.innerHTML =
+        '<tr><td colspan="4" class="empty">No watch-list intelligence available.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = watchList.map(player => {
+      const actionClass = String(player.recommendation || "")
+        .replace(/\s+/g, "-")
+        .replace(/[^A-Za-z0-9-]/g, "");
+
+      return `
+        <tr>
+          <td>
+            <strong>${esc(player.name)}</strong>
+            ${player.ownershipStatus && player.ownershipStatus !== "AVAILABLE"
+              ? `<div class="news-time">${esc(player.ownershipStatus)}${player.lflTeam ? ` · ${esc(player.lflTeam)}` : ""}</div>`
+              : ""
+            }
+          </td>
+
+          <td>${esc(player.position)}</td>
+
+          <td class="priority-score">
+            ${Number(player.priorityScore || 0)}
+          </td>
+
+          <td>
+            <span class="watch-action ${esc(actionClass)}">
+              ${esc(player.recommendation || "HOLD")}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join("");
   }
 
-  function renderOpportunity() {
-    const items = arr(intelData?.opportunityAlerts);
-    $("opportunity").innerHTML = items.length ? items.slice(0, 18).map(x => decisionCard(x)).join("") : empty("No actionable opportunity alerts right now.");
+  function renderSuggestedWatchList() {
+    const body = document.getElementById("suggestedWatchBody");
+    if (!body) return;
+
+    const suggested =
+      xData?.suggestedWatchList ||
+      xData?.suggestedWatchListIntelligence ||
+      xData?.suggestedWatchlist ||
+      [];
+
+    if (!suggested.length) {
+      body.innerHTML = '<tr><td colspan="5" class="empty">No strong new players outside your current Watch List right now.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = suggested.slice(0, 12).map(player => {
+      const score = Number(
+        player.zooValueScore ??
+        player.priorityScore ??
+        player.acquisitionScore ??
+        player.score ??
+        0
+      );
+
+      const reasons = Array.isArray(player.reasons)
+        ? player.reasons.slice(0, 2).join(" · ")
+        : (player.reason || player.why || player.recommendation || "Zoo-value opportunity");
+
+      const team = player.nflTeam || player.proTeam || player.team || "";
+      const status = player.injuryStatus || player.availabilityStatus || "";
+
+      return `
+        <tr>
+          <td>
+            <strong>${esc(player.name || "—")}</strong>
+            ${(team || status) ? `<div class="news-time">${esc([team, status].filter(Boolean).join(" · "))}</div>` : ""}
+          </td>
+          <td>${esc(player.position || "—")}</td>
+          <td class="priority-score">${score}</td>
+          <td><span class="watch-action WATCH-CLOSELY">${esc(player.watchListStatus || "NOT ON WATCH LIST")}</span></td>
+          <td>${esc(reasons)}</td>
+        </tr>
+      `;
+    }).join("");
   }
 
-  function renderBestAvailable() {
-    const ex = intelData?.expendability || {};
-    let items = arr(ex.bestAvailableOverall);
-    if (!items.length) items = arr(espnData?.availablePlayers).slice(0, 20);
-    $("bestAvailable").innerHTML = items.length ? items.slice(0, 20).map(x => decisionCard({...x, action: text(x.watchRecommendation, x.action, "AVAILABLE")})).join("") : empty("Available-player data is not available right now.");
+  function renderZooPlayerUpdates() {
+    const container = document.getElementById("zooPlayerUpdates");
+    if (!container) return;
+
+    const WINDOW_MS = 12 * 60 * 60 * 1000;
+    const cutoff = Date.now() - WINDOW_MS;
+    const CACHE_KEY = "zooGMPlayerUpdates12h";
+
+    const updateTime = update =>
+      new Date(update?.publishedAt || update?.post?.publishedAt || 0).getTime();
+
+    const normalizeName = value =>
+      String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+
+    const currentUpdates = Array.isArray(xData?.zooPlayerUpdates)
+      ? xData.zooPlayerUpdates
+      : [];
+
+    // Fallback: detect literal mentions of current Zoo players in recent X posts.
+    // This catches a direct player tweet even if the backend classification misses it.
+    const zooRoster = getZooRoster();
+    const postFallbackUpdates = [];
+
+    for (const post of (xData?.posts || [])) {
+      const published = new Date(post?.publishedAt || 0).getTime();
+      if (!Number.isFinite(published) || published < cutoff) continue;
+
+      const combined = normalizeName(`${post?.title || ""} ${post?.text || ""}`);
+      if (!combined) continue;
+
+      for (const rosterPlayer of zooRoster) {
+        const playerName = normalizeName(rosterPlayer?.name);
+        if (!playerName || !combined.includes(playerName)) continue;
+
+        const intelligence = post?.intelligence || {};
+        postFallbackUpdates.push({
+          playerId: rosterPlayer.playerId || "",
+          player: rosterPlayer.name,
+          position: rosterPlayer.position || "",
+          nflTeam: rosterPlayer.nflTeam || "",
+          event: intelligence.primaryEvent || "UPDATE",
+          primaryEvent: intelligence.primaryEvent || "UPDATE",
+          recommendation: intelligence.recommendation || intelligence.actionTier || "MONITOR",
+          whatHappened: post.text || post.title || "Update",
+          source: post.author || post.handle || "X Source",
+          author: post.author || post.handle || "X Source",
+          publishedAt: post.publishedAt || "",
+          link: post.link || "",
+          guid: post.guid || "",
+          direct: true
+        });
+      }
+    }
+
+    let cachedUpdates = [];
+    try {
+      const parsed = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
+      if (Array.isArray(parsed)) cachedUpdates = parsed;
+    } catch (error) {
+      console.warn("Zoo player update cache could not be read", error);
+    }
+
+    const merged = [
+      ...currentUpdates,
+      ...postFallbackUpdates,
+      ...cachedUpdates
+    ]
+      .filter(update => {
+        const published = updateTime(update);
+        return Number.isFinite(published) && published >= cutoff;
+      })
+      .sort((a, b) => updateTime(b) - updateTime(a));
+
+    const seen = new Set();
+    const updates = merged.filter(update => {
+      const post = update.post || update;
+      const player = normalizeName(update.player || update.playerName || update.name || "Zoo Player");
+      const sourceId = String(update.guid || post.guid || update.link || post.link || "");
+      const story = normalizeName(update.whatHappened || update.summary || update.text || post.text || post.title || "").slice(0, 180);
+      const key = sourceId ? `${player}|${sourceId}` : `${player}|${story}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(updates.slice(0, 30)));
+    } catch (error) {
+      console.warn("Zoo player update cache could not be saved", error);
+    }
+
+    if (!updates.length) {
+      container.innerHTML = '<div class="empty">No direct Zoo player updates detected in the last 12 hours.</div>';
+      return;
+    }
+
+    container.innerHTML = updates.map(update => {
+      const post = update.post || update;
+      const player = update.player || update.playerName || update.name || "Zoo Player";
+      const event = update.event || update.primaryEvent || post.intelligence?.primaryEvent || "UPDATE";
+      const recommendation = update.recommendation || post.intelligence?.recommendation || post.intelligence?.actionTier || "MONITOR";
+      const author = update.author || update.source || post.author || "X Source";
+      const publishedAt = update.publishedAt || post.publishedAt || "";
+      const story = update.whatHappened || update.summary || update.text || post.text || post.title || "Update";
+
+      return `
+        <article class="zoo-update-card">
+          <div class="zoo-update-player">${esc(player)} — ${esc(event)}</div>
+          <div class="zoo-update-source">
+            <span>${esc(author)}</span>
+            <span>${esc(formatTime(publishedAt))}</span>
+          </div>
+          <div class="zoo-update-text">${esc(story)}</div>
+          <div class="meter-row"><span class="tag zoo">GM: ${esc(recommendation)}</span></div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  function findCurrentMatchup() {
+    const zooId = Number(
+      espnData?.zooTeamId ??
+      espnData?.zoo?.teamId
+    );
+
+    return (espnData?.matchups || []).find(matchup => {
+      const homeId = Number(matchup.home?.teamId);
+      const awayId = Number(matchup.away?.teamId);
+
+      return (
+        homeId === zooId ||
+        awayId === zooId
+      );
+    });
+  }
+
+  function renderMatchup() {
+    const container = document.getElementById("matchup");
+    const matchup = findCurrentMatchup();
+
+    if (!matchup) {
+      container.className = "empty";
+      container.innerHTML =
+        "No current matchup found.";
+      return;
+    }
+
+    const home = matchup.home || {};
+    const away = matchup.away || {};
+
+    container.className = "matchup";
+
+    container.innerHTML = `
+
+      <div>
+
+        <div class="team-name">
+          ${esc(
+            home.teamName ||
+            home.name ||
+            "Home"
+          )}
+        </div>
+
+        <div class="news-time">
+          ${esc(home.totalPoints ?? home.score ?? 0)} pts
+        </div>
+
+      </div>
+
+      <div class="vs">
+        VS
+      </div>
+
+      <div>
+
+        <div class="team-name">
+          ${esc(
+            away.teamName ||
+            away.name ||
+            "Away"
+          )}
+        </div>
+
+        <div class="news-time">
+          ${esc(away.totalPoints ?? away.score ?? 0)} pts
+        </div>
+
+      </div>
+    `;
+  }
+
+
+  function severityClass(value) {
+    const raw = String(value || "").toUpperCase();
+    if (raw.includes("URGENT") || raw.includes("ACT NOW")) return "urgent";
+    if (raw.includes("IMPORTANT")) return "important";
+    if (raw.includes("WATCH") || raw.includes("MONITOR")) return "watch";
+    return "good";
+  }
+
+  function renderGameDayMode() {
+    const banner = document.getElementById("gameDayBanner");
+    if (!banner) return;
+
+    const now = new Date();
+    const isSunday = now.getDay() === 0;
+    const urgentLineup = (xData?.lineupAlerts || []).some(
+      alert => String(alert.severity || "").toUpperCase() === "URGENT"
+    );
+
+    banner.classList.toggle("active", isSunday || urgentLineup);
+  }
+
+  function renderActionCenter() {
+    const grid = document.getElementById("actionCenterGrid");
+    const status = document.getElementById("actionCenterStatus");
+    if (!grid) return;
+
+    const lineupAlerts = xData?.lineupAlerts || [];
+    const replacements = xData?.replacementRecommendations || [];
+    const cards = [];
+
+    lineupAlerts.slice(0, 4).forEach(alert => {
+      cards.push({
+        severity: alert.severity || "IMPORTANT",
+        title: alert.player || "Lineup Alert",
+        meta: [
+          alert.position,
+          alert.reason,
+          alert.source ? `Source: ${alert.source}` : ""
+        ].filter(Boolean).join(" · "),
+        action: alert.action || "REVIEW LINEUP"
+      });
+    });
+
+    replacements.slice(0, 4).forEach(item => {
+      const replacement = item.bestReplacement || {};
+      cards.push({
+        severity: item.severity || "IMPORTANT",
+        title: item.problemPlayer || "Replacement Needed",
+        meta: [
+          item.problemPosition,
+          item.problemStatus,
+          replacement.name ? `Best option: ${replacement.name}${replacement.position ? ` (${replacement.position})` : ""}` : ""
+        ].filter(Boolean).join(" · "),
+        action: item.recommendation || "REVIEW REPLACEMENT"
+      });
+    });
+
+    if (!cards.length) {
+      grid.innerHTML = `
+        <div class="priority-card good">
+          <div class="priority-card-title">No urgent Zoo actions</div>
+          <div class="priority-card-meta">No lineup or replacement alerts are active right now.</div>
+          <div class="priority-card-action">HOLD</div>
+        </div>
+      `;
+      if (status) status.textContent = "No urgent lineup or replacement actions";
+      return;
+    }
+
+    grid.innerHTML = cards.slice(0, 6).map(card => `
+      <div class="priority-card ${severityClass(card.severity)}">
+        <div class="priority-card-title">${esc(card.title)}</div>
+        <div class="priority-card-meta">${esc(card.meta)}</div>
+        <div class="priority-card-action">${esc(card.action)}</div>
+      </div>
+    `).join("");
+
+    if (status) {
+      const urgent = cards.filter(card => severityClass(card.severity) === "urgent").length;
+      status.textContent = urgent
+        ? `${urgent} urgent action${urgent === 1 ? "" : "s"}`
+        : `${cards.length} active decision${cards.length === 1 ? "" : "s"}`;
+    }
+  }
+
+  function renderAddDropDecisions() {
+    const container = document.getElementById("addDropDecisions");
+    if (!container) return;
+
+    const decisions = xData?.addDropDecisions || [];
+
+    if (!decisions.length) {
+      container.innerHTML = '<div class="empty">No add/drop upgrade clears Zoo GM thresholds right now.</div>';
+      return;
+    }
+
+    container.innerHTML = decisions.slice(0, 8).map(item => {
+      const add = item.addPlayer || item.availablePlayer || item.add || {};
+      const drop = item.dropPlayer || item.currentPlayer || item.drop || {};
+      const addName = add.name || item.addPlayerName || item.player || "Available player";
+      const dropName = drop.name || item.dropPlayerName || item.replacementFor || "Zoo roster player";
+      const gain = Number(item.scoreGain ?? item.valueGain ?? item.delta ?? 0);
+      const recommended = item.recommended ?? item.makeMove ?? item.isUpgrade;
+      const action = item.recommendation ||
+        (recommended === false ? "HOLD" : `ADD ${addName} · DROP ${dropName}`);
+
+      return `
+        <div class="decision-row">
+          <div class="decision-row-top">
+            <div class="decision-row-name">${esc(addName)} → over ${esc(dropName)}</div>
+            <span class="action-tier ${recommended === false ? "FYI" : "ACT-NOW"}">${esc(action)}</span>
+          </div>
+          <div class="decision-row-detail">
+            ${gain ? `Zoo value gain: +${gain} · ` : ""}
+            ${esc(item.reason || item.why || item.summary || "Cross-position roster-value comparison")}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderOpportunityOpponentAlerts() {
+    const container = document.getElementById("opportunityOpponentAlerts");
+    if (!container) return;
+
+    const opportunity = (xData?.opportunityAlerts || []).map(item => ({
+      ...item,
+      _kind: "OPPORTUNITY"
+    }));
+
+    const opponent = (xData?.opponentActionableUpdates || []).map(item => ({
+      ...item,
+      _kind: "OPPONENT"
+    }));
+
+    const combined = [...opportunity, ...opponent];
+
+    if (!combined.length) {
+      container.innerHTML = '<div class="empty">No actionable opportunity or opponent alerts right now.</div>';
+      return;
+    }
+
+    container.innerHTML = combined.slice(0, 10).map(item => {
+      const name = item.player || item.playerName || item.name || item.title || item._kind;
+      const detail = item.reason || item.summary || item.whatHappened || item.text || item.description || "";
+      const action = item.recommendation || item.action || (item._kind === "OPPONENT" ? "MONITOR OPPONENT" : "MONITOR");
+
+      return `
+        <div class="decision-row">
+          <div class="decision-row-top">
+            <div class="decision-row-name">${esc(name)}</div>
+            <span class="tag ${item._kind === "OPPONENT" ? "opponent" : "available"}">${esc(item._kind)}</span>
+          </div>
+          <div class="decision-row-detail">${esc(detail)}</div>
+          <div class="priority-card-action">${esc(action)}</div>
+        </div>
+      `;
+    }).join("");
   }
 
   function decodeNewsText(value) {
@@ -1392,233 +2274,237 @@
     return out;
   }
 
-  function renderZooNews() {
-    const allPosts = arr(intelData?.posts)
-      .filter(x => String(x?.sourceType || "").toUpperCase() === "PLAYER_NEWS");
-
-    const tierScore = { "ACT NOW": 0, "MONITOR": 1, "FYI": 2 };
-    const updates = allPosts
+  function renderPlayerNews() {
+    const target = document.getElementById("playerNewsGrid");
+    if (!target) return;
+    const posts = (xData?.posts || [])
+      .filter(post => String(post?.sourceType || "").toUpperCase() === "PLAYER_NEWS")
       .slice()
       .sort((a, b) => {
-        const at = tierScore[String(a?.intelligence?.actionTier || "").toUpperCase()] ?? 3;
-        const bt = tierScore[String(b?.intelligence?.actionTier || "").toUpperCase()] ?? 3;
-        if (at !== bt) return at - bt;
-        const ar = Math.max(
-          num(a?.intelligence?.zooRelevance),
-          num(a?.intelligence?.watchRelevance),
-          num(a?.intelligence?.availableRelevance),
-          num(a?.intelligence?.opponentRelevance),
-          num(a?.intelligence?.fantasyRelevance)
+        const score = p => Math.max(
+          Number(p?.intelligence?.zooRelevance || 0),
+          Number(p?.intelligence?.watchRelevance || 0),
+          Number(p?.intelligence?.availableRelevance || 0),
+          Number(p?.intelligence?.opponentRelevance || 0),
+          Number(p?.intelligence?.fantasyRelevance || 0)
         );
-        const br = Math.max(
-          num(b?.intelligence?.zooRelevance),
-          num(b?.intelligence?.watchRelevance),
-          num(b?.intelligence?.availableRelevance),
-          num(b?.intelligence?.opponentRelevance),
-          num(b?.intelligence?.fantasyRelevance)
-        );
-        if (ar !== br) return br - ar;
-        return new Date(b?.publishedAt || 0) - new Date(a?.publishedAt || 0);
+        const tier = p => ({"ACT NOW":0,"MONITOR":1,"FYI":2}[String(p?.intelligence?.actionTier || "").toUpperCase()] ?? 3);
+        return tier(a) - tier(b) || score(b) - score(a) || new Date(b?.publishedAt || 0) - new Date(a?.publishedAt || 0);
       });
 
-    $("zooNews").innerHTML = updates.length ? updates.slice(0, 24).map(x => {
-      const source = text(x.sourceLabel, x.author, "Player News");
-      const names = arr(x.playerNames);
-      const intel = x.intelligence || {};
-      const players = arr(intel.players);
-      const primary = names[0] || players[0]?.name || "Player Update";
-      const tags = [
-        text(intel.actionTier, ""),
-        text(intel.primaryCategory, ""),
-        ...players.slice(0, 2).map(p => text(p.classification, p.ownershipStatus, ""))
-      ].filter(Boolean);
-      const body = decodeNewsText(text(x.text, x.news, x.summary, x.description, ""));
-      const stamp = x.publishedAt ? new Date(x.publishedAt).toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"}) : "";
-      const link = x.link ? `<a href="${esc(x.link)}" target="_blank" rel="noopener">Source</a>` : "";
-      return `<div class="zoo-update-card ${actionClass(text(intel.actionTier, ""))}">
-        <div class="zoo-update-player">${esc(primary)}</div>
-        <div class="zoo-update-source">${esc(source)}${stamp ? ` • ${esc(stamp)}` : ""}${link ? ` • ${link}` : ""}</div>
+    const status = document.getElementById("playerNewsStatus");
+    if (status) status.textContent = `${posts.length} current matched stories · NBC Sports + FantasyPros`;
+
+    if (!posts.length) {
+      target.innerHTML = '<div class="empty">No current player-news stories matched the monitored player universe.</div>';
+      return;
+    }
+
+    target.innerHTML = posts.slice(0, 24).map(post => {
+      const intel = post.intelligence || {};
+      const players = intel.players || [];
+      const primary = (post.playerNames || [])[0] || players[0]?.name || post.title || "Player Update";
+      const body = decodeNewsText(post.text || post.summary || post.description || "");
+      const link = post.link ? `<a href="${esc(post.link)}" target="_blank" rel="noopener">Source</a>` : "";
+      const tags = [intel.actionTier, intel.primaryCategory]
+        .concat(players.slice(0,2).map(p => p.classification || p.ownershipStatus))
+        .filter(Boolean);
+      return `<div class="player-news-card">
+        <div class="player-news-title">${esc(primary)}</div>
+        <div class="player-news-meta">${esc(post.sourceLabel || post.author || "Player News")} · ${esc(formatTime(post.publishedAt))}${link ? ` · ${link}` : ""}</div>
         ${tags.length ? `<div class="tags player-context">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div>` : ""}
-        <div class="zoo-update-text">${esc(body || "News update available.")}</div>
+        <div class="player-news-text">${esc(body || "News update available.")}</div>
       </div>`;
-    }).join("") : empty("No current NBC Sports or FantasyPros player news matched the monitored player universe.");
+    }).join("");
   }
 
   function renderExpertRankings() {
-    const rankings = arr(intelData?.expertRankings?.consensus);
-    const usedExperts = [...new Set(rankings.flatMap(r => arr(r.experts).map(e => e.expert)).filter(Boolean))];
-    const sourceStatus = arr(intelData?.expertRankings?.sourceStatus);
-    const limited = sourceStatus.filter(s => s.ok && num(s.playerCount) > 0 && num(s.playerCount) < 20).map(s => s.name);
-    const statusBits = [];
-    if (usedExperts.length) statusBits.push(`Consensus: ${usedExperts.join(" • ")}`);
-    if (limited.length) statusBits.push(`${limited.join(", ")} connected but excluded where coverage is incomplete`);
-    statusBits.push(`Week ${intelData?.expertRankings?.week || ""}`);
-    $("expertStatus").textContent = statusBits.join(" • ");
+    const body = document.getElementById("expertRankingBody");
+    const toolbar = document.getElementById("rankingToolbar");
+    const status = document.getElementById("expertRankingStatus");
+    if (!body || !toolbar) return;
 
-    const counts = POSITIONS.map(pos => ({pos, count: rankings.filter(r => normPos(r.position) === pos).length})).filter(x => x.count);
-    $("rankingSummary").innerHTML = counts.map(x => `<div class="summary-card"><div class="summary-number">${x.count}</div><div class="summary-label">${x.pos} ranked</div></div>`).join("");
-
-    $("rankingFilters").innerHTML = ["ALL", ...counts.map(x => x.pos)].map(pos => `<button type="button" class="filter ${rankingPosition === pos ? "active" : ""}" data-pos="${pos}">${pos}</button>`).join("");
-    $("rankingFilters").querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => { rankingPosition = btn.dataset.pos; renderExpertRankings(); }));
-
-    const filtered = rankings
-      .filter(r => rankingPosition === "ALL" || normPos(r.position) === rankingPosition)
-      .sort((a,b) => normPos(a.position).localeCompare(normPos(b.position)) || num(a.consensusRank, 999)-num(b.consensusRank, 999) || num(a.adjustedRank, 999)-num(b.adjustedRank, 999));
-
-    $("expertRankings").innerHTML = filtered.length ? filtered.slice(0, rankingPosition === "ALL" ? 80 : 100).map(r => {
-      const expertsText = arr(r.experts).map(e => `${e.expert} #${e.rank}`).join(" • ");
-      const coverage = r.availableExpertCount ? `${r.expertCount}/${r.availableExpertCount} experts` : `${r.expertCount || 0} expert${r.expertCount === 1 ? "" : "s"}`;
-      const detail = [expertsText, `Avg ${r.averageRank}`, coverage].filter(Boolean).join(" • ");
-      return decisionCard(r, {action: `#${r.consensusRank || r.averageRank}`, reason: detail});
-    }).join("") : empty("No rankings available for this position.");
-  }
-
-  function renderOpponent() {
-    const opp = getOpponentTeam();
-    $("opponentName").textContent = opp ? text(opp.name, opp.teamName, "") : "";
-    const items = arr(intelData?.opponentIntelligence);
-    const cards = [];
-    if (opp) {
-      const proj = text(opp.projectedScore, opp.projectedPoints, opp.projection, "");
-      cards.push(priorityCard(text(opp.name, opp.teamName, "Opponent"), "MATCHUP", proj !== "" ? `Projected ${proj}` : "Current weekly opponent"));
+    const rankings = xData?.expertRankings?.consensus || [];
+    const healthyExperts = [...new Set(rankings.flatMap(r => (r.experts || []).map(e => e.expert)).filter(Boolean))];
+    const sourceStatus = xData?.expertRankings?.sourceStatus || [];
+    const limited = sourceStatus.filter(s => s.ok && Number(s.playerCount || 0) > 0 && Number(s.playerCount || 0) < 20).map(s => s.name);
+    const week = xData?.expertRankings?.week || espnData?.matchupPeriodId || espnData?.scoringPeriodId || "";
+    if (status) {
+      const parts = [`Week ${week}`, healthyExperts.length ? `Consensus: ${healthyExperts.join(" · ")}` : ""];
+      if (limited.length) parts.push(`${limited.join(", ")} limited coverage excluded where incomplete`);
+      status.textContent = parts.filter(Boolean).join(" · ");
     }
-    items.slice(0, 16).forEach(x => cards.push(decisionCard(x)));
-    $("opponentIntel").innerHTML = cards.length ? cards.join("") : empty("No actionable opponent intelligence right now.");
-  }
 
-  function renderRosterStrength() {
-    const roster = getZooRoster();
-    const starters = roster.filter(p => !isBench(p));
-    const bench = roster.filter(isBench);
-    const exp = arr(intelData?.expendability?.players || intelData?.expendability);
-    const byPos = {};
-    roster.forEach(p => { const pos = normPos(text(p.position, p.pos, "?")); byPos[pos] = (byPos[pos] || 0) + 1; });
-    const cards = [
-      `<div class="summary-card"><div class="summary-number">${starters.length}</div><div class="summary-label">Starters</div></div>`,
-      `<div class="summary-card"><div class="summary-number">${bench.length}</div><div class="summary-label">Bench / IR</div></div>`,
-      ...Object.entries(byPos).sort().map(([p,c]) => `<div class="summary-card"><div class="summary-number">${c}</div><div class="summary-label">${esc(p)}</div></div>`)
-    ];
-    const expendable = exp.slice(0, 5).map(x => decisionCard({...x, action: text(x.action, "CUT VALUE")}));
-    $("rosterStrength").innerHTML = cards.join("") + expendable.join("");
-  }
+    const positions = [...new Set(rankings.map(r => String(r.position || "").toUpperCase()).filter(Boolean))];
+    const preferred = ["QB","RB","WR","TE","K","LB","DL","CB","S"];
+    positions.sort((a,b) => preferred.indexOf(a) - preferred.indexOf(b));
+    toolbar.innerHTML = ["ALL", ...positions].map(pos => `<button type="button" class="${rankingPosition === pos ? "active" : ""}" data-rank-pos="${esc(pos)}">${esc(pos)}</button>`).join("");
+    toolbar.querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => {
+      rankingPosition = btn.dataset.rankPos || "ALL";
+      renderExpertRankings();
+    }));
 
-  function renderTradeIntel() {
-    const expRaw = intelData?.expendability;
-    const expendable = arr(expRaw?.players || expRaw).slice(0, 6);
-    const best = arr(expRaw?.bestAvailableOverall).slice(0, 6);
-    const items = [];
-    expendable.forEach(x => items.push(decisionCard(x, {action: "SHOP / EXPENDABLE", reason: itemReason(x) || "Lower roster-protection score relative to Zoo depth."})));
-    best.filter(x => /RB|WR|LB/i.test(String(x.position || x.pos || ""))).slice(0, 4).forEach(x => items.push(decisionCard(x, {action: "MARKET LEVERAGE", reason: "Available replacement value can increase Zoo's trade flexibility."})));
-    $("tradeIntel").innerHTML = items.length ? items.join("") : empty("No trade-specific edge is strong enough to flag right now.");
-  }
+    const filtered = rankings.filter(r => rankingPosition === "ALL" || String(r.position || "").toUpperCase() === rankingPosition)
+      .slice()
+      .sort((a,b) => {
+        const ap = preferred.indexOf(String(a.position || "").toUpperCase());
+        const bp = preferred.indexOf(String(b.position || "").toUpperCase());
+        if (ap !== bp) return ap - bp;
+        return Number(a.consensusRank || a.adjustedRank || a.averageRank || 999) - Number(b.consensusRank || b.adjustedRank || b.averageRank || 999);
+      });
 
-  function renderCommishReport() {
-    const report = espnData?.commishReport || {};
-    const week = Number(report.week || espnData?.reportWeek || espnData?.matchupPeriodId || 1);
-    selectedReportWeek = week;
+    if (!filtered.length) {
+      body.innerHTML = '<tr><td colspan="5">No weekly rankings available.</td></tr>';
+      return;
+    }
 
-    const selector = $("commishWeek");
-    if (!selector) return;
-    const maxWeek = Math.max(1, Number(espnData?.matchupPeriodId || week));
-    selector.innerHTML = Array.from({length:maxWeek}, (_,i) => {
-      const value = i + 1;
-      return `<option value="${value}"${value === week ? " selected" : ""}>${value}</option>`;
+    body.innerHTML = filtered.slice(0, rankingPosition === "ALL" ? 100 : 120).map(r => {
+      const rank = r.consensusRank || r.adjustedRank || r.averageRank || "—";
+      const experts = (r.experts || []).map(e => `<span class="source-pill">${esc(e.expert)} #${esc(e.rank)}</span>`).join("");
+      const coverage = r.availableExpertCount ? `${r.expertCount || 0}/${r.availableExpertCount} experts` : `${r.expertCount || 0} expert${Number(r.expertCount || 0) === 1 ? "" : "s"}`;
+      return `<tr>
+        <td class="rank-num">#${esc(rank)}</td>
+        <td><div class="rank-player">${esc(r.name)}</div><div class="rank-meta">Avg ${esc(r.averageRank ?? "—")} · ${esc(coverage)}</div></td>
+        <td>${esc(r.position || "")}</td>
+        <td>${esc(r.nflTeam || "")}</td>
+        <td>${experts || '<span class="ranking-note">No expert detail</span>'}</td>
+      </tr>`;
     }).join("");
-    selector.value = String(week);
-
-    $("commishStatus").textContent = `Week ${week} · ${report.status || "IN PROGRESS"}`;
-    const note = $("commishNote");
-    if (report.isComplete) { note.style.display = "none"; note.textContent = ""; }
-    else {
-      note.style.display = "block";
-      note.textContent = "This week is still in progress. Commish Report awards are provisional until every LFL matchup is final.";
-    }
-
-    const offense = report.offensivePlayerOfWeek;
-    const defense = report.defensivePlayerOfWeek;
-    const cash = report.cashMoneyTeam;
-    const garbage = report.garbageTeam;
-    $("offensivePOTW").textContent = offense?.name || "—";
-    $("offensivePOTWDetail").textContent = offense ? `${offense.position} · ${offense.teamName} · ${num(offense.points).toFixed(2)} pts` : "No qualifying player yet";
-    $("defensivePOTW").textContent = defense?.name || "—";
-    $("defensivePOTWDetail").textContent = defense ? `${defense.position} · ${defense.teamName} · ${num(defense.points).toFixed(2)} pts` : "No qualifying player yet";
-    $("cashMoneyTeam").textContent = cash?.teamName || "—";
-    $("cashMoneyDetail").textContent = cash ? `${num(cash.points).toFixed(2)} pts` : "No team score yet";
-    $("garbageTeam").textContent = garbage?.teamName || "—";
-    $("garbageDetail").textContent = garbage ? `${num(garbage.points).toFixed(2)} pts` : "No team score yet";
-
-    const rankings = arr(report.powerRankings);
-    $("powerRankingsBody").innerHTML = rankings.length ? rankings.map(team => {
-      const record = num(team.ties) > 0 ? `${num(team.wins)}-${num(team.losses)}-${num(team.ties)}` : `${num(team.wins)}-${num(team.losses)}`;
-      return `<tr><td><strong>${num(team.rank)}</strong></td><td><strong>${esc(team.teamName)}</strong></td><td>${esc(record)}</td><td>${num(team.pointsFor).toFixed(2)}</td></tr>`;
-    }).join("") : '<tr><td colspan="4" class="empty">No standings data.</td></tr>';
-  }
-
-  function renderSources() {
-    const sourceStatus = arr(intelData?.sourceStatus);
-    const rankingStatus = arr(intelData?.expertRankings?.sourceStatus);
-    const all = [...sourceStatus, ...rankingStatus];
-    $("sourceHealth").innerHTML = all.length ? all.map(s => `<div class="summary-card"><div class="summary-number">${s.ok ? "✓" : "!"}</div><div class="summary-label">${esc(text(s.label, s.name, s.key, "Source"))}${s.ok ? "" : ` — ${esc(text(s.error, "Unavailable"))}`}</div></div>`).join("") : empty("Source health unavailable.");
   }
 
   function renderAll() {
+    renderSummary();
+    renderBrief();
+    renderGameDayMode();
     renderActionCenter();
-    renderOptimalLineup();
-    renderInjuries();
-    renderStartSit();
-    renderAddDrop();
-    renderWatchList();
-    renderOpportunity();
-    renderBestAvailable();
-    renderZooNews();
-    renderExpertRankings();
-    renderOpponent();
-    renderRosterStrength();
-    renderTradeIntel();
+    renderNews();
     renderCommishReport();
-    renderSources();
+    renderExpendability();
+    renderRoster();
+    renderWatchList();
+    renderZooPlayerUpdates();
+    renderPlayerNews();
+    renderExpertRankings();
+    renderSuggestedWatchList();
+    renderAddDropDecisions();
+    renderOpportunityOpponentAlerts();
+    renderMatchup();
   }
 
-  async function getJson(url) {
-    const sep = url.includes("?") ? "&" : "?";
-    const res = await fetch(`${url}${sep}t=${Date.now()}`, {cache: "no-store", headers: {"Accept":"application/json"}});
-    let data;
-    try { data = await res.json(); } catch (e) { throw new Error(`${url} did not return JSON`); }
-    if (!res.ok || data?.ok === false) throw new Error(data?.error || `${url} failed (${res.status})`);
-    return data;
-  }
+  async function loadZooGM() {
+    const status = document.getElementById("status");
+    const refreshButton =
+      document.querySelector(".refresh-area button");
 
-  async function loadDashboard() {
-    $("systemStatus").textContent = "Refreshing live ESPN + Zoo intelligence…";
-    $("refreshBtn").disabled = true;
-    $("errorBox").style.display = "none";
+    status.textContent =
+      "Refreshing ESPN and fantasy intelligence...";
+
+    refreshButton.disabled = true;
+
     try {
-      const espnUrl = selectedReportWeek ? `${ESPN_URL}?reportWeek=${encodeURIComponent(selectedReportWeek)}` : ESPN_URL;
-      const [espn, intel] = await Promise.all([getJson(espnUrl), getJson(INTEL_URL)]);
+      const [espnResponse, xResponse] =
+        await Promise.all([
+          fetch(getEspnUrl(), {
+            cache: "no-store"
+          }),
+
+          fetch(getXUrl(), {
+            cache: "no-store",
+            headers: {
+              "Cache-Control": "no-cache",
+              "Pragma": "no-cache"
+            }
+          })
+        ]);
+
+      const [espn, x] =
+        await Promise.all([
+          espnResponse.json(),
+          xResponse.json()
+        ]);
+
+      if (!espnResponse.ok || !espn.ok) {
+        throw new Error(
+          espn.error ||
+          `ESPN request failed (${espnResponse.status})`
+        );
+      }
+
+      if (!xResponse.ok || !x.ok) {
+        throw new Error(
+          x.detail ||
+          x.error ||
+          `Intelligence request failed (${xResponse.status})`
+        );
+      }
+
       espnData = espn;
-      intelData = intel;
+      xData = x;
+
       renderAll();
-      const week = text(intel?.expertRankings?.week, espn?.matchupPeriodId, espn?.scoringPeriodId, "");
-      $("systemStatus").textContent = `Live • Week ${week || "—"} • Updated ${new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}`;
-    } catch (err) {
-      console.error(err);
-      $("errorBox").textContent = `Zoo GM could not refresh: ${err.message}`;
-      $("errorBox").style.display = "block";
-      $("systemStatus").textContent = "Refresh failed";
+
+      status.innerHTML =
+        `🟢 Zoo GM Live · ${esc(
+          espn.league ||
+          espn.leagueName ||
+          "LFL"
+        )} · ${esc(
+          x.summary?.postsReviewed ?? 0
+         )} intelligence items analyzed`;
+
+      document.getElementById("lastRefresh").textContent =
+        `Last refreshed ${new Date().toLocaleTimeString()}`;
+
+    } catch (error) {
+      console.error(error);
+
+      status.innerHTML =
+        `<span class="error">Zoo GM connection error: ${esc(error.message)}</span>`;
+
+      document.getElementById("newsFeed").innerHTML =
+        `<div class="error">Unable to load intelligence: ${esc(error.message)}</div>`;
+
     } finally {
-      $("refreshBtn").disabled = false;
+      refreshButton.disabled = false;
     }
   }
 
-  $("commishWeek")?.addEventListener("change", event => {
-    selectedReportWeek = Number(event.target.value || 1);
-    loadDashboard();
+  document.getElementById("commishWeek").addEventListener("change", event => {
+    selectedReportWeek =
+      Number(event.target.value || 1);
+
+    loadZooGM();
   });
 
-  $("refreshBtn").addEventListener("click", loadDashboard);
-  loadDashboard();
-  setInterval(loadDashboard, 5 * 60 * 1000);
-})();
+
+  document.querySelectorAll(".filter").forEach(button => {
+    button.addEventListener("click", () => {
+
+      document.querySelectorAll(".filter")
+        .forEach(item =>
+          item.classList.remove("active")
+        );
+
+      button.classList.add("active");
+
+      activeFilter =
+        button.dataset.filter || "all";
+
+      const label = button.querySelector("span")?.textContent || "All";
+      const activeLabel = document.getElementById("activeFilterLabel");
+      if (activeLabel) activeLabel.textContent = `${label} intelligence`;
+
+      renderNews();
+    });
+  });
+
+  loadZooGM();
+
+  setInterval(
+    loadZooGM,
+    5 * 60 * 1000
+  );
 </script>
+
 </body>
 </html>
