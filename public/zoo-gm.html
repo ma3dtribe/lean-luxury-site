@@ -940,7 +940,7 @@
     }
 
 
-    /* Current intelligence additions using the original X-feed layout */
+    /* Current intelligence additions using the preferred classic Zoo GM layout */
     .ranking-toolbar { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px; }
     .ranking-toolbar button { padding:8px 11px; font-size:12px; }
     .ranking-toolbar button.active { background:var(--green); color:#07110d; border-color:var(--green); }
@@ -956,6 +956,11 @@
     .player-news-text a { color:var(--blue); text-decoration:none; }
     .ranking-note { color:var(--muted); font-size:12px; line-height:1.45; }
     @media (max-width:900px){ .player-news-grid{grid-template-columns:1fr;} }
+
+    .ranking-scroll { max-height: 620px; overflow:auto; }
+    .ranking-scroll thead th { position:sticky; top:0; z-index:3; background:#111820; }
+    .zoo-consensus-scroll { max-height:520px; overflow:auto; }
+    .zoo-consensus-scroll thead th { position:sticky; top:0; z-index:3; background:#111820; }
 
 </style>
 </head>
@@ -1154,12 +1159,27 @@
 
   <section class="panel zoo-player-updates">
     <div class="panel-header">
-      <h2>Zoo Player Updates</h2>
-      <span class="news-time">Latest meaningful Zoo roster notes</span>
+      <h2>Zoo Player News</h2>
+      <span class="news-time">Every Zoo player story from the last 12 hours</span>
     </div>
     <div class="panel-body">
       <div id="zooPlayerUpdates" class="zoo-updates-grid">
         <div class="empty">Checking current intelligence for Zoo player news...</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Zoo Consensus Rankings</h2>
+      <span class="news-time" id="zooConsensusStatus">Current-week expert rankings for the Zoo roster</span>
+    </div>
+    <div class="panel-body">
+      <div class="table-wrap zoo-consensus-scroll">
+        <table class="ranking-table">
+          <thead id="zooConsensusHead"><tr><th>Player</th><th>Pos</th><th>Consensus</th><th>Sources</th></tr></thead>
+          <tbody id="zooConsensusBody"><tr><td colspan="4">Loading Zoo rankings...</td></tr></tbody>
+        </table>
       </div>
     </div>
   </section>
@@ -1183,7 +1203,7 @@
     </div>
     <div class="panel-body">
       <div id="rankingToolbar" class="ranking-toolbar"></div>
-      <div class="table-wrap">
+      <div class="table-wrap ranking-scroll">
         <table class="ranking-table">
           <thead><tr><th>Rank</th><th>Player</th><th>Pos</th><th>Team</th><th>Expert Detail</th></tr></thead>
           <tbody id="expertRankingBody"><tr><td colspan="5">Loading rankings...</td></tr></tbody>
@@ -1195,7 +1215,7 @@
   <section class="panel suggested-watch-panel">
     <div class="panel-header">
       <h2>GM Suggested Watch Adds</h2>
-      <span class="news-time">Players Zoo GM found who are NOT on your ESPN Watch List</span>
+      <span class="news-time">Top players Zoo GM found who are not already on your ESPN Watch List</span>
     </div>
     <div class="panel-body table-wrap watch-scroll">
       <table>
@@ -1282,10 +1302,10 @@
 </div>
 <script>
   const ESPN_URL_BASE = "/.netlify/functions/zoo-gm-espn";
-  const X_URL_BASE = "/.netlify/functions/zoo-gm-x-feed";
+  const INTELLIGENCE_URL_BASE = "/.netlify/functions/zoo-gm-x-feed"; // Legacy route name; serves current Zoo GM fantasy-intelligence payload.
 
   let espnData = null;
-  let xData = null;
+  let intelligenceData = null;
   let activeFilter = "all";
   let selectedReportWeek = null;
   let rankingPosition = "ALL";
@@ -1303,8 +1323,8 @@
     return withCacheBust(url);
   }
 
-  function getXUrl() {
-    return withCacheBust(X_URL_BASE);
+  function getIntelligenceUrl() {
+    return withCacheBust(INTELLIGENCE_URL_BASE);
   }
 
   function esc(value) {
@@ -1401,31 +1421,36 @@
     if (el) el.textContent = value ?? 0;
   }
 
-  function renderSummary() {
-    const posts = xData?.posts || [];
-    const count = filter => posts.filter(post => {
-      const i = post.intelligence || {};
-      if (filter === "relevant") return maxRelevance(post) >= 55 && !i.noise;
-      if (filter === "act") return i.actionTier === "ACT NOW" || i.alertLevel === "URGENT";
-      if (filter === "zoo") return i.zooImpact || (i.zooPlayers || []).length > 0;
-      if (filter === "available") return i.availablePlayerImpact || (i.availablePlayers || []).length > 0;
-      if (filter === "watch") return i.watchListImpact || (i.watchPlayers || []).length > 0;
-      if (filter === "opponent") return i.opponentImpact || (i.opponentPlayers || []).length > 0;
-      return true;
-    }).length;
+  function freshIntelligencePosts() {
+    const cutoff = Date.now() - (12 * 60 * 60 * 1000);
+    return (intelligenceData?.posts || [])
+      .filter(post => String(post?.sourceType || "").toUpperCase() !== "EXPERT_RANKING")
+      .filter(post => {
+        const published = new Date(post?.publishedAt || 0).getTime();
+        return Number.isFinite(published) && published >= cutoff;
+      });
+  }
 
-    setFilterCount("relevant", count("relevant"));
-    setFilterCount("act", count("act"));
-    setFilterCount("zoo", count("zoo"));
-    setFilterCount("available", count("available"));
-    setFilterCount("watch", count("watch"));
-    setFilterCount("opponent", count("opponent"));
-    setFilterCount("all", posts.length);
+  function matchesFilter(post, filter = activeFilter) {
+    const i = post.intelligence || {};
+    if (filter === "relevant") return i.actionTier !== "NOISE";
+    if (filter === "act") return i.actionTier === "ACT NOW" || i.alertLevel === "URGENT";
+    if (filter === "zoo") return Boolean(i.zooImpact ?? i.directZooImpact);
+    if (filter === "available") return Boolean(i.availablePlayerImpact);
+    if (filter === "watch") return Boolean(i.watchListImpact);
+    if (filter === "opponent") return Boolean(i.opponentImpact);
+    return true;
+  }
+
+  function renderSummary() {
+    const posts = freshIntelligencePosts();
+    const filters = ["relevant", "act", "zoo", "available", "watch", "opponent", "all"];
+    for (const filter of filters) {
+      setFilterCount(filter, posts.filter(post => matchesFilter(post, filter)).length);
+    }
 
     const line = document.getElementById("intelligenceLine");
-    if (line) {
-      line.textContent = `${posts.length} X posts analyzed · click a category to filter`;
-    }
+    if (line) line.textContent = `${posts.length} intelligence items from the last 12 hours · click a category to filter`;
   }
 
   function renderBrief() {
@@ -1433,42 +1458,14 @@
   }
 
   function postMatchesFilter(post) {
-    const i = post.intelligence || {};
-
-    if (activeFilter === "relevant") {
-      return i.actionTier !== "NOISE";
-    }
-
-    if (activeFilter === "act") {
-      return i.actionTier === "ACT NOW";
-    }
-
-    if (activeFilter === "zoo") {
-      return i.zooImpact ?? i.directZooImpact;
-    }
-
-    if (activeFilter === "available") {
-      return i.availablePlayerImpact;
-    }
-
-    if (activeFilter === "watch") {
-      return i.watchListImpact;
-    }
-
-    if (activeFilter === "opponent") {
-      return i.opponentImpact;
-    }
-
-    return true;
+    return matchesFilter(post, activeFilter);
   }
 
   function renderNews() {
     const container = document.getElementById("newsFeed");
 
-    const posts = (xData?.posts || [])
-      .filter(post => String(post?.sourceType || "").toUpperCase() !== "EXPERT_RANKING")
-      .filter(postMatchesFilter)
-      .slice(0, 30);
+    const posts = freshIntelligencePosts()
+      .filter(postMatchesFilter);
 
     if (!posts.length) {
       container.innerHTML =
@@ -1713,7 +1710,7 @@
 
   function renderExpendability() {
     const grid = document.getElementById("expendabilityGrid");
-    const top3 = xData?.expendability?.top3 || [];
+    const top3 = intelligenceData?.expendability?.top3 || [];
 
     if (!grid) return;
 
@@ -1818,7 +1815,7 @@
 
   function renderWatchList() {
     const body = document.getElementById("watchBody");
-    const watchList = xData?.watchListIntelligence || [];
+    const watchList = intelligenceData?.watchListIntelligence || [];
 
     if (!watchList.length) {
       body.innerHTML =
@@ -1862,9 +1859,9 @@
     if (!body) return;
 
     const suggested =
-      xData?.suggestedWatchList ||
-      xData?.suggestedWatchListIntelligence ||
-      xData?.suggestedWatchlist ||
+      intelligenceData?.suggestedWatchList ||
+      intelligenceData?.suggestedWatchListIntelligence ||
+      intelligenceData?.suggestedWatchlist ||
       [];
 
     if (!suggested.length) {
@@ -1872,7 +1869,7 @@
       return;
     }
 
-    body.innerHTML = suggested.slice(0, 12).map(player => {
+    body.innerHTML = suggested.slice(0, 8).map(player => {
       const score = Number(
         player.zooValueScore ??
         player.priorityScore ??
@@ -1882,7 +1879,7 @@
       );
 
       const reasons = Array.isArray(player.reasons)
-        ? player.reasons.slice(0, 2).join(" · ")
+        ? player.reasons.filter(reason => !/ranked on overall LFL player value/i.test(reason)).slice(0, 1).join(" · ")
         : (player.reason || player.why || player.recommendation || "Zoo-value opportunity");
 
       const team = player.nflTeam || player.proTeam || player.team || "";
@@ -1907,119 +1904,35 @@
     const container = document.getElementById("zooPlayerUpdates");
     if (!container) return;
 
-    const WINDOW_MS = 12 * 60 * 60 * 1000;
-    const cutoff = Date.now() - WINDOW_MS;
-    const CACHE_KEY = "zooGMPlayerUpdates12h";
-
-    const updateTime = update =>
-      new Date(update?.publishedAt || update?.post?.publishedAt || 0).getTime();
-
-    const normalizeName = value =>
-      String(value || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, " ")
-        .trim();
-
-    const currentUpdates = Array.isArray(xData?.zooPlayerUpdates)
-      ? xData.zooPlayerUpdates
-      : [];
-
-    // Fallback: detect literal mentions of current Zoo players in recent X posts.
-    // This catches a direct player tweet even if the backend classification misses it.
-    const zooRoster = getZooRoster();
-    const postFallbackUpdates = [];
-
-    for (const post of (xData?.posts || [])) {
-      const published = new Date(post?.publishedAt || 0).getTime();
-      if (!Number.isFinite(published) || published < cutoff) continue;
-
-      const combined = normalizeName(`${post?.title || ""} ${post?.text || ""}`);
-      if (!combined) continue;
-
-      for (const rosterPlayer of zooRoster) {
-        const playerName = normalizeName(rosterPlayer?.name);
-        if (!playerName || !combined.includes(playerName)) continue;
-
-        const intelligence = post?.intelligence || {};
-        postFallbackUpdates.push({
-          playerId: rosterPlayer.playerId || "",
-          player: rosterPlayer.name,
-          position: rosterPlayer.position || "",
-          nflTeam: rosterPlayer.nflTeam || "",
-          event: intelligence.primaryEvent || "UPDATE",
-          primaryEvent: intelligence.primaryEvent || "UPDATE",
-          recommendation: intelligence.recommendation || intelligence.actionTier || "MONITOR",
-          whatHappened: post.text || post.title || "Update",
-          source: post.author || post.handle || "X Source",
-          author: post.author || post.handle || "X Source",
-          publishedAt: post.publishedAt || "",
-          link: post.link || "",
-          guid: post.guid || "",
-          direct: true
-        });
-      }
-    }
-
-    let cachedUpdates = [];
-    try {
-      const parsed = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
-      if (Array.isArray(parsed)) cachedUpdates = parsed;
-    } catch (error) {
-      console.warn("Zoo player update cache could not be read", error);
-    }
-
-    const merged = [
-      ...currentUpdates,
-      ...postFallbackUpdates,
-      ...cachedUpdates
-    ]
+    const cutoff = Date.now() - (12 * 60 * 60 * 1000);
+    const updates = (intelligenceData?.zooPlayerUpdates || [])
       .filter(update => {
-        const published = updateTime(update);
+        const published = new Date(update?.publishedAt || 0).getTime();
         return Number.isFinite(published) && published >= cutoff;
       })
-      .sort((a, b) => updateTime(b) - updateTime(a));
-
-    const seen = new Set();
-    const updates = merged.filter(update => {
-      const post = update.post || update;
-      const player = normalizeName(update.player || update.playerName || update.name || "Zoo Player");
-      const sourceId = String(update.guid || post.guid || update.link || post.link || "");
-      const story = normalizeName(update.whatHappened || update.summary || update.text || post.text || post.title || "").slice(0, 180);
-      const key = sourceId ? `${player}|${sourceId}` : `${player}|${story}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(updates.slice(0, 30)));
-    } catch (error) {
-      console.warn("Zoo player update cache could not be saved", error);
-    }
+      .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
     if (!updates.length) {
-      container.innerHTML = '<div class="empty">No direct Zoo player updates detected in the last 12 hours.</div>';
+      container.innerHTML = '<div class="empty">No Zoo player news in the last 12 hours.</div>';
       return;
     }
 
     container.innerHTML = updates.map(update => {
-      const post = update.post || update;
       const player = update.player || update.playerName || update.name || "Zoo Player";
-      const event = update.event || update.primaryEvent || post.intelligence?.primaryEvent || "UPDATE";
-      const recommendation = update.recommendation || post.intelligence?.recommendation || post.intelligence?.actionTier || "MONITOR";
-      const author = update.author || update.source || post.author || "X Source";
-      const publishedAt = update.publishedAt || post.publishedAt || "";
-      const story = update.whatHappened || update.summary || update.text || post.text || post.title || "Update";
+      const author = update.author || update.source || "Player News";
+      const story = decodeNewsText(update.whatHappened || update.summary || update.text || "News update available.");
+      const sourceLink = update.link
+        ? `<a href="${esc(update.link)}" target="_blank" rel="noopener">Source</a>`
+        : "";
 
       return `
         <article class="zoo-update-card">
-          <div class="zoo-update-player">${esc(player)} — ${esc(event)}</div>
+          <div class="zoo-update-player">${esc(player)}</div>
           <div class="zoo-update-source">
-            <span>${esc(author)}</span>
-            <span>${esc(formatTime(publishedAt))}</span>
+            <span>${esc(author)}${sourceLink ? ` · ${sourceLink}` : ""}</span>
+            <span>${esc(formatTime(update.publishedAt))}</span>
           </div>
           <div class="zoo-update-text">${esc(story)}</div>
-          <div class="meter-row"><span class="tag zoo">GM: ${esc(recommendation)}</span></div>
         </article>
       `;
     }).join("");
@@ -2071,7 +1984,7 @@
         </div>
 
         <div class="news-time">
-          ${esc(home.totalPoints ?? home.score ?? 0)} pts
+          ${esc(home.cumulativeScore ?? home.totalPoints ?? home.score ?? 0)} pts
         </div>
 
       </div>
@@ -2091,7 +2004,7 @@
         </div>
 
         <div class="news-time">
-          ${esc(away.totalPoints ?? away.score ?? 0)} pts
+          ${esc(away.cumulativeScore ?? away.totalPoints ?? away.score ?? 0)} pts
         </div>
 
       </div>
@@ -2113,7 +2026,7 @@
 
     const now = new Date();
     const isSunday = now.getDay() === 0;
-    const urgentLineup = (xData?.lineupAlerts || []).some(
+    const urgentLineup = (intelligenceData?.lineupAlerts || []).some(
       alert => String(alert.severity || "").toUpperCase() === "URGENT"
     );
 
@@ -2125,8 +2038,8 @@
     const status = document.getElementById("actionCenterStatus");
     if (!grid) return;
 
-    const lineupAlerts = xData?.lineupAlerts || [];
-    const replacements = xData?.replacementRecommendations || [];
+    const lineupAlerts = intelligenceData?.lineupAlerts || [];
+    const replacements = intelligenceData?.replacementRecommendations || [];
     const cards = [];
 
     lineupAlerts.slice(0, 4).forEach(alert => {
@@ -2188,32 +2101,31 @@
     const container = document.getElementById("addDropDecisions");
     if (!container) return;
 
-    const decisions = xData?.addDropDecisions || [];
+    const decisions = intelligenceData?.addDropDecisions || [];
 
     if (!decisions.length) {
       container.innerHTML = '<div class="empty">No add/drop upgrade clears Zoo GM thresholds right now.</div>';
       return;
     }
 
-    container.innerHTML = decisions.slice(0, 8).map(item => {
+    container.innerHTML = decisions.slice(0, 3).map(item => {
       const add = item.addPlayer || item.availablePlayer || item.add || {};
       const drop = item.dropPlayer || item.currentPlayer || item.drop || {};
       const addName = add.name || item.addPlayerName || item.player || "Available player";
-      const dropName = drop.name || item.dropPlayerName || item.replacementFor || "Zoo roster player";
-      const gain = Number(item.scoreGain ?? item.valueGain ?? item.delta ?? 0);
-      const recommended = item.recommended ?? item.makeMove ?? item.isUpgrade;
-      const action = item.recommendation ||
-        (recommended === false ? "HOLD" : `ADD ${addName} · DROP ${dropName}`);
+      const dropName = drop?.name || item.dropPlayerName || item.replacementFor || "Open roster spot";
+      const gain = Number(item.rosterValueChange ?? item.scoreGain ?? item.valueGain ?? item.delta ?? 0);
+      const action = item.recommendation || `ADD ${addName}${drop?.name ? ` · DROP ${dropName}` : ""}`;
+      const strategy = item.strategy || "ROSTER MOVE";
+      const reason = item.reason || item.why || item.summary || "Top Zoo-value roster move";
 
       return `
         <div class="decision-row">
           <div class="decision-row-top">
-            <div class="decision-row-name">${esc(addName)} → over ${esc(dropName)}</div>
-            <span class="action-tier ${recommended === false ? "FYI" : "ACT-NOW"}">${esc(action)}</span>
+            <div class="decision-row-name">${esc(addName)}${drop?.name ? ` → over ${esc(dropName)}` : ""}</div>
+            <span class="action-tier ACT-NOW">${esc(action)}</span>
           </div>
           <div class="decision-row-detail">
-            ${gain ? `Zoo value gain: +${gain} · ` : ""}
-            ${esc(item.reason || item.why || item.summary || "Cross-position roster-value comparison")}
+            ${gain ? `Zoo value change: ${gain > 0 ? "+" : ""}${gain} · ` : ""}${esc(strategy)} · ${esc(reason)}
           </div>
         </div>
       `;
@@ -2224,24 +2136,28 @@
     const container = document.getElementById("opportunityOpponentAlerts");
     if (!container) return;
 
-    const opportunity = (xData?.opportunityAlerts || []).map(item => ({
+    const opportunity = (intelligenceData?.opportunityAlerts || []).map(item => ({
       ...item,
       _kind: "OPPORTUNITY"
     }));
 
-    const opponent = (xData?.opponentActionableUpdates || []).map(item => ({
+    const opponent = (intelligenceData?.opponentActionableUpdates || []).map(item => ({
       ...item,
       _kind: "OPPONENT"
     }));
 
-    const combined = [...opportunity, ...opponent];
+    const cutoff = Date.now() - (12 * 60 * 60 * 1000);
+    const combined = [...opportunity, ...opponent]
+      .filter(item => !item.publishedAt || new Date(item.publishedAt).getTime() >= cutoff)
+      .sort((a, b) => Number(b.impactScore || 0) - Number(a.impactScore || 0) ||
+        new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
     if (!combined.length) {
       container.innerHTML = '<div class="empty">No actionable opportunity or opponent alerts right now.</div>';
       return;
     }
 
-    container.innerHTML = combined.slice(0, 10).map(item => {
+    container.innerHTML = combined.slice(0, 5).map(item => {
       const name = item.player || item.playerName || item.name || item.title || item._kind;
       const detail = item.reason || item.summary || item.whatHappened || item.text || item.description || "";
       const action = item.recommendation || item.action || (item._kind === "OPPONENT" ? "MONITOR OPPONENT" : "MONITOR");
@@ -2277,7 +2193,7 @@
   function renderPlayerNews() {
     const target = document.getElementById("playerNewsGrid");
     if (!target) return;
-    const posts = (xData?.posts || [])
+    const posts = freshIntelligencePosts()
       .filter(post => String(post?.sourceType || "").toUpperCase() === "PLAYER_NEWS")
       .slice()
       .sort((a, b) => {
@@ -2300,7 +2216,7 @@
       return;
     }
 
-    target.innerHTML = posts.slice(0, 24).map(post => {
+    target.innerHTML = posts.map(post => {
       const intel = post.intelligence || {};
       const players = intel.players || [];
       const primary = (post.playerNames || [])[0] || players[0]?.name || post.title || "Player Update";
@@ -2318,17 +2234,58 @@
     }).join("");
   }
 
+  function renderZooConsensusRankings() {
+    const body = document.getElementById("zooConsensusBody");
+    const head = document.getElementById("zooConsensusHead");
+    const status = document.getElementById("zooConsensusStatus");
+    if (!body || !head) return;
+
+    const rankings = intelligenceData?.expertRankings?.consensus || [];
+    const roster = getZooRoster();
+    const rosterNames = new Set(roster.map(player => String(player.name || "").toLowerCase()));
+    const zooRanks = rankings.filter(item => rosterNames.has(String(item.name || "").toLowerCase()));
+    const experts = [...new Set(zooRanks.flatMap(item => (item.experts || []).map(e => e.expert)).filter(Boolean))];
+    const week = intelligenceData?.expertRankings?.week || espnData?.matchupPeriodId || espnData?.scoringPeriodId || "";
+
+    if (status) status.textContent = `Week ${week} · ${experts.length} validated expert source${experts.length === 1 ? "" : "s"}`;
+
+    head.innerHTML = `<tr><th>Player</th><th>Pos</th>${experts.map(expert => `<th>${esc(expert)}</th>`).join("")}<th>Consensus</th><th>Sources</th></tr>`;
+
+    if (!zooRanks.length) {
+      body.innerHTML = `<tr><td colspan="${experts.length + 4}">No current Zoo consensus rankings available.</td></tr>`;
+      return;
+    }
+
+    const preferred = ["QB","RB","WR","TE","K","LB","DL","CB","S"];
+    zooRanks.sort((a, b) => {
+      const ap = preferred.indexOf(String(a.position || "").toUpperCase());
+      const bp = preferred.indexOf(String(b.position || "").toUpperCase());
+      return ap - bp || Number(a.consensusRank || 999) - Number(b.consensusRank || 999);
+    });
+
+    body.innerHTML = zooRanks.map(item => {
+      const rankMap = new Map((item.experts || []).map(e => [e.expert, e.rank]));
+      return `<tr>
+        <td><strong>${esc(item.name)}</strong><div class="rank-meta">${esc(item.nflTeam || "")}</div></td>
+        <td>${esc(item.position || "")}</td>
+        ${experts.map(expert => `<td>${rankMap.has(expert) ? `#${esc(rankMap.get(expert))}` : "—"}</td>`).join("")}
+        <td class="rank-num">#${esc(item.consensusRank || item.averageRank || "—")}</td>
+        <td>${esc(item.expertCount || 0)}/${esc(item.availableExpertCount || item.expertCount || 0)}</td>
+      </tr>`;
+    }).join("");
+  }
+
   function renderExpertRankings() {
     const body = document.getElementById("expertRankingBody");
     const toolbar = document.getElementById("rankingToolbar");
     const status = document.getElementById("expertRankingStatus");
     if (!body || !toolbar) return;
 
-    const rankings = xData?.expertRankings?.consensus || [];
+    const rankings = intelligenceData?.expertRankings?.consensus || [];
     const healthyExperts = [...new Set(rankings.flatMap(r => (r.experts || []).map(e => e.expert)).filter(Boolean))];
-    const sourceStatus = xData?.expertRankings?.sourceStatus || [];
+    const sourceStatus = intelligenceData?.expertRankings?.sourceStatus || [];
     const limited = sourceStatus.filter(s => s.ok && Number(s.playerCount || 0) > 0 && Number(s.playerCount || 0) < 20).map(s => s.name);
-    const week = xData?.expertRankings?.week || espnData?.matchupPeriodId || espnData?.scoringPeriodId || "";
+    const week = intelligenceData?.expertRankings?.week || espnData?.matchupPeriodId || espnData?.scoringPeriodId || "";
     if (status) {
       const parts = [`Week ${week}`, healthyExperts.length ? `Consensus: ${healthyExperts.join(" · ")}` : ""];
       if (limited.length) parts.push(`${limited.join(", ")} limited coverage excluded where incomplete`);
@@ -2384,6 +2341,7 @@
     renderWatchList();
     renderZooPlayerUpdates();
     renderPlayerNews();
+    renderZooConsensusRankings();
     renderExpertRankings();
     renderSuggestedWatchList();
     renderAddDropDecisions();
@@ -2402,13 +2360,13 @@
     refreshButton.disabled = true;
 
     try {
-      const [espnResponse, xResponse] =
+      const [espnResponse, intelligenceResponse] =
         await Promise.all([
           fetch(getEspnUrl(), {
             cache: "no-store"
           }),
 
-          fetch(getXUrl(), {
+          fetch(getIntelligenceUrl(), {
             cache: "no-store",
             headers: {
               "Cache-Control": "no-cache",
@@ -2417,10 +2375,10 @@
           })
         ]);
 
-      const [espn, x] =
+      const [espn, intelligence] =
         await Promise.all([
           espnResponse.json(),
-          xResponse.json()
+          intelligenceResponse.json()
         ]);
 
       if (!espnResponse.ok || !espn.ok) {
@@ -2430,16 +2388,16 @@
         );
       }
 
-      if (!xResponse.ok || !x.ok) {
+      if (!intelligenceResponse.ok || !intelligence.ok) {
         throw new Error(
-          x.detail ||
-          x.error ||
-          `Intelligence request failed (${xResponse.status})`
+          intelligence.detail ||
+          intelligence.error ||
+          `Intelligence request failed (${intelligenceResponse.status})`
         );
       }
 
       espnData = espn;
-      xData = x;
+      intelligenceData = intelligence;
 
       renderAll();
 
@@ -2449,8 +2407,8 @@
           espn.leagueName ||
           "LFL"
         )} · ${esc(
-          x.summary?.postsReviewed ?? 0
-         )} intelligence items analyzed`;
+          freshIntelligencePosts().length
+         )} intelligence items from the last 12 hours`;
 
       document.getElementById("lastRefresh").textContent =
         `Last refreshed ${new Date().toLocaleTimeString()}`;
