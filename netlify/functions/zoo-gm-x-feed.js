@@ -56,9 +56,23 @@ const EXPERT_RANKINGS_URL = process.env.ZOO_GM_EXPERT_RANKINGS_URL || "";
 // Live ranking pages supplied for Zoo GM. These are fetched in parallel with
 // short timeouts and reduced to only players who can affect a Zoo decision.
 const EXPERT_RANKING_SOURCES = [
+  // CBS exposes Jamey and Heath separately inside the same weekly position pages.
   {
-    key: "cbs",
-    name: "CBS Sports",
+    key: "cbs_jamey",
+    name: "Jamey Eisenberg",
+    cbsExpert: "Jamey Eisenberg",
+    pages: [
+      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/QB/weekly/", positions: ["QB"] },
+      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/RB/weekly/", positions: ["RB"] },
+      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/WR/weekly/", positions: ["WR"] },
+      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/TE/weekly/", positions: ["TE"] },
+      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/K/weekly/", positions: ["K"] }
+    ]
+  },
+  {
+    key: "cbs_heath",
+    name: "Heath Cummings",
+    cbsExpert: "Heath Cummings",
     pages: [
       { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/QB/weekly/", positions: ["QB"] },
       { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/RB/weekly/", positions: ["RB"] },
@@ -70,32 +84,36 @@ const EXPERT_RANKING_SOURCES = [
   {
     key: "fantasypros_rankings",
     name: "FantasyPros",
-    pages: [
-      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-ppr-flex.php", positions: ["RB", "WR", "TE"] },
-      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-qb.php", positions: ["QB"] },
-      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-k.php", positions: ["K"] },
-      { url: "https://www.fantasypros.com/nfl/rankings/idp", positions: ["LB", "DL", "CB", "S"] }
-    ]
+    dynamicFantasyProsPages: true,
+    positions: ["QB", "RB", "WR", "TE", "K", "LB", "DL", "CB", "S"]
   },
   {
     key: "fabiano",
     name: "Michael Fabiano",
     dynamicWeekPages: true,
     positions: ["QB", "RB", "WR", "TE", "K"]
+  },
+  {
+    key: "espn_rankings",
+    name: "ESPN",
+    pages: [
+      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804022/nfl-fantasy-football-rankings-2026-qb-quarterback", positions: ["QB"] },
+      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804068/nfl-fantasy-football-rankings-2026-rb-running-back", positions: ["RB"] },
+      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804149/nfl-fantasy-football-rankings-2026-wr-wide-receiver", positions: ["WR"] },
+      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804164/nfl-fantasy-football-rankings-2026-te-tight-end", positions: ["TE"] },
+      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804233/nfl-fantasy-football-rankings-2026-k-kicker", positions: ["K"] },
+      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804332/nfl-fantasy-football-rankings-2026-idp", positions: ["LB", "DL", "CB", "S"] }
+    ]
   }
 ];
 
-// ESPN is intentionally not mixed into the weekly consensus until a current
-// weekly ESPN ranking page is discoverable. The preseason RB article supplied
-// earlier is useful draft context, but using it as a weekly ranking would
-// contaminate start/sit decisions.
 const ESPN_WEEKLY_RANKINGS_STATUS = {
   key: "espn_rankings",
   name: "ESPN",
-  url: "https://www.espn.com/fantasy/football/",
-  ok: false,
+  url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26main-49797082/fantasy-football-rankings-2026-qb-rb-wr-te-dst",
+  ok: true,
   playerCount: 0,
-  error: "No reliable current-week ESPN ranking page configured; stale preseason rankings excluded"
+  error: ""
 };
 
 // Manual fallback remains available if a ranking page changes its markup.
@@ -105,9 +123,11 @@ const INLINE_WEEKLY_EXPERT_RANKINGS = {
 };
 
 const EXPECTED_EXPERTS = [
-  "CBS Sports",
+  "Jamey Eisenberg",
+  "Heath Cummings",
   "FantasyPros",
-  "Michael Fabiano"
+  "Michael Fabiano",
+  "ESPN"
 ];
 
 const FANTASYPROS_API_KEY = process.env.FANTASYPROS_API_KEY || "";
@@ -124,6 +144,8 @@ const RUNTIME_CACHE = {
   finalResponseAt: 0,
   sourcePages: new Map(),
   expertRankings: new Map(),
+  rankingPages: new Map(),
+  rankingPagePromises: new Map(),
   fantasyProsApi: { value: null, at: 0 }
 };
 
@@ -4815,10 +4837,53 @@ function extractPagePublishedAt(html = "") {
 }
 
 function parseNewsTimestamp(text = "", fallback = "") {
-  const raw = String(text || "");
-  const match = raw.match(
-    /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,\s+([A-Z][a-z]{2})\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?\s+(\d{1,2}):(\d{2})\s*(am|pm)\s*(EDT|EST|CDT|CST|MDT|MST|PDT|PST)?\b/i
+  const raw = decodeHtmlEntities(String(text || ""));
+
+  // Prefer an ISO timestamp when a source exposes datePublished/dateModified
+  // or a machine-readable datetime value inside the story/card markup.
+  const isoMatch = raw.match(
+    /\b(20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2}))\b/i
   );
+  if (isoMatch && isoMatch[1]) {
+    const isoTime = new Date(isoMatch[1]).getTime();
+    if (Number.isFinite(isoTime)) return new Date(isoTime).toISOString();
+  }
+
+  // FantasyPros format: Sun, Sep 13th 7:24am EDT
+  let match = raw.match(
+    /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,\s+([A-Z][a-z]{2})\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?\s+(\d{1,2}):(\d{2})\s*(am|pm)\s*(EDT|EST|CDT|CST|MDT|MST|PDT|PST|ET|CT|MT|PT)?\b/i
+  );
+
+  // NBC/Rotoworld format commonly appears as:
+  // September 13, 2026 01:15 PM or Sep 13, 2026, 1:15 PM ET.
+  if (!match) {
+    const nbc = raw.match(
+      /\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*|\s+)(\d{4})\s*(?:,\s*)?(\d{1,2}):(\d{2})\s*(AM|PM)\s*(EDT|EST|CDT|CST|MDT|MST|PDT|PST|ET|CT|MT|PT)?\b/i
+    );
+
+    if (nbc) {
+      const fullMonthMap = {
+        january: "Jan", february: "Feb", march: "Mar", april: "Apr",
+        may: "May", june: "Jun", july: "Jul", august: "Aug",
+        september: "Sep", october: "Oct", november: "Nov", december: "Dec"
+      };
+      const monRaw = String(nbc[1] || "");
+      const monKey = monRaw.toLowerCase();
+      const shortMonth = fullMonthMap[monKey] || (
+        monRaw.charAt(0).toUpperCase() + monRaw.slice(1, 3).toLowerCase()
+      );
+      match = [
+        nbc[0],
+        shortMonth,
+        nbc[2],
+        nbc[3],
+        nbc[4],
+        nbc[5],
+        nbc[6],
+        nbc[7]
+      ];
+    }
+  }
 
   if (!match) return fallback || "";
 
@@ -4842,12 +4907,12 @@ function parseNewsTimestamp(text = "", fallback = "") {
   if (ampm === "pm" && hour !== 12) hour += 12;
   if (ampm === "am" && hour === 12) hour = 0;
 
-  const zone = String(match[7] || "EDT").toUpperCase();
+  const zone = String(match[7] || "ET").toUpperCase();
   const offsets = {
-    EDT: "-04:00", EST: "-05:00",
-    CDT: "-05:00", CST: "-06:00",
-    MDT: "-06:00", MST: "-07:00",
-    PDT: "-07:00", PST: "-08:00"
+    EDT: "-04:00", EST: "-05:00", ET: "-04:00",
+    CDT: "-05:00", CST: "-06:00", CT: "-05:00",
+    MDT: "-06:00", MST: "-07:00", MT: "-06:00",
+    PDT: "-07:00", PST: "-08:00", PT: "-07:00"
   };
 
   const mm = String(month + 1).padStart(2, "0");
@@ -4927,8 +4992,59 @@ function extractFantasyProsStories(html = "") {
 }
 
 function extractNbcStories(html = "") {
-  const blocks = extractHtmlBlocks(String(html || "").slice(0, 400000)).slice(0, 220);
-  return blocks.filter(block => block.length >= 45 && block.length <= 1400);
+  const raw = String(html || "").slice(0, 650000);
+  const stories = [];
+  const seen = new Set();
+
+  const add = chunk => {
+    const text = cleanSourceText(chunk);
+    const key = normalize(text);
+    if (text.length < 45 || text.length > 1800 || key.length < 35 || seen.has(key)) return;
+    seen.add(key);
+    stories.push(text);
+  };
+
+  // Brightspot/NBC commonly renders each player-news item inside article/list/card
+  // markup. Preserve the entire card so player name, blurb and timestamp stay
+  // together instead of being separated into unrelated text blocks.
+  for (const match of raw.matchAll(
+    /<(article|li)[^>]*>[\s\S]*?<\/\1>/gi
+  )) {
+    const chunk = match[0];
+    if (
+      /fantasy\/football\/player-news/i.test(chunk) ||
+      /player news/i.test(chunk) ||
+      /datePublished|dateModified|datetime=/i.test(chunk)
+    ) {
+      add(chunk);
+    }
+    if (stories.length >= 100) break;
+  }
+
+  // JSON-LD / embedded data fallback. Capture a bounded neighborhood around
+  // each player-news URL, which often contains datePublished/dateModified.
+  for (const match of raw.matchAll(
+    /https?:\\?\/\\?\/www\.nbcsports\.com\\?\/fantasy\\?\/football\\?\/player-news\\?\/20\d{2}-\d{2}-\d{2}\\?\/[^"'\s<]+/gi
+  )) {
+    const start = Math.max(0, (match.index || 0) - 900);
+    const end = Math.min(raw.length, (match.index || 0) + 1800);
+    add(raw.slice(start, end));
+    if (stories.length >= 140) break;
+  }
+
+  // Last fallback for markup changes.
+  if (stories.length < 8) {
+    const blocks = extractHtmlBlocks(raw).slice(0, 350);
+    for (let i = 0; i < blocks.length; i += 1) {
+      const combined = buildSourceContext(blocks, i);
+      if (/\b(Player Stats|More .* News|Source:|Fantasy)\b/i.test(combined)) {
+        add(combined);
+      }
+      if (stories.length >= 140) break;
+    }
+  }
+
+  return stories.slice(0, 140);
 }
 
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
@@ -5108,12 +5224,39 @@ function rankingFocusCatalog(playerCatalog = [], allowedPositions = []) {
 }
 
 
+function extractCbsExpertSection(html = "", expertName = "") {
+  const plain = cleanSourceText(String(html || "").slice(0, 600000));
+  if (!plain || !expertName) return "";
+
+  const expertNames = [
+    "Jamey Eisenberg",
+    "Dave Richard",
+    "Heath Cummings",
+    "CBS Fantasy Experts"
+  ];
+
+  const start = plain.toLowerCase().indexOf(String(expertName).toLowerCase());
+  if (start < 0) return "";
+
+  let end = plain.length;
+  for (const name of expertNames) {
+    if (name.toLowerCase() === String(expertName).toLowerCase()) continue;
+    const idx = plain.toLowerCase().indexOf(name.toLowerCase(), start + expertName.length);
+    if (idx > start && idx < end) end = idx;
+  }
+
+  return plain.slice(start, end);
+}
+
 function cbsAbbreviatedRankingsFromPage(source = {}, html = "", playerCatalog = []) {
   const allowedPositions = (source.positions || []).map(canonicalPosition).filter(Boolean);
   const focus = rankingFocusCatalog(playerCatalog, allowedPositions);
   if (!focus.length) return {};
 
-  const plain = cleanSourceText(String(html || "").slice(0, 500000));
+  const plain = source.cbsExpert
+    ? extractCbsExpertSection(html, source.cbsExpert)
+    : cleanSourceText(String(html || "").slice(0, 500000));
+
   if (!plain) return {};
 
   // CBS displays weekly tables as abbreviated names (for example J. Gibbs),
@@ -5166,7 +5309,14 @@ function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
   const focus = rankingFocusCatalog(playerCatalog, allowedPositions);
   if (!focus.length) return {};
 
-  const page = ` ${normalize(cleanSourceText(String(html || "").slice(0, 400000)))} `;
+  if (source.cbsExpert || String(source.key || "").startsWith("cbs_")) {
+    // CBS uses abbreviated display names and includes multiple expert sections
+    // on a single page. For Jamey/Heath, use only that expert's section.
+    return cbsAbbreviatedRankingsFromPage(source, html, playerCatalog);
+  }
+
+  const visibleText = cleanSourceText(String(html || "").slice(0, 500000));
+  const page = ` ${normalize(visibleText)} `;
   if (!page.trim()) return {};
 
   // Build one alias matcher and scan the ranking page once. The prior version
@@ -5211,9 +5361,49 @@ function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
     if (rankings[item.position].length < 100) rankings[item.position].push(item.name);
   }
 
-  if (source.key === "cbs") {
-    const cbsFallback = cbsAbbreviatedRankingsFromPage(source, html, playerCatalog);
-    mergePositionRankings(rankings, cbsFallback);
+  // FantasyPros and ESPN sometimes hydrate ranking tables from embedded JSON.
+  // If the visible HTML produced thin coverage, scan the raw page too. We keep
+  // visible-table ordering first and only use raw matches to fill missing names.
+  const visibleCount = Object.values(rankings).reduce((sum, names) => sum + names.length, 0);
+  if (visibleCount < Math.max(8, allowedPositions.length * 5)) {
+    const rawPage = ` ${normalize(
+      decodeHtmlEntities(
+        String(html || "")
+          .slice(0, 900000)
+          .replace(/<style[\s\S]*?<\/style>/gi, " ")
+          .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+          .replace(/<[^>]+>/g, " ")
+      ).replace(/\s+/g, " ")
+    )} `;
+
+    const rawOrdered = [];
+    const rawSeen = new Set();
+    let rawMatch;
+
+    const rawRegex = new RegExp(
+      `(?:^|\\s)(${aliases.map(escapeRegExp).join("|")})(?=\\s|$|[.-])`,
+      "g"
+    );
+
+    while ((rawMatch = rawRegex.exec(rawPage)) !== null) {
+      const alias = rawMatch[1];
+      const player = aliasMap.get(alias);
+      if (!player) continue;
+      const position = canonicalPosition(player.position);
+      const key = `${position}:${normalize(player.name)}`;
+      if (rawSeen.has(key)) continue;
+      rawSeen.add(key);
+      rawOrdered.push({ name: player.name, position, index: rawMatch.index });
+      if (rawOrdered.length >= 600) break;
+    }
+
+    rawOrdered.sort((a, b) => a.index - b.index);
+    const rawRankings = {};
+    for (const item of rawOrdered) {
+      if (!rawRankings[item.position]) rawRankings[item.position] = [];
+      if (rawRankings[item.position].length < 100) rawRankings[item.position].push(item.name);
+    }
+    mergePositionRankings(rankings, rawRankings);
   }
 
   return rankings;
@@ -5221,6 +5411,18 @@ function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
 
 function buildExpertRankingPages(source = {}, week = 1) {
   if (Array.isArray(source.pages) && source.pages.length) return source.pages;
+
+  if (source.dynamicFantasyProsPages) {
+    const w = Number(week) || 1;
+    return [
+      { url: `https://www.fantasypros.com/nfl/rankings/qb.php?week=${w}`, positions: ["QB"] },
+      { url: `https://www.fantasypros.com/nfl/rankings/ppr-rb.php?week=${w}`, positions: ["RB"] },
+      { url: `https://www.fantasypros.com/nfl/rankings/ppr-wr.php?week=${w}`, positions: ["WR"] },
+      { url: `https://www.fantasypros.com/nfl/rankings/ppr-te.php?week=${w}`, positions: ["TE"] },
+      { url: `https://www.fantasypros.com/nfl/rankings/k.php?week=${w}`, positions: ["K"] },
+      { url: `https://www.fantasypros.com/nfl/rankings/idp.php?week=${w}`, positions: ["LB", "DL", "CB", "S"] }
+    ];
+  }
 
   if (source.dynamicWeekPages) {
     const base = `https://www.si.com/fantasy/week-${Number(week) || 1}`;
@@ -5254,24 +5456,49 @@ function mergePositionRankings(target = {}, incoming = {}) {
   return target;
 }
 
+async function fetchRankingHtml(url = "") {
+  const cached = RUNTIME_CACHE.rankingPages.get(url);
+  if (cached && cacheFresh(cached.at, CACHE_TTL.expertRankingsMs)) {
+    return cached.html;
+  }
+
+  if (RUNTIME_CACHE.rankingPagePromises.has(url)) {
+    return RUNTIME_CACHE.rankingPagePromises.get(url);
+  }
+
+  const promise = (async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4500);
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/3.1; +https://ma3dtribe.com)",
+          "Accept": "text/html,application/xhtml+xml",
+          "Cache-Control": "no-cache"
+        },
+        signal: controller.signal
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const html = await response.text();
+      RUNTIME_CACHE.rankingPages.set(url, { html, at: Date.now() });
+      return html;
+    } finally {
+      clearTimeout(timer);
+      RUNTIME_CACHE.rankingPagePromises.delete(url);
+    }
+  })();
+
+  RUNTIME_CACHE.rankingPagePromises.set(url, promise);
+  return promise;
+}
+
 async function fetchExpertRankingPage(source = {}, page = {}, playerCatalog = []) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3200);
-
   try {
-    const response = await fetch(page.url, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.3; +https://ma3dtribe.com)",
-        "Accept": "text/html,application/xhtml+xml",
-        "Cache-Control": "no-cache"
-      },
-      signal: controller.signal
-    });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const html = await response.text();
+    const html = await fetchRankingHtml(page.url);
     const rankings = rankingsFromPage(
       { ...source, positions: page.positions || source.positions || [] },
       html,
@@ -5290,8 +5517,6 @@ async function fetchExpertRankingPage(source = {}, page = {}, playerCatalog = []
       playerCount: 0,
       error: error.name === "AbortError" ? "timeout" : (error.message || String(error))
     };
-  } finally {
-    clearTimeout(timer);
   }
 }
 
