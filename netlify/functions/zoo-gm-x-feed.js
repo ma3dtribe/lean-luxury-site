@@ -1770,158 +1770,71 @@ function buildContextImpact(
   playerCatalog = [],
   eventTypes = []
 ) {
+  // Context is allowed only when the story directly names a player and the
+  // inferred player is on THAT DIRECT PLAYER'S NFL team. This prevents an
+  // opponent mentioned in the story (for example, "vs. Detroit") from being
+  // incorrectly tagged as Zoo context.
   if (
-    !hasActionableEvent(
-      eventTypes
-    ) ||
+    !playerMatches.length ||
+    !hasActionableEvent(eventTypes) ||
     !hasRoleChangingContext(text, eventTypes)
   ) {
     return [];
   }
 
-  const mentionedTeams =
-    findMentionedNFLTeams(
-      text
-    );
+  const directTeams = new Set(
+    playerMatches
+      .map(player => normalizeNflTeam(player.nflTeam || ""))
+      .filter(Boolean)
+  );
 
-  const mentionedPositions =
-    findMentionedPositions(
-      text
-    );
+  if (!directTeams.size) return [];
 
-  for (
-    const player
-    of playerMatches
-  ) {
-    if (
-      player.nflTeam
-    ) {
-      mentionedTeams.add(
-        normalizeNflTeam(
-          player.nflTeam
-        )
-      );
-    }
-  }
+  const mentionedPositions = findMentionedPositions(text);
+  const directKeys = new Set(
+    playerMatches.map(player =>
+      player.playerId
+        ? `id:${player.playerId}`
+        : `name:${normalize(player.name)}`
+    )
+  );
 
-  if (
-    !mentionedTeams.size
-  ) {
-    return [];
-  }
+  const context = [];
 
-  const directKeys =
-    new Set(
-      playerMatches.map(
-        player =>
-          player.playerId
-            ? `id:${player.playerId}`
-            : `name:${normalize(
-                player.name
-              )}`
-      )
-    );
+  for (const candidate of playerCatalog) {
+    if (!candidate?.name || !candidate.nflTeam || !isRelevantContextCandidate(candidate)) continue;
 
-  const context =
-    [];
+    const candidateKey = candidate.playerId
+      ? `id:${candidate.playerId}`
+      : `name:${normalize(candidate.name)}`;
 
-  for (
-    const candidate
-    of playerCatalog
-  ) {
-    if (
-      !candidate?.name ||
-      !candidate.nflTeam ||
-      !isRelevantContextCandidate(
-        candidate
-      )
-    ) {
-      continue;
-    }
+    if (directKeys.has(candidateKey)) continue;
 
-    const candidateKey =
-      candidate.playerId
-        ? `id:${candidate.playerId}`
-        : `name:${normalize(
-            candidate.name
-          )}`;
+    const team = normalizeNflTeam(candidate.nflTeam);
+    if (!directTeams.has(team)) continue;
 
-    if (
-      directKeys.has(
-        candidateKey
-      )
-    ) {
-      continue;
-    }
-
-    const team =
-      normalizeNflTeam(
-        candidate.nflTeam
-      );
-
-    if (
-      !mentionedTeams.has(
-        team
-      )
-    ) {
-      continue;
-    }
-
-    const candidatePosition =
-      String(
-        candidate.position ||
-        ""
-      ).toUpperCase();
-
-    const directPositions =
-      directPositionsForTeam(
-        playerMatches,
-        team
-      );
-
-    let reason =
-      "";
+    const candidatePosition = String(candidate.position || "").toUpperCase();
+    const directPositions = directPositionsForTeam(playerMatches, team);
+    let reason = "";
 
     if (
       mentionedPositions.size &&
-      mentionedPositions.has(
-        candidatePosition
-      )
+      mentionedPositions.has(candidatePosition) &&
+      positionsAreRelated(candidatePosition, directPositions, eventTypes)
     ) {
-      reason =
-        "TEAM + POSITION CONTEXT";
-
+      reason = "TEAMMATE / ROLE CONTEXT";
     } else if (
       directPositions.size &&
-      positionsAreRelated(
-        candidatePosition,
-        directPositions,
-        eventTypes
-      )
+      positionsAreRelated(candidatePosition, directPositions, eventTypes)
     ) {
-      reason =
-        "TEAMMATE / ROLE CONTEXT";
-
-    } else if (
-      !mentionedPositions.size &&
-      directPositions.has(
-        candidatePosition
-      )
-    ) {
-      reason =
-        "POSITION COMPETITION";
+      reason = "TEAMMATE / ROLE CONTEXT";
     }
 
-    if (
-      !reason
-    ) {
-      continue;
-    }
+    if (!reason) continue;
 
     context.push({
       ...candidate,
-      contextReason:
-        reason
+      contextReason: reason
     });
   }
 
@@ -2575,6 +2488,30 @@ function playerAvailabilityContext(player = {}, posts = []) {
   };
 }
 
+function expertRankingValueScore(player = {}) {
+  const ranking = player.expertRanking || null;
+  if (!ranking || !Number.isFinite(Number(ranking.averageRank))) return null;
+
+  const position = canonicalPosition(player.position);
+  const ceilings = {
+    QB: 20, RB: 60, WR: 60, TE: 24, K: 20,
+    LB: 60, DL: 36, CB: 30, S: 36
+  };
+  const ceiling = Number(ceilings[position] || 40);
+  const rank = Math.max(1, Number(ranking.averageRank));
+  const rankScore = clamp(100 - (((rank - 1) / Math.max(1, ceiling - 1)) * 100), 0, 100);
+  const confidence = clamp(Number(ranking.confidence ?? 100), 0, 100);
+
+  // Ranking quality is the main signal; source coverage slightly tempers one-source lists.
+  return clamp(Math.round((rankScore * 0.90) + (confidence * 0.10)), 0, 100);
+}
+
+function blendExpertRanking(baseScore, player = {}) {
+  const rankingScore = expertRankingValueScore(player);
+  if (rankingScore == null) return clamp(Math.round(baseScore), 0, 100);
+  return clamp(Math.round((Number(baseScore) * 0.80) + (rankingScore * 0.20)), 0, 100);
+}
+
 function acquisitionScore(player = {}, rosterCounts = {}, posts = [], watchContext = null) {
   const position = canonicalPosition(player.position);
   const profile = getPositionProfile(position);
@@ -2632,7 +2569,7 @@ function acquisitionScore(player = {}, rosterCounts = {}, posts = [], watchConte
     score = Math.max(score, context.watchPriorityScore * 0.94);
   }
 
-  return clamp(Math.round(score), 0, 100);
+  return blendExpertRanking(score, player);
 }
 
 function lflBestPlayerScore(player = {}, rosterCounts = {}, posts = [], watchContext = null) {
@@ -2662,7 +2599,7 @@ function lflBestPlayerScore(player = {}, rosterCounts = {}, posts = [], watchCon
     (context.watchPriorityBonus * 0.20) +
     availability.totalAdjustment;
 
-  return clamp(Math.round(score), 0, 100);
+  return blendExpertRanking(score, player);
 }
 
 function buildWatchListIntelligence(
@@ -2774,7 +2711,9 @@ function buildWatchListIntelligence(
         tradeMarketValue: profile.market,
         claimRisk,
         injuryAvailabilityAdjustment: availability.injuryAdjustment,
-        roleOpportunityAdjustment: availability.roleAdjustment
+        roleOpportunityAdjustment: availability.roleAdjustment,
+        expertRankingScore: expertRankingValueScore(catalogPlayer),
+        expertRanking: catalogPlayer.expertRanking || null
       },
       injuryStatus: catalogPlayer.injuryStatus || "ACTIVE",
       historicalPositionAverage: historicalPositionAverage(position),
@@ -2795,7 +2734,7 @@ function buildSuggestedWatchList(
   watchList = [],
   espnData = {},
   posts = [],
-  limit = 12
+  limit = 8
 ) {
   const zooRoster = getZooRoster(espnData);
   const counts = countRosterPositions(zooRoster);
@@ -2860,7 +2799,9 @@ function buildSuggestedWatchList(
           liveNews: news,
           marketQuality,
           injuryAvailabilityAdjustment: availability.injuryAdjustment,
-          roleOpportunityAdjustment: availability.roleAdjustment
+          roleOpportunityAdjustment: availability.roleAdjustment,
+          expertRankingScore: expertRankingValueScore(player),
+          expertRanking: player.expertRanking || null
         },
         reasons
       };
@@ -3268,6 +3209,22 @@ function buildReplacementRecommendations(
   return results;
 }
 
+function easternDayParts(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    hour: "2-digit",
+    hour12: false
+  }).formatToParts(now);
+  return Object.fromEntries(parts.map(part => [part.type, part.value]));
+}
+
+function kickerMustBeProtectedNow() {
+  // Sunday is treated as lineup-balance day. During the rest of the week, the
+  // kicker spot may be used temporarily to buy decision time.
+  return easternDayParts().weekday === "Sun";
+}
+
 function buildAddDropDecisions(
   espnData = {},
   posts = [],
@@ -3276,18 +3233,60 @@ function buildAddDropDecisions(
 ) {
   const roster = getZooRoster(espnData);
   const counts = countRosterPositions(roster);
+  const protectKicker = kickerMustBeProtectedNow();
+  const rosterKickers = roster.filter(player => canonicalPosition(player.position) === "K");
+  const hasKicker = rosterKickers.length > 0;
+
   const available = buildBestAvailableOptions(
     espnData,
     posts,
     counts,
-    15,
+    30,
     watchListIntelligence
   );
 
-  const drops = (expendability.all || []).slice(0, 8);
+  const drops = (expendability.all || []).slice(0, 12);
   const decisions = [];
 
-  for (const add of available.slice(0, 10)) {
+  // If Zoo reaches Sunday without a kicker, restoring a starting K becomes the
+  // first roster-management priority.
+  if (protectKicker && !hasKicker) {
+    const kicker = available
+      .filter(player => canonicalPosition(player.position) === "K")
+      .sort((a, b) => Number(b.zooValueScore || 0) - Number(a.zooValueScore || 0))[0];
+    const drop = drops.find(item => canonicalPosition(item.position) !== "K") || null;
+
+    if (kicker) {
+      decisions.push({
+        add: {
+          playerId: kicker.playerId || null,
+          name: kicker.name,
+          position: "K",
+          nflTeam: kicker.nflTeam || "",
+          zooValueScore: Number(kicker.zooValueScore || 0)
+        },
+        drop: drop ? {
+          playerId: drop.playerId || null,
+          name: drop.name,
+          position: drop.position,
+          nflTeam: drop.nflTeam || "",
+          keepValue: 0,
+          expendabilityScore: drop.expendabilityScore
+        } : null,
+        rosterValueChange: 0,
+        verdict: "REQUIRED",
+        recommendation: drop
+          ? `RESTORE KICKER · ADD ${kicker.name} · DROP ${drop.name}`
+          : `RESTORE KICKER · ADD ${kicker.name}`,
+        strategy: "GAME-DAY KICKER REQUIREMENT",
+        reason: "Zoo must restore a playable starting kicker before the lineup matters."
+      });
+    }
+  }
+
+  for (const add of available) {
+    if (decisions.some(item => normalize(item.add?.name) === normalize(add.name))) continue;
+
     const watchRecommendation = normalize(add.watchRecommendation || add.recommendation || "");
     if (watchRecommendation === "ignore") continue;
 
@@ -3299,6 +3298,10 @@ function buildAddDropDecisions(
         normalize(player.name) === normalize(drop.name)
       );
       if (!dropPlayer) continue;
+
+      const dropPosition = canonicalPosition(dropPlayer.position);
+      const onlyKicker = dropPosition === "K" && rosterKickers.length === 1;
+      if (protectKicker && onlyKicker) continue;
 
       const keepValue = lflBestPlayerScore(dropPlayer, counts, posts, null);
       const addValue = Number(add.zooValueScore || add.acquisitionScore || 0);
@@ -3321,23 +3324,63 @@ function buildAddDropDecisions(
           expendabilityScore: drop.expendabilityScore
         },
         rosterValueChange: rosterGain,
-        verdict: rosterGain >= 8 ? "YES" : rosterGain >= 1 ? "MARGINAL" : "NO"
+        verdict: rosterGain >= 8 ? "YES" : rosterGain >= 1 ? "MARGINAL" : "NO",
+        recommendation: `ADD ${add.name} · DROP ${drop.name}`,
+        strategy: "PERMANENT ROSTER MOVE",
+        reason: `Zoo value ${addValue} vs. keep value ${keepValue}.`
       };
 
-      if (!bestPair || pair.rosterValueChange > bestPair.rosterValueChange) {
-        bestPair = pair;
-      }
+      if (!bestPair || pair.rosterValueChange > bestPair.rosterValueChange) bestPair = pair;
     }
 
-    if (bestPair) decisions.push(bestPair);
+    // During the week, Zoo may intentionally use its only K slot as temporary
+    // roster storage for a genuinely strong target. This is not a permanent cut.
+    if (!protectKicker && rosterKickers.length === 1 && Number(add.zooValueScore || 0) >= 75) {
+      const kicker = rosterKickers[0];
+      const temporaryPair = {
+        add: {
+          playerId: add.playerId || null,
+          name: add.name,
+          position: add.position,
+          nflTeam: add.nflTeam || "",
+          zooValueScore: Number(add.zooValueScore || 0)
+        },
+        drop: {
+          playerId: kicker.playerId || null,
+          name: kicker.name,
+          position: "K",
+          nflTeam: kicker.nflTeam || "",
+          keepValue: lflBestPlayerScore(kicker, counts, posts, null),
+          expendabilityScore: 0
+        },
+        rosterValueChange: Math.max(0, Number(add.zooValueScore || 0) - 70),
+        verdict: "TEMPORARY",
+        recommendation: `TEMPORARY K DROP · ADD ${add.name}`,
+        strategy: "BUY DECISION TIME",
+        reason: `Use the kicker slot temporarily, then restore a starting K before Sunday lineup lock.`
+      };
+
+      if (!bestPair || temporaryPair.rosterValueChange > bestPair.rosterValueChange) bestPair = temporaryPair;
+    }
+
+    if (bestPair && (bestPair.verdict !== "NO" || Number(add.zooValueScore || 0) >= 80)) {
+      decisions.push(bestPair);
+    }
+
+    if (decisions.length >= 3) break;
   }
 
   return decisions
-    .sort((a, b) => b.rosterValueChange - a.rosterValueChange)
-    .slice(0, 10);
+    .sort((a, b) => {
+      if (a.verdict === "REQUIRED" && b.verdict !== "REQUIRED") return -1;
+      if (b.verdict === "REQUIRED" && a.verdict !== "REQUIRED") return 1;
+      return Number(b.add?.zooValueScore || 0) - Number(a.add?.zooValueScore || 0) ||
+        Number(b.rosterValueChange || 0) - Number(a.rosterValueChange || 0);
+    })
+    .slice(0, 3);
 }
 
-function buildOpponentIntelligence(posts = [], hours = 24) {
+function buildOpponentIntelligence(posts = [], hours = 12) {
   const cutoff = Date.now() - (hours * 60 * 60 * 1000);
 
   return posts
@@ -3360,11 +3403,12 @@ function buildOpponentIntelligence(posts = [], hours = 24) {
         `${post.title || ""} ${post.text || ""}`
       ),
       whatHappened: post.text || post.title || "",
-      source: post.author || post.handle || "X Source",
+      source: post.author || post.handle || "Player News",
       publishedAt: post.publishedAt || "",
       link: post.link || ""
     }))
-    .slice(0, 12);
+    .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime())
+    .slice(0, 5);
 }
 
 function buildOpportunityAlerts(
@@ -3374,67 +3418,83 @@ function buildOpportunityAlerts(
   watchListIntelligence = []
 ) {
   const alerts = [];
-  const availableNames = new Set(
-    (espnData.availablePlayers || []).map(player => normalize(player.name))
+  const cutoff = Date.now() - (12 * 60 * 60 * 1000);
+  const availableNames = new Set((espnData.availablePlayers || []).map(player => normalize(player.name)));
+  const watchNames = new Set((watchListIntelligence || []).map(player => normalize(player.name)));
+  const scoreByName = new Map(
+    [...(suggestedWatchList || []), ...(watchListIntelligence || [])]
+      .map(player => [normalize(player.name), Number(player.zooValueScore || player.priorityScore || 0)])
   );
 
   for (const post of posts) {
-    const i = post.intelligence || {};
     const published = new Date(post.publishedAt || 0).getTime();
-    if (!Number.isFinite(published) || getPostAgeHours(post.publishedAt) > 24) continue;
+    if (!Number.isFinite(published) || published < cutoff) continue;
 
-    const candidates = (i.players || []).filter(player =>
-      isActiveNflPlayer(player) && (
+    const i = post.intelligence || {};
+    const n = normalize(`${post.title || ""} ${post.text || ""}`);
+    const positiveSignal =
+      /(named starter|starting role|first team|first-team|every down|every-down|green dot|promoted|elevated|increased role|larger role|more snaps|snap share|targets|target share|routes|workload|lead back|rb1|wr1|starting linebacker|starting safety|starting corner)/.test(n);
+
+    if (!positiveSignal) continue;
+
+    const candidates = (i.players || []).filter(player => {
+      const name = normalize(player.name);
+      return player?.name && isActiveNflPlayer(player) && (
         player.ownershipStatus === "AVAILABLE" ||
-        availableNames.has(normalize(player.name))
-      )
-    );
+        availableNames.has(name) ||
+        player.onWatchList ||
+        watchNames.has(name)
+      );
+    });
 
     for (const candidate of candidates) {
-      const n = normalize(`${post.title || ""} ${post.text || ""}`);
-      const opportunitySignal =
-        /(named starter|starting|first team|first-team|every down|every-down|green dot|promoted|elevated|snap|snaps|targets|target share|routes|workload|lead back|rb1)/.test(n);
-
-      if (!opportunitySignal && !i.hasActionableEvent) continue;
-
       alerts.push({
         player: candidate.name,
         position: candidate.position || "",
         nflTeam: candidate.nflTeam || "",
         reason: post.text || post.title || "",
-        event: i.primaryEvent || "GENERAL_NEWS",
-        source: post.author || post.handle || "X Source",
+        event: i.primaryEvent || "ROLE_WORKLOAD",
+        source: post.author || post.handle || "Player News",
         publishedAt: post.publishedAt || "",
         link: post.link || "",
-        recommendation: "REVIEW FOR ZOO"
+        recommendation: "REVIEW FOR ZOO",
+        impactScore: Math.max(60, Number(scoreByName.get(normalize(candidate.name)) || 0))
       });
     }
   }
 
+  // A scored player may qualify even when the source parser summarized the role
+  // change rather than producing a dedicated article card. Keep only true positive
+  // role/news adjustments from the same 12-hour dataset.
   for (const player of [...(suggestedWatchList || []), ...(watchListIntelligence || [])]) {
     if (Number(player.zooValueScore || player.priorityScore || 0) < 75) continue;
-    if (!(player.components?.roleOpportunityAdjustment > 0 || player.components?.liveNews >= 15)) continue;
+    if (!(player.components?.roleOpportunityAdjustment > 0 && player.components?.liveNews >= 15)) continue;
 
     alerts.push({
       player: player.name,
       position: player.position || "",
       nflTeam: player.nflTeam || "",
-      reason: (player.reasons || []).slice(0, 2).join(" · "),
+      reason: (player.reasons || []).filter(reason => /role|opportun|news|starter|snap/i.test(reason)).slice(0, 2).join(" · "),
       event: "OPPORTUNITY",
       source: "Zoo GM",
       publishedAt: "",
       link: "",
-      recommendation: player.recommendation || "REVIEW FOR ZOO"
+      recommendation: player.recommendation || "REVIEW FOR ZOO",
+      impactScore: Number(player.zooValueScore || player.priorityScore || 0)
     });
   }
 
   const seen = new Set();
-  return alerts.filter(item => {
-    const key = normalize(item.player);
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).slice(0, 12);
+  return alerts
+    .sort((a, b) => Number(b.impactScore || 0) - Number(a.impactScore || 0) ||
+      new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime())
+    .filter(item => {
+      const key = normalize(item.player);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 5);
 }
 
 function buildExpendability(espnData = {}, posts = [], watchListIntelligence = [], playerCatalog = []) {
@@ -3453,7 +3513,6 @@ function buildExpendability(espnData = {}, posts = [], watchListIntelligence = [
     const positionCount = Number(counts[position] || 0);
     const surplus = Math.max(0, positionCount - preferred);
     const lineupStatus = String(player.rosterStatus || player.lineupSlot || "").toUpperCase();
-    const isBench = ["BE", "BENCH", "20"].includes(lineupStatus);
     const marketQuality = playerMarketQuality(player);
     const news = liveNewsScore(posts, player.name);
     const availability = playerAvailabilityContext(player, posts);
@@ -3474,7 +3533,6 @@ function buildExpendability(espnData = {}, posts = [], watchListIntelligence = [
     // are deliberately weighted more heavily than simply being above a positional quota.
     let score = 36;
 
-    if (isBench) score += 20;
     if (surplus > 0) score += Math.min(16, 8 + ((surplus - 1) * 4));
 
     score -= profile.scarcity * 0.12;
@@ -3492,7 +3550,6 @@ function buildExpendability(espnData = {}, posts = [], watchListIntelligence = [
     if (position === "RB") score -= 8;
     if (position === "WR") score -= 5;
     if (position === "LB" && surplus === 0) score -= 6;
-    if (["DL", "CB", "S"].includes(position) && !isBench) score -= 7;
 
     if (
       LFL_CONFIG.philosophy.singleCarryPositions.includes(position) &&
@@ -3516,7 +3573,6 @@ function buildExpendability(espnData = {}, posts = [], watchListIntelligence = [
     score = clamp(Math.round(score), 0, 100);
 
     const reasons = [];
-    if (isBench) reasons.push("currently a Zoo bench player");
     if (surplus > 0) reasons.push(`${position} is above Zoo's preferred roster count`);
     if (position === "LB" && surplus > 0) reasons.push("LB surplus matters, but no longer outweighs a major role/opportunity decline elsewhere");
     if (teammateContext.adjustment < 0) reasons.push(...teammateContext.notes);
@@ -4231,8 +4287,8 @@ function buildZooPlayerUpdates(
         direct: true,
         recommendation,
         whatHappened,
-        source: post.author || post.handle || "X Source",
-        author: post.author || post.handle || "X Source",
+        source: post.author || post.handle || "Player News",
+        author: post.author || post.handle || "Player News",
         publishedAt: post.publishedAt || "",
         link: post.link || "",
         guid: post.guid || "",
@@ -5356,19 +5412,51 @@ async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
 }
 
 function buildExpertRankingConsensus(expertRankings = {}, playerCatalog = []) {
+  // Only use an expert for a position when we captured enough of that list to
+  // treat the page as a real weekly ranking set. This prevents a partially
+  // parsed page (for example, one CBS match) from distorting consensus.
+  const minimumCoverage = {
+    QB: 8,
+    RB: 20,
+    WR: 20,
+    TE: 8,
+    K: 8,
+    LB: 20,
+    DL: 10,
+    CB: 5,
+    S: 10
+  };
+
+  const healthyByPosition = new Map();
+
+  for (const expert of expertRankings.experts || []) {
+    for (const [rawPosition, names] of Object.entries(expert.rankings || {})) {
+      const position = canonicalPosition(rawPosition);
+      if (!Array.isArray(names)) continue;
+      const minimum = minimumCoverage[position] || 5;
+      if (names.length < minimum) continue;
+      if (!healthyByPosition.has(position)) healthyByPosition.set(position, []);
+      healthyByPosition.get(position).push(expert.name);
+    }
+  }
+
   const byPlayer = new Map();
 
   for (const expert of expertRankings.experts || []) {
-    for (const [position, names] of Object.entries(expert.rankings || {})) {
+    for (const [rawPosition, names] of Object.entries(expert.rankings || {})) {
+      const position = canonicalPosition(rawPosition);
       if (!Array.isArray(names)) continue;
 
+      const healthyExperts = healthyByPosition.get(position) || [];
+      if (!healthyExperts.includes(expert.name)) continue;
+
       names.forEach((name, index) => {
-        const key = normalize(name);
-        if (!key) return;
+        const key = `${position}|${normalize(name)}`;
+        if (!normalize(name)) return;
 
         const current = byPlayer.get(key) || {
           name,
-          position: canonicalPosition(position),
+          position,
           ranks: [],
           experts: []
         };
@@ -5388,32 +5476,112 @@ function buildExpertRankingConsensus(expertRankings = {}, playerCatalog = []) {
     playerCatalog.map(player => [normalize(player.name), player])
   );
 
-  return [...byPlayer.values()]
-    .map(item => {
-      const avg = item.ranks.length
-        ? item.ranks.reduce((sum, rank) => sum + rank, 0) / item.ranks.length
-        : 999;
+  const mapped = [...byPlayer.values()].map(item => {
+    const avg = item.ranks.length
+      ? item.ranks.reduce((sum, rank) => sum + rank, 0) / item.ranks.length
+      : 999;
 
-      const player = catalogByName.get(normalize(item.name)) || {};
+    const player = catalogByName.get(normalize(item.name)) || {};
+    const availableExperts = healthyByPosition.get(item.position) || [];
+    const missingExperts = Math.max(0, availableExperts.length - item.ranks.length);
 
-      return {
-        ...item,
-        averageRank: Math.round(avg * 100) / 100,
-        expertCount: item.ranks.length,
-        playerId: player.playerId || "",
-        nflTeam: normalizeNflTeam(player.nflTeam || ""),
-        ownershipStatus: player.ownershipStatus || "UNKNOWN",
-        lflTeam: player.lflTeam || "",
-        onWatchList: Boolean(player.onWatchList),
-        opponentThisWeek: Boolean(player.opponentThisWeek)
-      };
-    })
-    .sort((a, b) => {
-      if (a.position !== b.position) {
-        return a.position.localeCompare(b.position);
-      }
-      return a.averageRank - b.averageRank;
-    });
+    // Missing from another healthy weekly list should matter. A player ranked
+    // very high by only one of two complete sources should not automatically
+    // become the #2/#3 "consensus" player.
+    const missingPenalty = {
+      RB: 20,
+      WR: 20,
+      QB: 12,
+      TE: 12,
+      K: 10,
+      LB: 12,
+      DL: 10,
+      CB: 8,
+      S: 10
+    }[item.position] || 12;
+
+    const adjustedRank = avg + (missingExperts * missingPenalty);
+
+    return {
+      ...item,
+      averageRank: Math.round(avg * 100) / 100,
+      adjustedRank: Math.round(adjustedRank * 100) / 100,
+      expertCount: item.ranks.length,
+      availableExpertCount: availableExperts.length,
+      confidence: availableExperts.length
+        ? Math.round((item.ranks.length / availableExperts.length) * 100)
+        : 0,
+      playerId: player.playerId || "",
+      nflTeam: normalizeNflTeam(player.nflTeam || ""),
+      ownershipStatus: player.ownershipStatus || "UNKNOWN",
+      lflTeam: player.lflTeam || "",
+      onWatchList: Boolean(player.onWatchList),
+      opponentThisWeek: Boolean(player.opponentThisWeek)
+    };
+  });
+
+  const grouped = new Map();
+  for (const item of mapped) {
+    if (!grouped.has(item.position)) grouped.set(item.position, []);
+    grouped.get(item.position).push(item);
+  }
+
+  const output = [];
+  for (const [position, items] of grouped.entries()) {
+    items
+      .sort((a, b) =>
+        (a.adjustedRank || 999) - (b.adjustedRank || 999) ||
+        (b.expertCount || 0) - (a.expertCount || 0) ||
+        (a.averageRank || 999) - (b.averageRank || 999) ||
+        a.name.localeCompare(b.name)
+      )
+      .forEach((item, index) => {
+        output.push({
+          ...item,
+          consensusRank: index + 1
+        });
+      });
+  }
+
+  return output.sort((a, b) => {
+    if (a.position !== b.position) return a.position.localeCompare(b.position);
+    return a.consensusRank - b.consensusRank;
+  });
+}
+
+function attachExpertRankingSignals(espnData = {}, playerCatalog = [], consensus = []) {
+  const byKey = new Map();
+  const byName = new Map();
+
+  for (const item of consensus || []) {
+    const key = `${canonicalPosition(item.position)}|${normalize(item.name)}`;
+    byKey.set(key, item);
+    if (!byName.has(normalize(item.name))) byName.set(normalize(item.name), item);
+  }
+
+  const attach = player => {
+    if (!player?.name) return;
+    const item = byKey.get(`${canonicalPosition(player.position)}|${normalize(player.name)}`) || byName.get(normalize(player.name));
+    if (!item) {
+      player.expertRanking = null;
+      return;
+    }
+    player.expertRanking = {
+      averageRank: item.averageRank,
+      adjustedRank: item.adjustedRank,
+      consensusRank: item.consensusRank,
+      expertCount: item.expertCount,
+      availableExpertCount: item.availableExpertCount,
+      confidence: item.confidence,
+      experts: item.experts || []
+    };
+  };
+
+  for (const player of playerCatalog || []) attach(player);
+  for (const player of espnData.availablePlayers || []) attach(player);
+  for (const player of espnData.watchList || []) attach(player);
+  if (espnData.zoo?.roster) for (const player of espnData.zoo.roster) attach(player);
+  for (const team of espnData.teams || []) for (const player of team.roster || []) attach(player);
 }
 
 const NEWS_RANK_LIMITS = Object.freeze({
@@ -5450,7 +5618,8 @@ function applyRankedNewsUniverse(playerCatalog = [], consensus = []) {
     const items = (grouped.get(position) || [])
       .slice()
       .sort((a, b) =>
-        (a.averageRank || 999) - (b.averageRank || 999) ||
+        (a.consensusRank || 999) - (b.consensusRank || 999) ||
+        (a.adjustedRank || 999) - (b.adjustedRank || 999) ||
         (b.expertCount || 0) - (a.expertCount || 0)
       )
       .slice(0, limit);
@@ -5459,15 +5628,18 @@ function applyRankedNewsUniverse(playerCatalog = [], consensus = []) {
       const player = catalogByName.get(normalize(item.name));
       if (!player) return;
       player.newsRanked = true;
-      player.newsConsensusRank = index + 1;
+      player.newsConsensusRank = item.consensusRank || (index + 1);
       player.newsConsensusPosition = position;
       rankedPlayers.push({
         name: player.name,
         playerId: player.playerId || "",
         position,
-        consensusRank: index + 1,
+        consensusRank: item.consensusRank || (index + 1),
         averageRank: item.averageRank,
+        adjustedRank: item.adjustedRank,
         expertCount: item.expertCount,
+        availableExpertCount: item.availableExpertCount,
+        confidence: item.confidence,
         ownershipStatus: player.ownershipStatus || "UNKNOWN",
         lflTeam: player.lflTeam || ""
       });
@@ -5623,6 +5795,12 @@ async function () {
         playerCatalog
       );
 
+    attachExpertRankingSignals(
+      espnData,
+      playerCatalog,
+      expertRankingConsensus
+    );
+
     // Expand live player-news monitoring from Zoo-only relevance to the weekly
     // expert-ranked universe requested for Zoo GM: Top 50 RB/WR/LB and
     // Top 15 QB/TE, regardless of which LFL team currently owns the player.
@@ -5676,18 +5854,16 @@ async function () {
           )
         : scrapedItems;
 
-    const expertRankingItems =
-      buildExpertRankingItems(
-        expertRankingConsensus,
-        expertRankings.week
-      );
+    const newsCutoff = Date.now() - (12 * 60 * 60 * 1000);
 
     const rawPosts =
       dedupeSourceItems([
         ...fantasyProsApiItems,
-        ...filteredScrapedItems,
-        ...expertRankingItems
-      ]);
+        ...filteredScrapedItems
+      ]).filter(item => {
+        const published = new Date(item.publishedAt || 0).getTime();
+        return Number.isFinite(published) && published >= newsCutoff;
+      });
 
     const posts =
       rawPosts
@@ -5747,7 +5923,7 @@ async function () {
         watchList,
         espnData,
         posts,
-        12
+        8
       );
 
     const expendability =
@@ -5783,7 +5959,7 @@ async function () {
     const opponentIntelligence =
       buildOpponentIntelligence(
         posts,
-        24
+        12
       );
 
     const opportunityAlerts =
@@ -6068,6 +6244,7 @@ async function () {
           replacementRecommendations,
           addDropDecisions,
           opponentIntelligence,
+          opponentActionableUpdates: opponentIntelligence,
           opportunityAlerts,
           zooPlayerUpdates,
           posts
