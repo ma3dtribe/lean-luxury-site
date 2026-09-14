@@ -3323,7 +3323,8 @@ function buildAddDropDecisions(
 
       const dropPosition = canonicalPosition(dropPlayer.position);
       const onlyKicker = dropPosition === "K" && rosterKickers.length === 1;
-      if (protectKicker && onlyKicker) continue;
+      // The only kicker is roster-flex during the week, never the permanent cut.
+      if (onlyKicker) continue;
 
       const keepValue = lflBestPlayerScore(dropPlayer, counts, posts, null);
       const addValue = Number(add.zooValueScore || add.acquisitionScore || 0);
@@ -3385,7 +3386,10 @@ function buildAddDropDecisions(
       if (!bestPair || temporaryPair.rosterValueChange > bestPair.rosterValueChange) bestPair = temporaryPair;
     }
 
-    if (bestPair && (bestPair.verdict !== "NO" || Number(add.zooValueScore || 0) >= 80)) {
+    // Roster additions should be genuinely compelling, not merely the highest
+    // available name. Require both a credible Zoo value and a meaningful gain.
+    if (bestPair && (bestPair.verdict === "REQUIRED" || bestPair.verdict === "TEMPORARY" ||
+        (Number(add.zooValueScore || 0) >= 70 && Number(bestPair.rosterValueChange || 0) >= 8))) {
       decisions.push(bestPair);
     }
 
@@ -3402,35 +3406,35 @@ function buildAddDropDecisions(
     .slice(0, 3);
 }
 
+function situationDirection(text = "") {
+  const n = normalize(text);
+  if (/(out|inactive|injur|doubtful|questionable|limited|suspend|demot|lost role|reduced|fewer snaps|worsen|miss practice)/.test(n)) return "WORSENED";
+  if (/(active|cleared|full practice|return|promot|named starter|starting role|increased role|more snaps|workload|lead back|green dot|improv)/.test(n)) return "IMPROVED";
+  return "CHANGED";
+}
+
 function buildOpponentIntelligence(posts = [], hours = 12) {
   const cutoff = Date.now() - (hours * 60 * 60 * 1000);
-
-  return posts
-    .filter(post => {
-      const published = new Date(post.publishedAt || 0).getTime();
-      const i = post.intelligence || {};
-      return (
-        Number.isFinite(published) &&
-        published >= cutoff &&
-        (i.opponentPlayers || []).length > 0 &&
-        i.hasActionableEvent &&
-        ["INACTIVE", "INJURY", "PRACTICE", "DEPTH_CHART", "ROLE_WORKLOAD", "TRANSACTION"].includes(i.primaryEvent)
-      );
-    })
-    .map(post => ({
-      players: post.intelligence.opponentPlayers || [],
-      event: getZooUpdateEvent(
-        post.intelligence.primaryEvent,
-        post.intelligence.eventTypes || [],
-        `${post.title || ""} ${post.text || ""}`
-      ),
-      whatHappened: post.text || post.title || "",
-      source: post.author || post.handle || "Player News",
-      publishedAt: post.publishedAt || "",
-      link: post.link || ""
-    }))
-    .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime())
-    .slice(0, 5);
+  const rows = [];
+  for (const post of posts) {
+    const published = new Date(post.publishedAt || 0).getTime();
+    const i = post.intelligence || {};
+    if (!Number.isFinite(published) || published < cutoff || !i.hasActionableEvent) continue;
+    if (!["INACTIVE","INJURY","PRACTICE","DEPTH_CHART","ROLE_WORKLOAD","TRANSACTION"].includes(i.primaryEvent)) continue;
+    for (const player of (i.opponentPlayers || [])) {
+      const pos = canonicalPosition(player.position);
+      if (!player?.name || pos === "D/ST" || pos === "DST") continue;
+      const detail = cleanSourceText(post.text || post.title || "");
+      rows.push({
+        player: player.name, position: pos, nflTeam: player.nflTeam || "", context:"OPPONENT",
+        direction: situationDirection(detail), event:i.primaryEvent, reason:detail, whatHappened:detail,
+        source:post.author || post.handle || "Player News", publishedAt:post.publishedAt || "", link:post.link || "", impactScore:Math.max(65, Number(i.opponentRelevance || 0))
+      });
+    }
+  }
+  const seen = new Set();
+  return rows.sort((a,b)=>Number(b.impactScore||0)-Number(a.impactScore||0) || new Date(b.publishedAt)-new Date(a.publishedAt))
+    .filter(row=>{const k=normalize(row.player); if(!k||seen.has(k)) return false; seen.add(k); return true;}).slice(0,5);
 }
 
 function buildOpportunityAlerts(
@@ -3480,6 +3484,8 @@ function buildOpportunityAlerts(
         publishedAt: post.publishedAt || "",
         link: post.link || "",
         recommendation: "REVIEW FOR ZOO",
+        context: candidate.onWatchList || watchNames.has(normalize(candidate.name)) ? "WATCH LIST" : "AVAILABLE",
+        direction: "IMPROVED",
         impactScore: Math.max(60, Number(scoreByName.get(normalize(candidate.name)) || 0))
       });
     }
@@ -3512,6 +3518,9 @@ function buildOpportunityAlerts(
       new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime())
     .filter(item => {
       const key = normalize(item.player);
+      const pos = canonicalPosition(item.position);
+      const t = new Date(item.publishedAt || 0).getTime();
+      if (!Number.isFinite(t) || t < cutoff || pos === "D/ST" || pos === "DST") return false;
       if (!key || seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -4774,14 +4783,18 @@ function decodeHtmlEntities(text = "") {
 }
 
 function cleanSourceText(text = "") {
-  return decodeHtmlEntities(
-    String(text)
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
-      .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-  )
+  let out = String(text)
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+    .replace(/<[^>]+>/g, " ");
+  // Some source pages double-encode entities (for example &amp;raquo;).
+  out = decodeHtmlEntities(decodeHtmlEntities(out));
+  return out
+    .replace(/(?:Rankings\s*[»›>]+\s*Stats\s*[»›>]+\s*More News)/gi, " ")
+    .replace(/(?:Injury Updates|Game Recaps|Player News)\s+(?:QB|RB|WR|TE|K|LB|DL|DE|DT|CB|S|D\/ST)\s*-\s*[A-Z]{2,3}\s*[»›>]+/gi, " ")
+    .replace(/\bCategory:\s*(?=$|[A-Z])/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -4997,7 +5010,10 @@ function extractNbcStories(html = "") {
   const seen = new Set();
 
   const add = chunk => {
-    const text = cleanSourceText(chunk);
+    const rawChunk = String(chunk || "");
+    const urlDate = rawChunk.match(/player-news\\?\/\\?(20\d{2}-\d{2}-\d{2})\\?\//i)?.[1] || "";
+    const machineDate = rawChunk.match(/(?:datePublished|dateModified|datetime)[^0-9]{0,40}(20\d{2}-\d{2}-\d{2}T[^"' <\\]{5,40})/i)?.[1] || "";
+    const text = cleanSourceText(`${machineDate || urlDate} ${rawChunk}`);
     const key = normalize(text);
     if (text.length < 45 || text.length > 1800 || key.length < 35 || seen.has(key)) return;
     seen.add(key);
@@ -5315,9 +5331,37 @@ function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
     return cbsAbbreviatedRankingsFromPage(source, html, playerCatalog);
   }
 
-  const visibleText = cleanSourceText(String(html || "").slice(0, 500000));
+  const visibleText = cleanSourceText(String(html || "").slice(0, 900000));
   const page = ` ${normalize(visibleText)} `;
   if (!page.trim()) return {};
+
+  // Prefer explicit rank numbers printed next to player names. This prevents
+  // navigation/related-story mentions from shifting Fabiano or FantasyPros ranks.
+  const explicit = {};
+  for (const player of focus) {
+    const pos = canonicalPosition(player.position);
+    const aliases = normalizedPlayerAliases(player.name).filter(a => a.includes(" ") && a.length >= 5);
+    let best = null;
+    for (const alias of aliases) {
+      const re = new RegExp(`(?:^|\\s)([1-9]\\d{0,2})\\s+(?:image\\s+)?(?:[^0-9]{0,45}\\s+)?${escapeRegExp(alias)}(?=\\s|$|[.(])`, "ig");
+      let m;
+      while ((m = re.exec(page)) !== null) {
+        const rank = Number(m[1]);
+        if (rank >= 1 && rank <= 100 && (best == null || rank < best)) best = rank;
+      }
+    }
+    if (best != null) {
+      if (!explicit[pos]) explicit[pos] = [];
+      explicit[pos].push({ name: player.name, rank: best });
+    }
+  }
+  const explicitRankings = {};
+  for (const [pos, rows] of Object.entries(explicit)) {
+    rows.sort((a,b)=>a.rank-b.rank);
+    // Only trust explicit extraction when it resembles an actual ranking table.
+    if (rows.length >= 5) explicitRankings[pos] = rows.map(row=>row.name);
+  }
+  if (Object.keys(explicitRankings).length) return explicitRankings;
 
   // Build one alias matcher and scan the ranking page once. The prior version
   // called page.indexOf() for every player on every page, producing billions of
