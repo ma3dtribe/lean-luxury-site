@@ -1005,18 +1005,6 @@
     🏈 GAME-DAY MODE · Prioritize lineup alerts, late injury news, inactive reports and replacement options.
   </div>
 
-  <section class="panel priority-panel">
-    <div class="panel-header">
-      <h2>GM Action Center</h2>
-      <span class="news-time" id="actionCenterStatus">Checking lineup and roster decisions...</span>
-    </div>
-    <div class="panel-body">
-      <div class="priority-grid" id="actionCenterGrid">
-        <div class="empty">Building Zoo priorities...</div>
-      </div>
-    </div>
-  </section>
-
   <div class="main-grid">
 
     <main>
@@ -1033,6 +1021,18 @@
           <div class="empty">Loading intelligence...</div>
         </div>
 
+      </section>
+
+      <section class="panel priority-panel">
+        <div class="panel-header">
+          <h2>GM Action Center</h2>
+          <span class="news-time" id="actionCenterStatus">Checking lineup and roster decisions...</span>
+        </div>
+        <div class="panel-body">
+          <div class="priority-grid" id="actionCenterGrid">
+            <div class="empty">Building Zoo priorities...</div>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -1119,8 +1119,8 @@
 
   <section class="panel">
     <div class="panel-header">
-      <h2>Add / Drop Decisions</h2>
-      <span class="news-time">Best available upgrades against Zoo's current roster</span>
+      <h2>Potential Additions to Your Roster</h2>
+      <span class="news-time">Available players who genuinely clear Zoo's roster-addition threshold</span>
     </div>
     <div class="panel-body">
       <div id="addDropDecisions" class="decision-list">
@@ -1131,8 +1131,8 @@
 
   <section class="panel">
     <div class="panel-header">
-      <h2>Opportunity & Opponent Alerts</h2>
-      <span class="news-time">Depth-chart opportunities and opponent-impacting changes</span>
+      <h2>Situation Changes +/-</h2>
+      <span class="news-time">Meaningful player situations that improved or worsened</span>
     </div>
     <div class="panel-body">
       <div id="opportunityOpponentAlerts" class="decision-list">
@@ -1955,6 +1955,17 @@
     });
   }
 
+  function matchupDisplayScore(side = {}) {
+    const values = [
+      side.score,
+      side.cumulativeScore?.score,
+      side.totalPoints
+    ].map(Number).filter(Number.isFinite);
+    if (!values.length) return 0;
+    const nonZero = values.find(value => value !== 0);
+    return nonZero ?? values[0] ?? 0;
+  }
+
   function renderMatchup() {
     const container = document.getElementById("matchup");
     const matchup = findCurrentMatchup();
@@ -2038,45 +2049,36 @@
     const status = document.getElementById("actionCenterStatus");
     if (!grid) return;
 
-    const lineupAlerts = intelligenceData?.lineupAlerts || [];
-    const replacements = intelligenceData?.replacementRecommendations || [];
-    const cards = [];
+    const byPlayer = new Map();
+    const ensure = (name, seed = {}) => {
+      const key = String(name || "Lineup Alert").trim().toLowerCase();
+      if (!byPlayer.has(key)) byPlayer.set(key, { title: name || "Lineup Alert", severity: "IMPORTANT", meta: [], actions: [], ...seed });
+      return byPlayer.get(key);
+    };
 
-    lineupAlerts.slice(0, 4).forEach(alert => {
-      cards.push({
-        severity: alert.severity || "IMPORTANT",
-        title: alert.player || "Lineup Alert",
-        meta: [
-          alert.position,
-          alert.reason,
-          alert.source ? `Source: ${alert.source}` : ""
-        ].filter(Boolean).join(" · "),
-        action: alert.action || "REVIEW LINEUP"
-      });
+    (intelligenceData?.lineupAlerts || []).forEach(alert => {
+      const card = ensure(alert.player || "Lineup Alert");
+      card.severity = alert.severity || card.severity;
+      [alert.position, alert.reason, alert.source ? `Source: ${alert.source}` : ""].filter(Boolean).forEach(v => card.meta.push(v));
+      card.actions.push(alert.action || "REVIEW LINEUP");
     });
 
-    replacements.slice(0, 4).forEach(item => {
+    (intelligenceData?.replacementRecommendations || []).forEach(item => {
       const replacement = item.bestReplacement || {};
-      cards.push({
-        severity: item.severity || "IMPORTANT",
-        title: item.problemPlayer || "Replacement Needed",
-        meta: [
-          item.problemPosition,
-          item.problemStatus,
-          replacement.name ? `Best option: ${replacement.name}${replacement.position ? ` (${replacement.position})` : ""}` : ""
-        ].filter(Boolean).join(" · "),
-        action: item.recommendation || "REVIEW REPLACEMENT"
-      });
+      const card = ensure(item.problemPlayer || "Replacement Needed");
+      card.severity = item.severity || card.severity;
+      [item.problemPosition, item.problemStatus, replacement.name ? `Best option: ${replacement.name}${replacement.position ? ` (${replacement.position})` : ""}` : ""].filter(Boolean).forEach(v => card.meta.push(v));
+      card.actions.push(item.recommendation || "REVIEW REPLACEMENT");
     });
+
+    const cards = [...byPlayer.values()].map(card => ({
+      ...card,
+      meta: [...new Set(card.meta)].join(" · "),
+      action: [...new Set(card.actions)].join(" · ")
+    }));
 
     if (!cards.length) {
-      grid.innerHTML = `
-        <div class="priority-card good">
-          <div class="priority-card-title">No urgent Zoo actions</div>
-          <div class="priority-card-meta">No lineup or replacement alerts are active right now.</div>
-          <div class="priority-card-action">HOLD</div>
-        </div>
-      `;
+      grid.innerHTML = `<div class="priority-card good"><div class="priority-card-title">No urgent Zoo actions</div><div class="priority-card-meta">No lineup or replacement alerts are active right now.</div><div class="priority-card-action">HOLD</div></div>`;
       if (status) status.textContent = "No urgent lineup or replacement actions";
       return;
     }
@@ -2086,14 +2088,11 @@
         <div class="priority-card-title">${esc(card.title)}</div>
         <div class="priority-card-meta">${esc(card.meta)}</div>
         <div class="priority-card-action">${esc(card.action)}</div>
-      </div>
-    `).join("");
+      </div>`).join("");
 
     if (status) {
       const urgent = cards.filter(card => severityClass(card.severity) === "urgent").length;
-      status.textContent = urgent
-        ? `${urgent} urgent action${urgent === 1 ? "" : "s"}`
-        : `${cards.length} active decision${cards.length === 1 ? "" : "s"}`;
+      status.textContent = urgent ? `${urgent} urgent action${urgent === 1 ? "" : "s"}` : `${cards.length} active decision${cards.length === 1 ? "" : "s"}`;
     }
   }
 
@@ -2135,43 +2134,26 @@
   function renderOpportunityOpponentAlerts() {
     const container = document.getElementById("opportunityOpponentAlerts");
     if (!container) return;
-
-    const opportunity = (intelligenceData?.opportunityAlerts || []).map(item => ({
-      ...item,
-      _kind: "OPPORTUNITY"
-    }));
-
-    const opponent = (intelligenceData?.opponentActionableUpdates || []).map(item => ({
-      ...item,
-      _kind: "OPPONENT"
-    }));
-
     const cutoff = Date.now() - (12 * 60 * 60 * 1000);
-    const combined = [...opportunity, ...opponent]
-      .filter(item => !item.publishedAt || new Date(item.publishedAt).getTime() >= cutoff)
-      .sort((a, b) => Number(b.impactScore || 0) - Number(a.impactScore || 0) ||
-        new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
-
-    if (!combined.length) {
-      container.innerHTML = '<div class="empty">No actionable opportunity or opponent alerts right now.</div>';
-      return;
-    }
-
-    container.innerHTML = combined.slice(0, 5).map(item => {
-      const name = item.player || item.playerName || item.name || item.title || item._kind;
-      const detail = item.reason || item.summary || item.whatHappened || item.text || item.description || "";
-      const action = item.recommendation || item.action || (item._kind === "OPPONENT" ? "MONITOR OPPONENT" : "MONITOR");
-
-      return `
-        <div class="decision-row">
-          <div class="decision-row-top">
-            <div class="decision-row-name">${esc(name)}</div>
-            <span class="tag ${item._kind === "OPPONENT" ? "opponent" : "available"}">${esc(item._kind)}</span>
-          </div>
-          <div class="decision-row-detail">${esc(detail)}</div>
-          <div class="priority-card-action">${esc(action)}</div>
-        </div>
-      `;
+    const raw = [
+      ...(intelligenceData?.opportunityAlerts || []).map(item => ({...item, _kind:"OPPORTUNITY"})),
+      ...(intelligenceData?.opponentActionableUpdates || []).map(item => ({...item, _kind:"OPPONENT"}))
+    ];
+    const combined = raw.filter(item => {
+      const pos = String(item.position || item.player?.position || "").toUpperCase();
+      const text = `${item.player || ""} ${item.reason || item.whatHappened || ""}`.toUpperCase();
+      if (pos === "D/ST" || pos === "DST" || /\bD\/ST\b/.test(text)) return false;
+      const t = new Date(item.publishedAt || 0).getTime();
+      return Number.isFinite(t) && t >= cutoff;
+    }).sort((a,b) => Number(b.impactScore||0)-Number(a.impactScore||0) || new Date(b.publishedAt||0)-new Date(a.publishedAt||0));
+    if (!combined.length) { container.innerHTML = '<div class="empty">No meaningful situation changes in the last 12 hours.</div>'; return; }
+    container.innerHTML = combined.slice(0,5).map(item => {
+      const detail = decodeNewsText(item.reason || item.summary || item.whatHappened || item.text || "");
+      const negative = /out|inactive|injur|limited|doubtful|questionable|suspend|reduced|lost role|demoted|worsen|miss/i.test(`${item.event||""} ${detail}`);
+      const direction = negative ? "− WORSENED" : "+ IMPROVED";
+      const context = item._kind === "OPPONENT" ? "OPPONENT" : (item.context || item.ownershipStatus || "AVAILABLE / WATCH");
+      const name = item.player || item.playerName || item.name || "Player situation";
+      return `<div class="decision-row"><div class="decision-row-top"><div class="decision-row-name">${esc(name)}</div><span class="tag ${negative ? "opponent" : "available"}">${esc(direction)}</span></div><div class="decision-row-detail">${esc(context)} · ${esc(detail)}</div></div>`;
     }).join("");
   }
 
