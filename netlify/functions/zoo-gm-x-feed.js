@@ -5066,24 +5066,114 @@ async function fetchSourcePage(source = {}) {
     return { ...cached.value, cached: true };
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 6000);
+  // NBC has become much more selective about what it returns to obvious
+  // server-side scrapers. Make the request look like a normal desktop browser
+  // and, for Rotoworld only, fetch both the dedicated Player News page and the
+  // Fantasy Football landing page. The landing page is an NBC/Rotoworld source
+  // too and gives Zoo GM a second path to current player-news text if the
+  // dedicated page returns a shell instead of the rendered feed.
+  const browserHeaders = {
+    "User-Agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+      "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+    "Accept":
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Referer": "https://www.nbcsports.com/fantasy/football"
+  };
+
+  async function fetchPage(url) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: source.key === "nbcsports"
+          ? browserHeaders
+          : {
+              "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/3.1; +https://ma3dtribe.com)",
+              "Accept": "text/html,application/xhtml+xml",
+              "Accept-Language": "en-US,en;q=0.9",
+              "Cache-Control": "no-cache"
+            },
+        redirect: "follow",
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const html = await response.text();
+      if (!html || html.length < 500) {
+        throw new Error("empty response");
+      }
+
+      return { ok: true, url, html };
+    } catch (error) {
+      return {
+        ok: false,
+        url,
+        html: "",
+        error: error.name === "AbortError" ? "timeout" : (error.message || String(error))
+      };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 
   try {
-    const response = await fetch(source.url, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/3.0; +https://ma3dtribe.com)",
-        "Accept": "text/html,application/xhtml+xml"
-      },
-      signal: controller.signal
-    });
+    const urls = source.key === "nbcsports"
+      ? [
+          source.url,
+          "https://www.nbcsports.com/fantasy/football"
+        ]
+      : [source.url];
 
-    if (!response.ok) {
-      throw new Error(`${source.label} request failed: ${response.status}`);
+    // Run NBC's two fetches in parallel so the fallback does not make the
+    // Netlify function twice as slow.
+    const results = await Promise.all(urls.map(fetchPage));
+    const successful = results.filter(result => result.ok && result.html);
+
+    if (!successful.length) {
+      const detail = results
+        .map(result => `${result.url}: ${result.error || "failed"}`)
+        .join(" | ");
+      throw new Error(`${source.label} request failed: ${detail}`);
     }
 
-    const value = { ok: true, source, html: await response.text() };
+    let html = successful
+      .map(result => result.html)
+      .join("\n<!-- ZOO_GM_NBC_PAGE_BREAK -->\n");
+
+    // If NBC sent a consent/interstitial shell, strip the most common script
+    // noise before the existing Rotoworld parser sees it. We intentionally do
+    // not fabricate or substitute non-NBC stories here.
+    if (source.key === "nbcsports") {
+      html = html
+        .replace(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi, match => match)
+        .replace(/<script(?![^>]*type=["']application\/ld\+json["'])[^>]*>[\s\S]*?<\/script>/gi, " ");
+    }
+
+    const value = {
+      ok: true,
+      source,
+      html,
+      fetchedUrls: successful.map(result => result.url),
+      fetchErrors: results.filter(result => !result.ok).map(result => ({
+        url: result.url,
+        error: result.error || "failed"
+      }))
+    };
+
     RUNTIME_CACHE.sourcePages.set(source.url, { value, at: Date.now() });
     return value;
   } catch (error) {
@@ -5092,8 +5182,6 @@ async function fetchSourcePage(source = {}) {
       source,
       error: error.name === "AbortError" ? "timeout" : (error.message || String(error))
     };
-  } finally {
-    clearTimeout(timer);
   }
 }
 
