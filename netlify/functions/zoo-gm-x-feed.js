@@ -56,23 +56,9 @@ const EXPERT_RANKINGS_URL = process.env.ZOO_GM_EXPERT_RANKINGS_URL || "";
 // Live ranking pages supplied for Zoo GM. These are fetched in parallel with
 // short timeouts and reduced to only players who can affect a Zoo decision.
 const EXPERT_RANKING_SOURCES = [
-  // CBS exposes Jamey and Heath separately inside the same weekly position pages.
   {
-    key: "cbs_jamey",
-    name: "Jamey Eisenberg",
-    cbsExpert: "Jamey Eisenberg",
-    pages: [
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/QB/weekly/", positions: ["QB"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/RB/weekly/", positions: ["RB"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/WR/heath-cummings/", positions: ["WR"], cbsDedicated: true },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/TE/weekly/", positions: ["TE"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/K/weekly/", positions: ["K"] }
-    ]
-  },
-  {
-    key: "cbs_heath",
-    name: "Heath Cummings",
-    cbsExpert: "Heath Cummings",
+    key: "cbs",
+    name: "CBS Sports",
     pages: [
       { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/QB/weekly/", positions: ["QB"] },
       { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/RB/weekly/", positions: ["RB"] },
@@ -84,36 +70,32 @@ const EXPERT_RANKING_SOURCES = [
   {
     key: "fantasypros_rankings",
     name: "FantasyPros",
-    dynamicFantasyProsPages: true,
-    positions: ["QB", "RB", "WR", "TE", "K", "LB", "DL", "CB", "S"]
+    pages: [
+      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-ppr-flex.php", positions: ["RB", "WR", "TE"] },
+      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-qb.php", positions: ["QB"] },
+      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-k.php", positions: ["K"] },
+      { url: "https://www.fantasypros.com/nfl/rankings/idp", positions: ["LB", "DL", "CB", "S"] }
+    ]
   },
   {
     key: "fabiano",
     name: "Michael Fabiano",
     dynamicWeekPages: true,
     positions: ["QB", "RB", "WR", "TE", "K"]
-  },
-  {
-    key: "espn_rankings",
-    name: "ESPN",
-    pages: [
-      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804022/nfl-fantasy-football-rankings-2026-qb-quarterback", positions: ["QB"] },
-      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804068/nfl-fantasy-football-rankings-2026-rb-running-back", positions: ["RB"] },
-      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804149/nfl-fantasy-football-rankings-2026-wr-wide-receiver", positions: ["WR"] },
-      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804164/nfl-fantasy-football-rankings-2026-te-tight-end", positions: ["TE"] },
-      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804233/nfl-fantasy-football-rankings-2026-k-kicker", positions: ["K"] },
-      { url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26-49804332/nfl-fantasy-football-rankings-2026-idp", positions: ["LB", "DL", "CB", "S"] }
-    ]
   }
 ];
 
+// ESPN is intentionally not mixed into the weekly consensus until a current
+// weekly ESPN ranking page is discoverable. The preseason RB article supplied
+// earlier is useful draft context, but using it as a weekly ranking would
+// contaminate start/sit decisions.
 const ESPN_WEEKLY_RANKINGS_STATUS = {
   key: "espn_rankings",
   name: "ESPN",
-  url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26main-49797082/fantasy-football-rankings-2026-qb-rb-wr-te-dst",
-  ok: true,
+  url: "https://www.espn.com/fantasy/football/",
+  ok: false,
   playerCount: 0,
-  error: ""
+  error: "No reliable current-week ESPN ranking page configured; stale preseason rankings excluded"
 };
 
 // Manual fallback remains available if a ranking page changes its markup.
@@ -123,11 +105,9 @@ const INLINE_WEEKLY_EXPERT_RANKINGS = {
 };
 
 const EXPECTED_EXPERTS = [
-  "Jamey Eisenberg",
-  "Heath Cummings",
+  "CBS Sports",
   "FantasyPros",
-  "Michael Fabiano",
-  "ESPN"
+  "Michael Fabiano"
 ];
 
 const FANTASYPROS_API_KEY = process.env.FANTASYPROS_API_KEY || "";
@@ -144,8 +124,6 @@ const RUNTIME_CACHE = {
   finalResponseAt: 0,
   sourcePages: new Map(),
   expertRankings: new Map(),
-  rankingPages: new Map(),
-  rankingPagePromises: new Map(),
   fantasyProsApi: { value: null, at: 0 }
 };
 
@@ -3323,8 +3301,7 @@ function buildAddDropDecisions(
 
       const dropPosition = canonicalPosition(dropPlayer.position);
       const onlyKicker = dropPosition === "K" && rosterKickers.length === 1;
-      // The only kicker is roster-flex during the week, never the permanent cut.
-      if (onlyKicker) continue;
+      if (protectKicker && onlyKicker) continue;
 
       const keepValue = lflBestPlayerScore(dropPlayer, counts, posts, null);
       const addValue = Number(add.zooValueScore || add.acquisitionScore || 0);
@@ -3386,32 +3363,7 @@ function buildAddDropDecisions(
       if (!bestPair || temporaryPair.rosterValueChange > bestPair.rosterValueChange) bestPair = temporaryPair;
     }
 
-    // Roster additions are actual roster-move recommendations, so Zoo GM must
-    // have verified current-week expert support instead of elevating a deep
-    // stash merely because of market/news noise.
-    const ranking = add.expertRanking || null;
-    const position = canonicalPosition(add.position);
-    const actionableRankCeiling = {
-      QB: 20, RB: 50, WR: 50, TE: 20, K: 15,
-      LB: 50, DL: 30, CB: 25, S: 30
-    }[position] || 40;
-    const verifiedExpertSupport = Boolean(
-      ranking &&
-      Number(ranking.expertCount || 0) >= 2 &&
-      Number(ranking.confidence || 0) >= 40 &&
-      Number.isFinite(Number(ranking.averageRank)) &&
-      Number(ranking.averageRank) <= actionableRankCeiling
-    );
-
-    if (bestPair?.verdict === "YES" && verifiedExpertSupport) {
-      bestPair.reason = `Verified weekly expert rank ${Number(ranking.averageRank).toFixed(1)} across ${ranking.expertCount} sources · Zoo value ${Number(add.zooValueScore || 0)} vs. keep value ${Number(bestPair.drop?.keepValue || 0)}.`;
-    }
-
-    if (bestPair && (
-      bestPair.verdict === "REQUIRED" ||
-      (bestPair.verdict === "TEMPORARY" && verifiedExpertSupport) ||
-      (bestPair.verdict === "YES" && verifiedExpertSupport && Number(add.zooValueScore || 0) >= 70 && Number(bestPair.rosterValueChange || 0) >= 8)
-    )) {
+    if (bestPair && (bestPair.verdict !== "NO" || Number(add.zooValueScore || 0) >= 80)) {
       decisions.push(bestPair);
     }
 
@@ -3428,35 +3380,35 @@ function buildAddDropDecisions(
     .slice(0, 3);
 }
 
-function situationDirection(text = "") {
-  const n = normalize(text);
-  if (/(out|inactive|injur|doubtful|questionable|limited|suspend|demot|lost role|reduced|fewer snaps|worsen|miss practice)/.test(n)) return "WORSENED";
-  if (/(active|cleared|full practice|return|promot|named starter|starting role|increased role|more snaps|workload|lead back|green dot|improv)/.test(n)) return "IMPROVED";
-  return "CHANGED";
-}
-
 function buildOpponentIntelligence(posts = [], hours = 12) {
   const cutoff = Date.now() - (hours * 60 * 60 * 1000);
-  const rows = [];
-  for (const post of posts) {
-    const published = new Date(post.publishedAt || 0).getTime();
-    const i = post.intelligence || {};
-    if (!Number.isFinite(published) || published < cutoff || !i.hasActionableEvent) continue;
-    if (!["INACTIVE","INJURY","PRACTICE","DEPTH_CHART","ROLE_WORKLOAD","TRANSACTION"].includes(i.primaryEvent)) continue;
-    for (const player of (i.opponentPlayers || [])) {
-      const pos = canonicalPosition(player.position);
-      if (!player?.name || pos === "D/ST" || pos === "DST") continue;
-      const detail = cleanSourceText(post.text || post.title || "");
-      rows.push({
-        player: player.name, position: pos, nflTeam: player.nflTeam || "", context:"OPPONENT",
-        direction: situationDirection(detail), event:i.primaryEvent, reason:detail, whatHappened:detail,
-        source:post.author || post.handle || "Player News", publishedAt:post.publishedAt || "", link:post.link || "", impactScore:Math.max(65, Number(i.opponentRelevance || 0))
-      });
-    }
-  }
-  const seen = new Set();
-  return rows.sort((a,b)=>Number(b.impactScore||0)-Number(a.impactScore||0) || new Date(b.publishedAt)-new Date(a.publishedAt))
-    .filter(row=>{const k=normalize(row.player); if(!k||seen.has(k)) return false; seen.add(k); return true;}).slice(0,5);
+
+  return posts
+    .filter(post => {
+      const published = new Date(post.publishedAt || 0).getTime();
+      const i = post.intelligence || {};
+      return (
+        Number.isFinite(published) &&
+        published >= cutoff &&
+        (i.opponentPlayers || []).length > 0 &&
+        i.hasActionableEvent &&
+        ["INACTIVE", "INJURY", "PRACTICE", "DEPTH_CHART", "ROLE_WORKLOAD", "TRANSACTION"].includes(i.primaryEvent)
+      );
+    })
+    .map(post => ({
+      players: post.intelligence.opponentPlayers || [],
+      event: getZooUpdateEvent(
+        post.intelligence.primaryEvent,
+        post.intelligence.eventTypes || [],
+        `${post.title || ""} ${post.text || ""}`
+      ),
+      whatHappened: post.text || post.title || "",
+      source: post.author || post.handle || "Player News",
+      publishedAt: post.publishedAt || "",
+      link: post.link || ""
+    }))
+    .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime())
+    .slice(0, 5);
 }
 
 function buildOpportunityAlerts(
@@ -3506,8 +3458,6 @@ function buildOpportunityAlerts(
         publishedAt: post.publishedAt || "",
         link: post.link || "",
         recommendation: "REVIEW FOR ZOO",
-        context: candidate.onWatchList || watchNames.has(normalize(candidate.name)) ? "WATCH LIST" : "AVAILABLE",
-        direction: "IMPROVED",
         impactScore: Math.max(60, Number(scoreByName.get(normalize(candidate.name)) || 0))
       });
     }
@@ -3540,9 +3490,6 @@ function buildOpportunityAlerts(
       new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime())
     .filter(item => {
       const key = normalize(item.player);
-      const pos = canonicalPosition(item.position);
-      const t = new Date(item.publishedAt || 0).getTime();
-      if (!Number.isFinite(t) || t < cutoff || pos === "D/ST" || pos === "DST") return false;
       if (!key || seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -4805,18 +4752,14 @@ function decodeHtmlEntities(text = "") {
 }
 
 function cleanSourceText(text = "") {
-  let out = String(text)
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
-    .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
-    .replace(/<[^>]+>/g, " ");
-  // Some source pages double-encode entities (for example &amp;raquo;).
-  out = decodeHtmlEntities(decodeHtmlEntities(out));
-  return out
-    .replace(/(?:Rankings\s*[»›>]+\s*Stats\s*[»›>]+\s*More News)/gi, " ")
-    .replace(/(?:Injury Updates|Game Recaps|Player News)\s+(?:QB|RB|WR|TE|K|LB|DL|DE|DT|CB|S|D\/ST)\s*-\s*[A-Z]{2,3}\s*[»›>]+/gi, " ")
-    .replace(/\bCategory:\s*(?=$|[A-Z])/gi, " ")
+  return decodeHtmlEntities(
+    String(text)
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+  )
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -4872,53 +4815,10 @@ function extractPagePublishedAt(html = "") {
 }
 
 function parseNewsTimestamp(text = "", fallback = "") {
-  const raw = decodeHtmlEntities(String(text || ""));
-
-  // Prefer an ISO timestamp when a source exposes datePublished/dateModified
-  // or a machine-readable datetime value inside the story/card markup.
-  const isoMatch = raw.match(
-    /\b(20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2}))\b/i
+  const raw = String(text || "");
+  const match = raw.match(
+    /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,\s+([A-Z][a-z]{2})\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?\s+(\d{1,2}):(\d{2})\s*(am|pm)\s*(EDT|EST|CDT|CST|MDT|MST|PDT|PST)?\b/i
   );
-  if (isoMatch && isoMatch[1]) {
-    const isoTime = new Date(isoMatch[1]).getTime();
-    if (Number.isFinite(isoTime)) return new Date(isoTime).toISOString();
-  }
-
-  // FantasyPros format: Sun, Sep 13th 7:24am EDT
-  let match = raw.match(
-    /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,\s+([A-Z][a-z]{2})\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?\s+(\d{1,2}):(\d{2})\s*(am|pm)\s*(EDT|EST|CDT|CST|MDT|MST|PDT|PST|ET|CT|MT|PT)?\b/i
-  );
-
-  // NBC/Rotoworld format commonly appears as:
-  // September 13, 2026 01:15 PM or Sep 13, 2026, 1:15 PM ET.
-  if (!match) {
-    const nbc = raw.match(
-      /\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*|\s+)(\d{4})\s*(?:,\s*)?(\d{1,2}):(\d{2})\s*(AM|PM)\s*(EDT|EST|CDT|CST|MDT|MST|PDT|PST|ET|CT|MT|PT)?\b/i
-    );
-
-    if (nbc) {
-      const fullMonthMap = {
-        january: "Jan", february: "Feb", march: "Mar", april: "Apr",
-        may: "May", june: "Jun", july: "Jul", august: "Aug",
-        september: "Sep", october: "Oct", november: "Nov", december: "Dec"
-      };
-      const monRaw = String(nbc[1] || "");
-      const monKey = monRaw.toLowerCase();
-      const shortMonth = fullMonthMap[monKey] || (
-        monRaw.charAt(0).toUpperCase() + monRaw.slice(1, 3).toLowerCase()
-      );
-      match = [
-        nbc[0],
-        shortMonth,
-        nbc[2],
-        nbc[3],
-        nbc[4],
-        nbc[5],
-        nbc[6],
-        nbc[7]
-      ];
-    }
-  }
 
   if (!match) return fallback || "";
 
@@ -4942,12 +4842,12 @@ function parseNewsTimestamp(text = "", fallback = "") {
   if (ampm === "pm" && hour !== 12) hour += 12;
   if (ampm === "am" && hour === 12) hour = 0;
 
-  const zone = String(match[7] || "ET").toUpperCase();
+  const zone = String(match[7] || "EDT").toUpperCase();
   const offsets = {
-    EDT: "-04:00", EST: "-05:00", ET: "-04:00",
-    CDT: "-05:00", CST: "-06:00", CT: "-05:00",
-    MDT: "-06:00", MST: "-07:00", MT: "-06:00",
-    PDT: "-07:00", PST: "-08:00", PT: "-07:00"
+    EDT: "-04:00", EST: "-05:00",
+    CDT: "-05:00", CST: "-06:00",
+    MDT: "-06:00", MST: "-07:00",
+    PDT: "-07:00", PST: "-08:00"
   };
 
   const mm = String(month + 1).padStart(2, "0");
@@ -5008,109 +4908,104 @@ function buildSourceContext(blocks = [], index = 0) {
 }
 
 function extractFantasyProsStories(html = "") {
-  const plain = cleanSourceText(String(html || "").slice(0, 650000));
-  const marker = /(?:More News\s+)?([A-Z][A-Za-z0-9.'’\- /&]{2,90})\s+([^]{0,130}?)\s+(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+([A-Z][a-z]{2})\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{1,2}:\d{2}(?:am|pm))\s+(EDT|EST|CDT|CST|MDT|MST|PDT|PST)\s+By\s+/g;
-  const matches = [...plain.matchAll(marker)].slice(0, 60);
+  const plain = cleanSourceText(String(html || "").slice(0, 450000));
+  const marker = /(?:More News\s+)?([A-Z][A-Za-z0-9.'’\- ]{2,55})\s+([^]{0,110}?)\s+(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+([A-Z][a-z]{2})\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{1,2}:\d{2}(?:am|pm))\s+(EDT|EST|CDT|CST|MDT|MST|PDT|PST)\s+By\s+/g;
+  const matches = [...plain.matchAll(marker)].slice(0, 45);
   const stories = [];
 
   for (let i = 0; i < matches.length; i += 1) {
     const current = matches[i];
     const next = matches[i + 1];
     const start = current.index || 0;
-    const end = next?.index || Math.min(plain.length, start + 1800);
-    let text = plain.slice(start, Math.min(end, start + 1800)).trim();
+    const end = next?.index || Math.min(plain.length, start + 1400);
+    const text = plain.slice(start, Math.min(end, start + 1400)).trim();
     if (text.length < 60) continue;
-
-    // The story subject/headline is everything before the timestamp. Matching
-    // players against this short subject prevents unrelated names mentioned in
-    // the analysis from being tagged as the subject of the story.
-    const stampIndex = text.search(/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+[A-Z][a-z]{2}\s+\d{1,2}(?:st|nd|rd|th)?\s+\d{1,2}:\d{2}(?:am|pm)/i);
-    let headline = (stampIndex > 0 ? text.slice(0, stampIndex) : text.slice(0, 220))
-      .replace(/^(?:Week\s+\d+\.?\s*)?(?:Injury Updates|Game Recaps|Player News)\s+/i, "")
-      .replace(/\b(?:QB|RB|WR|TE|K|LB|DL|DE|DT|CB|S|D\/ST)\s*-\s*[A-Z]{2,3}\s*[»›>]+\s*Rankings\s*[»›>]+\s*Stats\s*[»›>]+\s*More News\s*/gi, "")
-      .replace(/^More News\s+/i, "")
-      .trim();
-
-    // We use IDP, so team-defense stories should never enter Zoo intelligence.
-    if (/\b(?:D\/ST|DST|team defense|defense\/special teams)\b/i.test(headline)) continue;
-
-    const impactMatch = text.match(/\bFantasy Impact:\s*([\s\S]+)$/i);
-    const fantasyImpact = impactMatch ? impactMatch[1].trim() : "";
-    let body = text;
-    if (impactMatch) body = text.slice(0, impactMatch.index).trim();
-    body = body.replace(headline, "").trim();
-
-    stories.push({
-      text,
-      headline,
-      matchText: headline,
-      body,
-      fantasyImpact,
-      publishedAt: parseNewsTimestamp(text, ""),
-      timestampEstimated: false
-    });
+    stories.push(text);
   }
 
   return stories;
 }
 
 function extractNbcStories(html = "") {
-  const raw = String(html || "").slice(0, 900000);
-  const plain = cleanSourceText(raw);
+  const raw = String(html || "");
+
+  if (!raw) return [];
+
   const stories = [];
   const seen = new Set();
 
-  // NBC's live Rotoworld landing page is structured as:
-  // Player name -> TEAM Position # -> Player Stats -> headline -> analysis -> byline/source.
-  // Parse that repeating structure directly instead of looking for generic <article> tags.
-  const positionPattern = "Quarterback|Running Back|Wide Receiver|Tight End|Kicker|Linebacker|Defensive Tackle|Defensive End|Cornerback|Safety";
-  const marker = new RegExp(`([A-Z][A-Za-z.'’\\-]+(?:\\s+[A-Z][A-Za-z.'’\\-]+){1,4})\\s+([A-Z]{2,3})\\s+(${positionPattern})\\s+#?\\d+\\s+Player Stats\\s+`, "g");
-  const matches = [...plain.matchAll(marker)].slice(0, 120);
+  // NBC Rotoworld renders player-news cards around stable text markers such as
+  // "Player Stats" and "More [Player] News". Parse those markers instead of
+  // depending on NBC CSS class names, which can change without warning.
+  const plain = cleanSourceText(raw);
 
-  for (let i = 0; i < matches.length; i += 1) {
-    const m = matches[i];
-    const next = matches[i + 1];
-    const playerName = String(m[1] || "").trim();
-    const team = String(m[2] || "").trim();
-    const position = String(m[3] || "").trim();
-    const contentStart = (m.index || 0) + m[0].length;
-    const contentEnd = next?.index || Math.min(plain.length, contentStart + 1800);
-    let content = plain.slice(contentStart, Math.min(contentEnd, contentStart + 1800)).trim();
-    if (!playerName || content.length < 35) continue;
-
-    const moreNews = new RegExp(`\\bMore\\s+${escapeRegExp(playerName)}\\s+News\\b`, "i");
-    const moreMatch = content.match(moreNews);
-    if (moreMatch && moreMatch.index > 0) content = content.slice(0, moreMatch.index).trim();
-
-    const bylineAt = content.search(/\s+-\s+[A-Z][A-Za-z.'’\- ]{2,50}(?:\s+(?:Injury|Transaction|Source:)|\s+Source:)/i);
-    const sourceTail = bylineAt > 0 ? content.slice(bylineAt).trim() : "";
-    const main = bylineAt > 0 ? content.slice(0, bylineAt).trim() : content;
-
-    const sentence = main.match(/^(.{15,420}?[.!?])(?:\s|$)/);
-    const headline = (sentence ? sentence[1] : main.slice(0, 260)).trim();
-    const body = sentence ? main.slice(sentence[0].length).trim() : "";
-    const key = normalize(`${playerName}|${headline}|${body.slice(0, 240)}`);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-
-    // The NBC landing page does not expose a reliable visible timestamp per card.
-    // It is a live current-news feed, so use collection time and mark it estimated
-    // rather than silently dropping every NBC item from the 12-hour feed.
-    stories.push({
-      text: `${headline}${body ? ` ${body}` : ""}${sourceTail ? ` ${sourceTail}` : ""}`.trim(),
-      headline,
-      matchText: playerName,
-      playerName,
-      nflTeam: team,
-      position,
-      body,
-      fantasyImpact: "",
-      publishedAt: new Date().toISOString(),
-      timestampEstimated: true
-    });
+  let feed = plain;
+  const rotoworldMarker = feed.indexOf("Rotoworld");
+  if (rotoworldMarker >= 0) {
+    feed = feed.slice(rotoworldMarker);
   }
 
-  return stories.slice(0, 80);
+  const playerStatsRegex = /\bPlayer Stats\b/gi;
+  const statsMatches = [...feed.matchAll(playerStatsRegex)];
+
+  for (let i = 0; i < statsMatches.length; i += 1) {
+    const statsIndex = statsMatches[i].index || 0;
+    const start = Math.max(0, statsIndex - 180);
+    const afterStats = feed.slice(statsIndex);
+
+    const moreNewsMatch = afterStats.match(
+      /\bMore\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\- ]{1,70}\s+News\b/i
+    );
+
+    let end;
+
+    if (moreNewsMatch && Number.isFinite(moreNewsMatch.index)) {
+      end = statsIndex + moreNewsMatch.index + moreNewsMatch[0].length;
+    } else {
+      const nextStats = statsMatches[i + 1];
+      end = nextStats
+        ? Math.max(start, (nextStats.index || feed.length) - 180)
+        : Math.min(feed.length, statsIndex + 2200);
+    }
+
+    let story = feed
+      .slice(start, Math.min(end, start + 2200))
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Trim common page/UI text that can precede the player card.
+    story = story
+      .replace(
+        /^.*?(?=[A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3}\s+(?:[A-Z]{2,3}|Free Agent)\s+(?:Quarterback|Running Back|Wide Receiver|Tight End|Linebacker|Cornerback|Safety|Defensive|Kicker))/i,
+        ""
+      )
+      .trim();
+
+    if (story.length < 80) continue;
+    if (!/\bPlayer Stats\b/i.test(story)) continue;
+
+    const key = normalize(story).slice(0, 500);
+    if (!key || seen.has(key)) continue;
+
+    seen.add(key);
+    stories.push(story);
+
+    if (stories.length >= 50) break;
+  }
+
+  // Fallback: if NBC changes its card markers, use the existing generic HTML
+  // block parser instead of allowing the entire Rotoworld feed to go empty.
+  if (!stories.length) {
+    return extractHtmlBlocks(raw.slice(0, 650000))
+      .filter(block =>
+        block.length >= 60 &&
+        block.length <= 1800 &&
+        !/^(NFL Player News|Rotoworld|NFL Home|Teams|Scores|Schedule|Standings)$/i.test(block)
+      )
+      .slice(0, 250);
+  }
+
+  return stories;
 }
 
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
@@ -5128,42 +5023,28 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
     stories = extractHtmlBlocks(String(html || "").slice(0, 350000)).slice(0, 180);
   }
 
-  for (const rawStory of stories) {
-    const story = typeof rawStory === "string" ? { text: rawStory, matchText: rawStory } : rawStory;
-    const text = String(story.text || "").trim();
-    if (!text) continue;
-
-    // For Player News, identify the subject from the headline/player marker only.
-    // Do not tag every player mentioned later in the analysis paragraph.
-    const subjectText = String(story.matchText || story.playerName || story.headline || text.slice(0, 260));
-    if (/\b(?:D\/ST|DST|team defense|defense\/special teams)\b/i.test(subjectText)) continue;
-
-    let direct = findMatchingLeaguePlayers(subjectText, focusPlayers);
-    if (story.playerName && !direct.length) {
-      direct = findMatchingLeaguePlayers(story.playerName, focusPlayers);
-    }
+  for (const story of stories) {
+    const direct = findMatchingLeaguePlayers(story, focusPlayers);
     if (!direct.length) continue;
 
-    const playerNames = [...new Set(direct.map(player => player.name).filter(Boolean))].slice(0, 3);
+    // Keep each intelligence item tied only to players actually named in that
+    // individual story. Team/context effects are calculated later by the engine.
+    const playerNames = [...new Set(direct.map(player => player.name).filter(Boolean))].slice(0, 5);
     if (!playerNames.length) continue;
 
     const publishedAt = source.type === "PLAYER_NEWS"
-      ? (story.publishedAt || parseNewsTimestamp(text, pagePublishedAt))
+      ? parseNewsTimestamp(story, pagePublishedAt)
       : (pagePublishedAt || new Date().toISOString());
 
-    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(story.headline || text).slice(0, 320)}`;
+    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(story).slice(0, 320)}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
     items.push({
       author: source.label,
       handle: source.key,
-      text: text.slice(0, 1600),
-      headline: String(story.headline || "").slice(0, 420),
-      newsBody: String(story.body || "").slice(0, 1200),
-      fantasyImpact: String(story.fantasyImpact || "").slice(0, 1000),
-      timestampEstimated: Boolean(story.timestampEstimated),
-      title: story.headline || `${source.label}: ${playerNames.join(", ")}`,
+      text: story.slice(0, 1400),
+      title: `${source.label}: ${playerNames.join(", ")}`,
       link: source.url,
       publishedAt,
       guid: key,
@@ -5173,7 +5054,7 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
       playerNames
     });
 
-    if (items.length >= 40) break;
+    if (items.length >= 25) break;
   }
 
   return items;
@@ -5186,7 +5067,7 @@ async function fetchSourcePage(source = {}) {
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 2800);
+  const timer = setTimeout(() => controller.abort(), 6000);
 
   try {
     const response = await fetch(source.url, {
@@ -5304,41 +5185,12 @@ function rankingFocusCatalog(playerCatalog = [], allowedPositions = []) {
 }
 
 
-function extractCbsExpertSection(html = "", expertName = "") {
-  const plain = cleanSourceText(String(html || "").slice(0, 600000));
-  if (!plain || !expertName) return "";
-
-  const expertNames = [
-    "Jamey Eisenberg",
-    "Dave Richard",
-    "Heath Cummings",
-    "CBS Fantasy Experts"
-  ];
-
-  const start = plain.toLowerCase().indexOf(String(expertName).toLowerCase());
-  if (start < 0) return "";
-
-  let end = plain.length;
-  for (const name of expertNames) {
-    if (name.toLowerCase() === String(expertName).toLowerCase()) continue;
-    const idx = plain.toLowerCase().indexOf(name.toLowerCase(), start + expertName.length);
-    if (idx > start && idx < end) end = idx;
-  }
-
-  return plain.slice(start, end);
-}
-
 function cbsAbbreviatedRankingsFromPage(source = {}, html = "", playerCatalog = []) {
   const allowedPositions = (source.positions || []).map(canonicalPosition).filter(Boolean);
   const focus = rankingFocusCatalog(playerCatalog, allowedPositions);
   if (!focus.length) return {};
 
-  const plain = source.cbsDedicated
-    ? cleanSourceText(String(html || "").slice(0, 700000))
-    : (source.cbsExpert
-      ? extractCbsExpertSection(html, source.cbsExpert)
-      : cleanSourceText(String(html || "").slice(0, 500000)));
-
+  const plain = cleanSourceText(String(html || "").slice(0, 500000));
   if (!plain) return {};
 
   // CBS displays weekly tables as abbreviated names (for example J. Gibbs),
@@ -5391,43 +5243,8 @@ function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
   const focus = rankingFocusCatalog(playerCatalog, allowedPositions);
   if (!focus.length) return {};
 
-  if (source.cbsExpert || String(source.key || "").startsWith("cbs_")) {
-    // CBS uses abbreviated display names and includes multiple expert sections
-    // on a single page. For Jamey/Heath, use only that expert's section.
-    return cbsAbbreviatedRankingsFromPage(source, html, playerCatalog);
-  }
-
-  const visibleText = cleanSourceText(String(html || "").slice(0, 900000));
-  const page = ` ${normalize(visibleText)} `;
+  const page = ` ${normalize(cleanSourceText(String(html || "").slice(0, 400000)))} `;
   if (!page.trim()) return {};
-
-  // Prefer explicit rank numbers printed next to player names. This prevents
-  // navigation/related-story mentions from shifting Fabiano or FantasyPros ranks.
-  const explicit = {};
-  for (const player of focus) {
-    const pos = canonicalPosition(player.position);
-    const aliases = normalizedPlayerAliases(player.name).filter(a => a.includes(" ") && a.length >= 5);
-    let best = null;
-    for (const alias of aliases) {
-      const re = new RegExp(`(?:^|\\s)([1-9]\\d{0,2})\\s+(?:image\\s+)?(?:[^0-9]{0,45}\\s+)?${escapeRegExp(alias)}(?=\\s|$|[.(])`, "ig");
-      let m;
-      while ((m = re.exec(page)) !== null) {
-        const rank = Number(m[1]);
-        if (rank >= 1 && rank <= 100 && (best == null || rank < best)) best = rank;
-      }
-    }
-    if (best != null) {
-      if (!explicit[pos]) explicit[pos] = [];
-      explicit[pos].push({ name: player.name, rank: best });
-    }
-  }
-  const explicitRankings = {};
-  for (const [pos, rows] of Object.entries(explicit)) {
-    rows.sort((a,b)=>a.rank-b.rank);
-    // Only trust explicit extraction when it resembles an actual ranking table.
-    if (rows.length >= 5) explicitRankings[pos] = rows.map(row=>row.name);
-  }
-  if (Object.keys(explicitRankings).length) return explicitRankings;
 
   // Build one alias matcher and scan the ranking page once. The prior version
   // called page.indexOf() for every player on every page, producing billions of
@@ -5471,49 +5288,9 @@ function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
     if (rankings[item.position].length < 100) rankings[item.position].push(item.name);
   }
 
-  // FantasyPros and ESPN sometimes hydrate ranking tables from embedded JSON.
-  // If the visible HTML produced thin coverage, scan the raw page too. We keep
-  // visible-table ordering first and only use raw matches to fill missing names.
-  const visibleCount = Object.values(rankings).reduce((sum, names) => sum + names.length, 0);
-  if (visibleCount < Math.max(8, allowedPositions.length * 5)) {
-    const rawPage = ` ${normalize(
-      decodeHtmlEntities(
-        String(html || "")
-          .slice(0, 900000)
-          .replace(/<style[\s\S]*?<\/style>/gi, " ")
-          .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
-          .replace(/<[^>]+>/g, " ")
-      ).replace(/\s+/g, " ")
-    )} `;
-
-    const rawOrdered = [];
-    const rawSeen = new Set();
-    let rawMatch;
-
-    const rawRegex = new RegExp(
-      `(?:^|\\s)(${aliases.map(escapeRegExp).join("|")})(?=\\s|$|[.-])`,
-      "g"
-    );
-
-    while ((rawMatch = rawRegex.exec(rawPage)) !== null) {
-      const alias = rawMatch[1];
-      const player = aliasMap.get(alias);
-      if (!player) continue;
-      const position = canonicalPosition(player.position);
-      const key = `${position}:${normalize(player.name)}`;
-      if (rawSeen.has(key)) continue;
-      rawSeen.add(key);
-      rawOrdered.push({ name: player.name, position, index: rawMatch.index });
-      if (rawOrdered.length >= 600) break;
-    }
-
-    rawOrdered.sort((a, b) => a.index - b.index);
-    const rawRankings = {};
-    for (const item of rawOrdered) {
-      if (!rawRankings[item.position]) rawRankings[item.position] = [];
-      if (rawRankings[item.position].length < 100) rawRankings[item.position].push(item.name);
-    }
-    mergePositionRankings(rankings, rawRankings);
+  if (source.key === "cbs") {
+    const cbsFallback = cbsAbbreviatedRankingsFromPage(source, html, playerCatalog);
+    mergePositionRankings(rankings, cbsFallback);
   }
 
   return rankings;
@@ -5521,18 +5298,6 @@ function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
 
 function buildExpertRankingPages(source = {}, week = 1) {
   if (Array.isArray(source.pages) && source.pages.length) return source.pages;
-
-  if (source.dynamicFantasyProsPages) {
-    const w = Number(week) || 1;
-    return [
-      { url: `https://www.fantasypros.com/nfl/rankings/qb.php?week=${w}`, positions: ["QB"] },
-      { url: `https://www.fantasypros.com/nfl/rankings/ppr-rb.php?week=${w}`, positions: ["RB"] },
-      { url: `https://www.fantasypros.com/nfl/rankings/ppr-wr.php?week=${w}`, positions: ["WR"] },
-      { url: `https://www.fantasypros.com/nfl/rankings/ppr-te.php?week=${w}`, positions: ["TE"] },
-      { url: `https://www.fantasypros.com/nfl/rankings/k.php?week=${w}`, positions: ["K"] },
-      { url: `https://www.fantasypros.com/nfl/rankings/idp.php?week=${w}`, positions: ["LB", "DL", "CB", "S"] }
-    ];
-  }
 
   if (source.dynamicWeekPages) {
     const base = `https://www.si.com/fantasy/week-${Number(week) || 1}`;
@@ -5566,51 +5331,26 @@ function mergePositionRankings(target = {}, incoming = {}) {
   return target;
 }
 
-async function fetchRankingHtml(url = "") {
-  const cached = RUNTIME_CACHE.rankingPages.get(url);
-  if (cached && cacheFresh(cached.at, CACHE_TTL.expertRankingsMs)) {
-    return cached.html;
-  }
-
-  if (RUNTIME_CACHE.rankingPagePromises.has(url)) {
-    return RUNTIME_CACHE.rankingPagePromises.get(url);
-  }
-
-  const promise = (async () => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4500);
-
-    try {
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/3.1; +https://ma3dtribe.com)",
-          "Accept": "text/html,application/xhtml+xml",
-          "Cache-Control": "no-cache"
-        },
-        signal: controller.signal
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const html = await response.text();
-      RUNTIME_CACHE.rankingPages.set(url, { html, at: Date.now() });
-      return html;
-    } finally {
-      clearTimeout(timer);
-      RUNTIME_CACHE.rankingPagePromises.delete(url);
-    }
-  })();
-
-  RUNTIME_CACHE.rankingPagePromises.set(url, promise);
-  return promise;
-}
-
 async function fetchExpertRankingPage(source = {}, page = {}, playerCatalog = []) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3200);
+
   try {
-    const html = await fetchRankingHtml(page.url);
+    const response = await fetch(page.url, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.3; +https://ma3dtribe.com)",
+        "Accept": "text/html,application/xhtml+xml",
+        "Cache-Control": "no-cache"
+      },
+      signal: controller.signal
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const html = await response.text();
     const rankings = rankingsFromPage(
-      { ...source, ...page, positions: page.positions || source.positions || [] },
+      { ...source, positions: page.positions || source.positions || [] },
       html,
       playerCatalog
     );
@@ -5627,6 +5367,8 @@ async function fetchExpertRankingPage(source = {}, page = {}, playerCatalog = []
       playerCount: 0,
       error: error.name === "AbortError" ? "timeout" : (error.message || String(error))
     };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
