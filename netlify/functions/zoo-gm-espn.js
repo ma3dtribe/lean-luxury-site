@@ -621,6 +621,15 @@ function matchupSide(
       side.totalPoints ??
       null,
 
+    // ESPN can keep totalPoints at 0 while cumulativeScore.score is already live.
+    // Expose one normalized score that prefers a non-zero live value.
+    score: (() => {
+      const values = [side.cumulativeScore?.score, side.totalPoints]
+        .map(Number).filter(Number.isFinite);
+      const live = values.find(value => value !== 0);
+      return live ?? values[0] ?? 0;
+    })(),
+
     totalProjectedPointsLive:
       side.totalProjectedPointsLive ??
       null,
@@ -674,6 +683,27 @@ function normalizeMatchups(
     );
 }
 
+
+function extractWatchListIds(data = {}) {
+  const ids = new Set();
+  const visit = (value, key = "") => {
+    if (value == null) return;
+    if (Array.isArray(value)) {
+      if (/watch.*(id|player)/i.test(key)) {
+        value.forEach(v => { const n = Number(v?.playerId ?? v?.id ?? v); if (Number.isFinite(n) && n > 0) ids.add(n); });
+      }
+      value.forEach(v => visit(v, key));
+      return;
+    }
+    if (typeof value !== "object") return;
+    const playerId = Number(value.playerId ?? value.id ?? value.player?.id);
+    const watched = value.onWatchList === true || value.isWatched === true || value.watchlisted === true || value.watched === true;
+    if (watched && Number.isFinite(playerId) && playerId > 0) ids.add(playerId);
+    for (const [k,v] of Object.entries(value)) visit(v, k);
+  };
+  visit(data);
+  return [...ids];
+}
 
 function buildPlayerLookup(
   teams,
@@ -1510,6 +1540,23 @@ async function (event = {}) {
       );
 
 
+    // ESPN Watch List request. ESPN deployments differ in how this state is
+    // exposed, so this is optional and falls back safely when unsupported.
+    const watchListRequest =
+      fetchJson(
+        leagueUrl(["kona_player_info"], { scoringPeriodId }),
+        {
+          cookieHeader,
+          fantasyFilter: {
+            players: {
+              filterStatus: { value: ["WATCHLIST"] },
+              limit: 500
+            }
+          }
+        }
+      );
+
+
     /*
       COMMISH REPORT
       SELECTED-WEEK BOXSCORE
@@ -1607,6 +1654,7 @@ async function (event = {}) {
     const [
       seasonResult,
       availableResult,
+      watchListResult,
       transactionsResult,
       pendingResult,
       boxscoreResult
@@ -1615,6 +1663,7 @@ async function (event = {}) {
         [
           seasonRequest,
           availableRequest,
+          watchListRequest,
           transactionsRequest,
           pendingRequest,
           boxscoreRequest
@@ -1651,6 +1700,16 @@ async function (event = {}) {
       warnings.push(
         "Available players unavailable"
       );
+    }
+
+
+    const watchListData =
+      watchListResult.status === "fulfilled"
+        ? watchListResult.value
+        : {};
+
+    if (watchListResult.status === "rejected") {
+      warnings.push("Live ESPN Watch List endpoint unavailable; using detected/fallback Watch List");
     }
 
 
@@ -1794,29 +1853,28 @@ async function (event = {}) {
         availablePlayers
       );
 
-    const watchList =
-  ESPN_WATCH_LIST_IDS
-    .map(playerId => {
-      const player =
-        playerById.get(
-          Number(playerId)
-        );
+    const liveWatchIds = [...new Set([
+      ...extractWatchListIds(watchListData),
+      ...extractWatchListIds(availableData),
+      ...extractWatchListIds(core)
+    ])];
 
-      if (!player) {
-        return {
-          playerId: Number(playerId),
-          name: `Player ${playerId}`,
-          position: "",
-          nflTeam: "",
-          found: false
-        };
-      }
+    // Prefer ESPN's current live Watch List whenever the API exposes it. The
+    // historical hard-coded list remains only as a compatibility fallback.
+    const effectiveWatchIds = liveWatchIds.length ? liveWatchIds : ESPN_WATCH_LIST_IDS;
 
-      return {
-        ...player,
-        found: true
-      };
-    });
+    const watchList = effectiveWatchIds
+      .map(playerId => {
+        const player = playerById.get(Number(playerId));
+        if (!player) return { playerId:Number(playerId), name:`Player ${playerId}`, position:"", nflTeam:"", found:false };
+        return { ...player, found:true };
+      })
+      .filter(player => player.found || liveWatchIds.length === 0);
+
+    if (!liveWatchIds.length) {
+      warnings.push("ESPN did not expose live Watch List state; compatibility fallback is active");
+    }
+
     /*
       NORMALIZE TRANSACTIONS
     */
