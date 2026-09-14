@@ -5110,9 +5110,22 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
     const playerNames = [...new Set(direct.map(player => player.name).filter(Boolean))].slice(0, 5);
     if (!playerNames.length) continue;
 
-    const publishedAt = source.type === "PLAYER_NEWS"
-      ? parseNewsTimestamp(story, pagePublishedAt)
-      : (pagePublishedAt || new Date().toISOString());
+    let publishedAt;
+
+if (source.type === "PLAYER_NEWS") {
+  if (source.key === "nbcsports") {
+    publishedAt =
+      parseNewsTimestamp(story, "") ||
+      new Date().toISOString();
+  } else {
+    publishedAt =
+      parseNewsTimestamp(story, pagePublishedAt);
+  }
+} else {
+  publishedAt =
+    pagePublishedAt ||
+    new Date().toISOString();
+}
 
     const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(story).slice(0, 320)}`;
     if (seen.has(key)) continue;
