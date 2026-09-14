@@ -4816,6 +4816,28 @@ function extractPagePublishedAt(html = "") {
 
 function parseNewsTimestamp(text = "", fallback = "") {
   const raw = String(text || "");
+
+  // Rotoworld frequently publishes relative timestamps such as "2h ago",
+  // "35m ago" or "1d ago" instead of a full calendar timestamp. Resolve
+  // those first so fresh NBC stories are not discarded by Zoo GM's time filter.
+  const relative = raw.match(
+    /\b(\d{1,3})\s*(m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days)\s+ago\b/i
+  );
+
+  if (relative) {
+    const amount = Number(relative[1]);
+    const unit = String(relative[2] || "").toLowerCase();
+    let multiplier = 0;
+
+    if (unit.startsWith("m")) multiplier = 60 * 1000;
+    else if (unit.startsWith("h")) multiplier = 60 * 60 * 1000;
+    else if (unit.startsWith("d")) multiplier = 24 * 60 * 60 * 1000;
+
+    if (Number.isFinite(amount) && multiplier > 0) {
+      return new Date(Date.now() - (amount * multiplier)).toISOString();
+    }
+  }
+
   const match = raw.match(
     /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,\s+([A-Z][a-z]{2})\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?\s+(\d{1,2}):(\d{2})\s*(am|pm)\s*(EDT|EST|CDT|CST|MDT|MST|PDT|PST)?\b/i
   );
@@ -4933,11 +4955,21 @@ function extractNbcStories(html = "") {
 
   const stories = [];
   const seen = new Set();
-
-  // NBC Rotoworld renders player-news cards around stable text markers such as
-  // "Player Stats" and "More [Player] News". Parse those markers instead of
-  // depending on NBC CSS class names, which can change without warning.
   const plain = cleanSourceText(raw);
+
+  const addStory = value => {
+    const story = String(value || "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (story.length < 70 || story.length > 2600) return;
+
+    const key = normalize(story).slice(0, 650);
+    if (!key || seen.has(key)) return;
+
+    seen.add(key);
+    stories.push(story);
+  };
 
   let feed = plain;
   const rotoworldMarker = feed.indexOf("Rotoworld");
@@ -4945,12 +4977,14 @@ function extractNbcStories(html = "") {
     feed = feed.slice(rotoworldMarker);
   }
 
+  // Path 1: NBC's older/desktop Rotoworld card structure. Keep this because
+  // some responses still contain the Player Stats / More [Player] News markers.
   const playerStatsRegex = /\bPlayer Stats\b/gi;
   const statsMatches = [...feed.matchAll(playerStatsRegex)];
 
   for (let i = 0; i < statsMatches.length; i += 1) {
     const statsIndex = statsMatches[i].index || 0;
-    const start = Math.max(0, statsIndex - 180);
+    const start = Math.max(0, statsIndex - 220);
     const afterStats = feed.slice(statsIndex);
 
     const moreNewsMatch = afterStats.match(
@@ -4964,16 +4998,12 @@ function extractNbcStories(html = "") {
     } else {
       const nextStats = statsMatches[i + 1];
       end = nextStats
-        ? Math.max(start, (nextStats.index || feed.length) - 180)
-        : Math.min(feed.length, statsIndex + 2200);
+        ? Math.max(start, (nextStats.index || feed.length) - 220)
+        : Math.min(feed.length, statsIndex + 2400);
     }
 
-    let story = feed
-      .slice(start, Math.min(end, start + 2200))
-      .replace(/\s+/g, " ")
-      .trim();
+    let story = feed.slice(start, Math.min(end, start + 2400));
 
-    // Trim common page/UI text that can precede the player card.
     story = story
       .replace(
         /^.*?(?=[A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3}\s+(?:[A-Z]{2,3}|Free Agent)\s+(?:Quarterback|Running Back|Wide Receiver|Tight End|Linebacker|Cornerback|Safety|Defensive|Kicker))/i,
@@ -4981,22 +5011,70 @@ function extractNbcStories(html = "") {
       )
       .trim();
 
-    if (story.length < 80) continue;
-    if (!/\bPlayer Stats\b/i.test(story)) continue;
-
-    const key = normalize(story).slice(0, 500);
-    if (!key || seen.has(key)) continue;
-
-    seen.add(key);
-    stories.push(story);
-
-    if (stories.length >= 50) break;
+    addStory(story);
+    if (stories.length >= 60) break;
   }
 
-  // Fallback: if NBC changes its card markers, use the existing generic HTML
-  // block parser instead of allowing the entire Rotoworld feed to go empty.
+  // Path 2: NBC's current Rotoworld feed often renders cards as plain story
+  // text ending in a relative timestamp, for example:
+  //   "Chargers HC Jim Harbaugh said Ladd McConkey ... Injury 2h ago Source: ..."
+  // Build each card around that timestamp instead of requiring Player Stats.
+  const relativeRegex = /\b\d{1,3}\s*(?:m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days)\s+ago\b/gi;
+  const relativeMatches = [...feed.matchAll(relativeRegex)].slice(0, 100);
+
+  for (let i = 0; i < relativeMatches.length; i += 1) {
+    const current = relativeMatches[i];
+    const currentIndex = current.index || 0;
+    const previous = relativeMatches[i - 1];
+    const previousEnd = previous
+      ? (previous.index || 0) + String(previous[0] || "").length
+      : Math.max(0, currentIndex - 1800);
+
+    // The text between the previous timestamp and this timestamp is normally
+    // the current Rotoworld card. Cap the beginning so navigation/UI text from
+    // the page cannot swallow the story.
+    const start = Math.max(previousEnd, currentIndex - 1900, 0);
+    const next = relativeMatches[i + 1];
+    const nextIndex = next?.index || feed.length;
+    const end = Math.min(
+      feed.length,
+      currentIndex + 650,
+      nextIndex
+    );
+
+    let story = feed.slice(start, end).trim();
+
+    // Remove a trailing source/author fragment from the previous card when it
+    // lands at the beginning of this slice, but preserve the actual news text.
+    story = story
+      .replace(/^Source:\s+[^.]{0,220}\s+/i, "")
+      .replace(/^[-–—]\s*[A-Z][A-Za-z.'’\- ]{2,70}\s+/i, "")
+      .trim();
+
+    addStory(story);
+    if (stories.length >= 80) break;
+  }
+
+  // Path 3: generic HTML blocks. This catches NBC markup variations where the
+  // relative timestamp and story are split across adjacent elements.
+  const blocks = extractHtmlBlocks(raw.slice(0, 750000));
+  for (let i = 0; i < blocks.length; i += 1) {
+    const block = blocks[i];
+    if (!block) continue;
+
+    const hasRelativeTime = /\b\d{1,3}\s*(?:m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days)\s+ago\b/i.test(block);
+    const looksLikeNews = /\b(Injury|News|Transactions?|Source:)\b/i.test(block);
+
+    if (!hasRelativeTime && !looksLikeNews) continue;
+
+    addStory(buildSourceContext(blocks, i));
+    if (stories.length >= 100) break;
+  }
+
+  // Last-resort fallback: never let NBC go completely empty just because its
+  // page structure changes again.
   if (!stories.length) {
-    return extractHtmlBlocks(raw.slice(0, 650000))
+    return blocks
       .filter(block =>
         block.length >= 60 &&
         block.length <= 1800 &&
@@ -5005,7 +5083,7 @@ function extractNbcStories(html = "") {
       .slice(0, 250);
   }
 
-  return stories;
+  return stories.slice(0, 100);
 }
 
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
