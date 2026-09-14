@@ -213,6 +213,12 @@
       text-decoration: underline;
     }
 
+    .news-story-headline { font-size: 20px; line-height: 1.25; font-weight: 800; color: #f3f6f9; margin: 10px 0 6px; }
+    .news-story-meta { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+    .news-story-body { color: #e6edf3; font-size: 16px; line-height: 1.55; }
+    .news-story-impact { margin-top: 12px; color: #e6edf3; font-size: 16px; line-height: 1.55; }
+    .news-story-impact strong { color: #f3f6f9; }
+
     .tags {
       display: flex;
       flex-wrap: wrap;
@@ -1038,21 +1044,6 @@
     </main>
 
     <aside>
-
-      <section class="panel">
-
-        <div class="panel-header">
-          <h2>This Week</h2>
-        </div>
-
-        <div class="panel-body">
-          <div id="matchup" class="empty">
-            Loading matchup...
-          </div>
-        </div>
-
-      </section>
-
       <section class="panel">
 
         <div class="panel-header">
@@ -1465,11 +1456,11 @@
     const container = document.getElementById("newsFeed");
 
     const posts = freshIntelligencePosts()
-      .filter(postMatchesFilter);
+      .filter(postMatchesFilter)
+      .filter(post => !/\b(?:D\/ST|DST|team defense|defense\/special teams)\b/i.test(`${post.headline || ""} ${(post.playerNames || []).join(" ")}`));
 
     if (!posts.length) {
-      container.innerHTML =
-        '<div class="empty">No intelligence matches this filter.</div>';
+      container.innerHTML = '<div class="empty">No intelligence matches this filter.</div>';
       return;
     }
 
@@ -1478,123 +1469,41 @@
       const actionTier = i.actionTier || "FYI";
       const primaryCategory = i.primaryCategory || "FANTASY UPDATE";
       const recommendation = i.recommendation || "HOLD";
-
+      const presentation = newsPresentation(post);
       const tags = [];
+      const contextNames = new Set((i.contextImpact || []).map(player => player.name));
 
-      const contextNames = new Set(
-        (i.contextImpact || []).map(player => player.name)
-      );
+      (i.zooPlayers || []).forEach(name => tags.push(`<span class="tag zoo">${esc(name)} · ZOO${contextNames.has(name) ? " · CONTEXT" : ""}</span>`));
+      (i.availablePlayers || []).forEach(name => tags.push(`<span class="tag available">${esc(name)} · AVAILABLE</span>`));
+      (i.watchPlayers || []).forEach(name => tags.push(`<span class="tag watch">${esc(name)} · WATCH LIST</span>`));
+      (i.opponentPlayers || []).forEach(name => tags.push(`<span class="tag opponent">${esc(name)} · OPPONENT</span>`));
+      (i.lflOwnedPlayers || []).forEach(player => tags.push(`<span class="tag">${esc(player.name)} · ${esc(player.lflTeam || "LFL OWNED")}</span>`));
 
-      (i.zooPlayers || []).forEach(name => {
-        tags.push(
-          `<span class="tag zoo">${esc(name)} · ZOO${contextNames.has(name) ? " · CONTEXT" : ""}</span>`
-        );
-      });
+      const headline = post.link
+        ? `<a href="${esc(post.link)}" target="_blank" rel="noopener">${esc(presentation.headline)}</a>`
+        : esc(presentation.headline);
+      const estimated = post.timestampEstimated ? " · live-feed time" : "";
 
-      (i.availablePlayers || []).forEach(name => {
-        tags.push(
-          `<span class="tag available">${esc(name)} · AVAILABLE</span>`
-        );
-      });
-
-      (i.watchPlayers || []).forEach(name => {
-        tags.push(
-          `<span class="tag watch">${esc(name)} · WATCH LIST</span>`
-        );
-      });
-
-      (i.opponentPlayers || []).forEach(name => {
-        tags.push(
-          `<span class="tag opponent">${esc(name)} · OPPONENT</span>`
-        );
-      });
-
-      (i.lflOwnedPlayers || []).forEach(player => {
-        tags.push(
-          `<span class="tag">${esc(player.name)} · ${esc(player.lflTeam || "LFL OWNED")}</span>`
-        );
-      });
-
-      const linkStart = post.link
-        ? `<a href="${esc(post.link)}" target="_blank" rel="noopener">`
-        : "";
-
-      const linkEnd = post.link ? "</a>" : "";
-
-      return `
-        <article class="news-card">
-
-          ${tags.length
-            ? `<div class="tags player-context">${tags.join("")}</div>`
-            : ""
-          }
-
-          <div class="news-top">
-            <div class="news-author">
-              ${esc(post.sourceLabel || post.author || "Fantasy Intelligence")}
-            </div>
-
-            <div class="news-time">
-              ${esc(formatTime(post.publishedAt))}
-            </div>
-          </div>
-
-          <div class="news-text">
-            ${linkStart}
-              ${esc(post.text || post.title || "Fantasy update")}
-            ${linkEnd}
-          </div>
-
-          <div class="meter-row">
-
-            <span class="tag">
-              ${esc(i.primaryEvent || "GENERAL_NEWS")}
-            </span>
-
-            <span class="tag">
-              ${esc(i.sourceAuthority?.tier || "CURATED SOURCE")} · ${Number(i.sourceAuthority?.score || 0)}
-            </span>
-
-            <span class="action-tier ${esc(actionTier.replace(/\s+/g, "-"))}">
-              ${esc(actionTier)}
-            </span>
-
-            <span class="tag">
-              ${esc(primaryCategory)}
-            </span>
-
-            <span class="tag zoo">
-              ${esc(recommendation)}
-            </span>
-
-            <span class="meter">
-              Overall <strong>${maxRelevance(post)}</strong>
-            </span>
-
-            <span class="meter">
-              Fantasy <strong>${Number(i.fantasyRelevance || 0)}</strong>
-            </span>
-
-            <span class="meter">
-              Zoo <strong>${Number(i.zooRelevance || 0)}</strong>
-            </span>
-
-            <span class="meter">
-              Available <strong>${Number(i.availableRelevance || 0)}</strong>
-            </span>
-
-            <span class="meter">
-              Watch <strong>${Number(i.watchRelevance || 0)}</strong>
-            </span>
-
-            <span class="meter">
-              Opponent <strong>${Number(i.opponentRelevance || 0)}</strong>
-            </span>
-
-          </div>
-
-        </article>
-      `;
+      return `<article class="news-card">
+        ${tags.length ? `<div class="tags player-context">${tags.join("")}</div>` : ""}
+        <div class="news-story-headline">${headline}</div>
+        <div class="news-story-meta">${esc(presentation.source)} · ${esc(formatTime(post.publishedAt))}${esc(estimated)}</div>
+        ${presentation.body ? `<div class="news-story-body">${esc(presentation.body)}</div>` : ""}
+        ${presentation.impact ? `<div class="news-story-impact"><strong>Fantasy Impact:</strong> ${esc(presentation.impact)}</div>` : ""}
+        <div class="meter-row">
+          <span class="tag">${esc(i.primaryEvent || "GENERAL_NEWS")}</span>
+          <span class="tag">${esc(i.sourceAuthority?.tier || "CURATED SOURCE")} · ${Number(i.sourceAuthority?.score || 0)}</span>
+          <span class="action-tier ${esc(actionTier.replace(/\s+/g, "-"))}">${esc(actionTier)}</span>
+          <span class="tag">${esc(primaryCategory)}</span>
+          <span class="tag zoo">${esc(recommendation)}</span>
+          <span class="meter">Overall <strong>${maxRelevance(post)}</strong></span>
+          <span class="meter">Fantasy <strong>${Number(i.fantasyRelevance || 0)}</strong></span>
+          <span class="meter">Zoo <strong>${Number(i.zooRelevance || 0)}</strong></span>
+          <span class="meter">Available <strong>${Number(i.availableRelevance || 0)}</strong></span>
+          <span class="meter">Watch <strong>${Number(i.watchRelevance || 0)}</strong></span>
+          <span class="meter">Opponent <strong>${Number(i.opponentRelevance || 0)}</strong></span>
+        </div>
+      </article>`;
     }).join("");
   }
 
@@ -1819,7 +1728,7 @@
 
     if (!watchList.length) {
       body.innerHTML =
-        '<tr><td colspan="4" class="empty">No watch-list intelligence available.</td></tr>';
+        '<tr><td colspan="4" class="empty">Live ESPN Watch List unavailable or currently empty.</td></tr>';
       return;
     }
 
@@ -2103,7 +2012,7 @@
     const decisions = intelligenceData?.addDropDecisions || [];
 
     if (!decisions.length) {
-      container.innerHTML = '<div class="empty">No add/drop upgrade clears Zoo GM thresholds right now.</div>';
+      container.innerHTML = '<div class="empty">No roster addition recommended.</div>';
       return;
     }
 
@@ -2162,14 +2071,48 @@
     if (!raw) return "";
     const textarea = document.createElement("textarea");
     textarea.innerHTML = raw;
-    let out = textarea.value
+    let out = textarea.value;
+    // Double decode because FantasyPros sometimes returns &amp;raquo;.
+    textarea.innerHTML = out;
+    out = textarea.value
+      .replace(/&raquo;|&#187;|»/gi, " » ")
       .replace(/\s+/g, " ")
-      .replace(/^(Rankings\s*»\s*Stats\s*»\s*More News\s*)/i, "")
-      .replace(/^(Injury Updates\s+[A-Z/]+\s*-\s*[A-Z]{2,3}\s*»\s*Rankings\s*»\s*Stats\s*»\s*More News\s*)/i, "")
+      .replace(/^(?:Week\s+\d+\.?\s*)?(?:Injury Updates|Game Recaps|Player News)\s+(?:QB|RB|WR|TE|K|LB|DL|DE|DT|CB|S|D\/ST)\s*-\s*[A-Z]{2,3}\s*»\s*Rankings\s*»\s*Stats\s*»\s*More News\s*/i, "")
+      .replace(/^Rankings\s*»\s*Stats\s*»\s*More News\s*/i, "")
       .trim();
     const footerAt = out.search(/\sCategory:\s|\sFooter Sections of the Site\b/i);
     if (footerAt > 0) out = out.slice(0, footerAt).trim();
     return out;
+  }
+
+  function newsPresentation(post = {}) {
+    const source = String(post.sourceLabel || post.author || "Player News");
+    const raw = decodeNewsText(post.text || post.summary || post.description || "");
+    let headline = decodeNewsText(post.headline || "");
+    let body = decodeNewsText(post.newsBody || "");
+    let impact = decodeNewsText(post.fantasyImpact || "");
+
+    if (!impact) {
+      const impactAt = raw.search(/\bFantasy Impact:\s*/i);
+      if (impactAt >= 0) {
+        impact = raw.slice(impactAt).replace(/^Fantasy Impact:\s*/i, "").trim();
+        if (!body) body = raw.slice(0, impactAt).trim();
+      }
+    }
+
+    if (!headline && /FantasyPros/i.test(source)) {
+      const stamp = raw.search(/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+[A-Z][a-z]{2}\s+\d{1,2}(?:st|nd|rd|th)?\s+\d{1,2}:\d{2}(?:am|pm)/i);
+      if (stamp > 0) headline = raw.slice(0, stamp).trim();
+    }
+
+    if (!headline) headline = post.title || (post.playerNames || [])[0] || "Player Update";
+    if (!body) {
+      body = raw;
+      if (headline && body.startsWith(headline)) body = body.slice(headline.length).trim();
+      body = body.replace(/^\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+[A-Z][a-z]{2}\s+\d{1,2}(?:st|nd|rd|th)?\s+\d{1,2}:\d{2}(?:am|pm)\s+(?:EDT|EST|CDT|CST|MDT|MST|PDT|PST)\s+By\s+[A-Za-z.'’\- ]+\s*/i, "").trim();
+    }
+
+    return { source, headline, body, impact };
   }
 
   function renderPlayerNews() {
@@ -2177,6 +2120,7 @@
     if (!target) return;
     const posts = freshIntelligencePosts()
       .filter(post => String(post?.sourceType || "").toUpperCase() === "PLAYER_NEWS")
+      .filter(post => !/\b(?:D\/ST|DST|team defense|defense\/special teams)\b/i.test(`${post.headline || ""} ${(post.playerNames || []).join(" ")}`))
       .slice()
       .sort((a, b) => {
         const score = p => Math.max(
@@ -2191,7 +2135,7 @@
       });
 
     const status = document.getElementById("playerNewsStatus");
-    if (status) status.textContent = `${posts.length} current matched stories · NBC Sports + FantasyPros`;
+    if (status) status.textContent = `${posts.length} current matched stories · NBC Sports Rotoworld + FantasyPros`;
 
     if (!posts.length) {
       target.innerHTML = '<div class="empty">No current player-news stories matched the monitored player universe.</div>';
@@ -2202,16 +2146,18 @@
       const intel = post.intelligence || {};
       const players = intel.players || [];
       const primary = (post.playerNames || [])[0] || players[0]?.name || post.title || "Player Update";
-      const body = decodeNewsText(post.text || post.summary || post.description || "");
+      const p = newsPresentation(post);
       const link = post.link ? `<a href="${esc(post.link)}" target="_blank" rel="noopener">Source</a>` : "";
       const tags = [intel.actionTier, intel.primaryCategory]
-        .concat(players.slice(0,2).map(p => p.classification || p.ownershipStatus))
+        .concat(players.slice(0,2).map(player => player.classification || player.ownershipStatus))
         .filter(Boolean);
       return `<div class="player-news-card">
         <div class="player-news-title">${esc(primary)}</div>
-        <div class="player-news-meta">${esc(post.sourceLabel || post.author || "Player News")} · ${esc(formatTime(post.publishedAt))}${link ? ` · ${link}` : ""}</div>
+        <div class="news-story-headline">${esc(p.headline)}</div>
+        <div class="player-news-meta">${esc(p.source)} · ${esc(formatTime(post.publishedAt))}${post.timestampEstimated ? " · live-feed time" : ""}${link ? ` · ${link}` : ""}</div>
         ${tags.length ? `<div class="tags player-context">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div>` : ""}
-        <div class="player-news-text">${esc(body || "News update available.")}</div>
+        ${p.body ? `<div class="player-news-text">${esc(p.body)}</div>` : ""}
+        ${p.impact ? `<div class="news-story-impact"><strong>Fantasy Impact:</strong> ${esc(p.impact)}</div>` : ""}
       </div>`;
     }).join("");
   }
@@ -2328,7 +2274,6 @@
     renderSuggestedWatchList();
     renderAddDropDecisions();
     renderOpportunityOpponentAlerts();
-    renderMatchup();
   }
 
   async function loadZooGM() {
