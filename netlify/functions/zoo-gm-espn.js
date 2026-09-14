@@ -613,6 +613,18 @@ function normalizeTeam(
     abbreviation:
       team.abbrev || "",
 
+    // ESPN stores the owner's personal Watch List directly on the raw team
+    // object returned by the mTeam view. Preserve the IDs so the live list can
+    // be resolved later without guessing from player-status flags.
+    watchList:
+      Array.isArray(team.watchList)
+        ? [...new Set(
+            team.watchList
+              .map(playerId => Number(playerId))
+              .filter(playerId => Number.isFinite(playerId) && playerId > 0)
+          )]
+        : [],
+
     owners,
 
     wins:
@@ -1585,6 +1597,33 @@ async function (event = {}) {
     const warnings = [];
 
 
+    // ESPN's authoritative Watch List is stored on the owner's team object in
+    // the mTeam response. Capture Zoo's raw team before any normalization so
+    // Watch List membership comes directly from ESPN and updates immediately
+    // when a player is added or removed on ESPN.
+    const rawZooTeam =
+      (core.teams || []).find(
+        team =>
+          teamDisplayName(team).toLowerCase() ===
+          ZOO_TEAM_NAME.toLowerCase()
+      )
+      ||
+      (core.teams || []).find(
+        team =>
+          teamDisplayName(team)
+            .toLowerCase()
+            .includes(ZOO_TEAM_NAME.toLowerCase())
+      )
+      ||
+      null;
+
+    const rawZooWatchIds = [...new Set(
+      (Array.isArray(rawZooTeam?.watchList) ? rawZooTeam.watchList : [])
+        .map(playerId => Number(playerId))
+        .filter(playerId => Number.isFinite(playerId) && playerId > 0)
+    )];
+
+
     /*
       NFL TEAM / BYE-WEEK INFO
     */
@@ -1640,21 +1679,25 @@ async function (event = {}) {
       );
 
 
-    // ESPN Watch List request. ESPN deployments differ in how this state is
-    // exposed, so this is optional and falls back safely when unsupported.
+    // Resolve the exact live Watch List IDs ESPN returned on Zoo's mTeam
+    // object. This mirrors the ESPN web app: first read team.watchList, then
+    // request kona_player_info for those IDs. Do not use WATCHLIST as a player
+    // status filter; ESPN's browser does not use that mechanism.
     const watchListRequest =
-      fetchJson(
-        leagueUrl(["kona_player_info"], { scoringPeriodId }),
-        {
-          cookieHeader,
-          fantasyFilter: {
-            players: {
-              filterStatus: { value: ["WATCHLIST"] },
-              limit: 500
+      rawZooWatchIds.length
+        ? fetchJson(
+            leagueUrl(["kona_player_info"], { scoringPeriodId }),
+            {
+              cookieHeader,
+              fantasyFilter: {
+                players: {
+                  filterIds: { value: rawZooWatchIds },
+                  limit: Math.max(100, rawZooWatchIds.length)
+                }
+              }
             }
-          }
-        }
-      );
+          )
+        : Promise.resolve({ players: [] });
 
 
     /*
@@ -1947,10 +1990,9 @@ async function (event = {}) {
       );
 
 
-    // Normalize the dedicated Watch List response too. A watched player may not
-    // appear in the first slice of the general available-player query, so using
-    // these entries prevents a valid ESPN Watch List ID from being dropped merely
-    // because it was not already present in `availablePlayers`.
+    // Resolve the authoritative IDs from Zoo's raw ESPN team object. A watched
+    // player may not be available, so merge the dedicated ID lookup into the
+    // normal player lookup rather than relying on the free-agent pool alone.
     const watchListPlayers =
       normalizeAvailablePlayers(
         watchListData,
@@ -1966,25 +2008,10 @@ async function (event = {}) {
         ]
       );
 
-    const dedicatedWatchIds =
-      extractWatchListIds(
-        watchListData,
-        { dedicated: true }
-      );
+    const liveWatchIds = rawZooWatchIds;
 
-    // Secondary detection is allowed only from live ESPN payloads that explicitly
-    // mark a player as watched. These are not historical fallbacks.
-    const embeddedWatchIds = [
-      ...extractWatchListIds(availableData),
-      ...extractWatchListIds(core)
-    ];
-
-    const liveWatchIds = [...new Set([
-      ...dedicatedWatchIds,
-      ...embeddedWatchIds
-    ])];
-
-    // No hard-coded or remembered fallback: the current ESPN response is the truth.
+    // No hard-coded, remembered, or inferred fallback. The current ESPN
+    // team.watchList array is the single source of truth.
     const watchList = liveWatchIds
       .map(playerId => {
         const player = playerById.get(Number(playerId));
@@ -1992,32 +2019,33 @@ async function (event = {}) {
         return {
           ...player,
           found: true,
-          watchListSource: dedicatedWatchIds.includes(Number(playerId))
-            ? "ESPN WATCHLIST FILTER"
-            : "ESPN LIVE FLAG"
+          watchListSource: "ESPN TEAM WATCHLIST"
         };
       })
       .filter(Boolean);
 
     const watchListMeta = {
-      source: "ESPN LIVE WATCH LIST",
+      source: "ESPN TEAM WATCHLIST",
       requestStatus: watchListResult.status,
+      rawTeamIdsFound: rawZooWatchIds.length,
       dedicatedResponsePlayerCount: Array.isArray(watchListData?.players)
         ? watchListData.players.length
         : 0,
-      dedicatedIdsFound: dedicatedWatchIds.length,
-      embeddedIdsFound: embeddedWatchIds.length,
       liveIdsFound: liveWatchIds.length,
       resolvedPlayers: watchList.length,
       staleFallbackUsed: false
     };
 
     if (!liveWatchIds.length) {
-      warnings.push("Live ESPN Watch List currently returned no players; stale fallback data is disabled");
+      warnings.push("Zoo's ESPN team currently returned an empty Watch List; stale fallback data is disabled");
+    }
+
+    if (watchListResult.status === "rejected") {
+      warnings.push("ESPN Watch List player-detail lookup failed");
     }
 
     if (liveWatchIds.length && watchList.length !== liveWatchIds.length) {
-      warnings.push(`ESPN Watch List returned ${liveWatchIds.length} IDs but only ${watchList.length} could be resolved to player data`);
+      warnings.push(`ESPN Watch List contains ${liveWatchIds.length} IDs but only ${watchList.length} could be resolved to player data`);
     }
 
     /*
