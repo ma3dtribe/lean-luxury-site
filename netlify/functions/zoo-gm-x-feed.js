@@ -64,7 +64,7 @@ const EXPERT_RANKING_SOURCES = [
     pages: [
       { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/QB/weekly/", positions: ["QB"] },
       { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/RB/weekly/", positions: ["RB"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/WR/weekly/", positions: ["WR"] },
+      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/WR/heath-cummings/", positions: ["WR"], cbsDedicated: true },
       { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/TE/weekly/", positions: ["TE"] },
       { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/K/weekly/", positions: ["K"] }
     ]
@@ -3386,10 +3386,32 @@ function buildAddDropDecisions(
       if (!bestPair || temporaryPair.rosterValueChange > bestPair.rosterValueChange) bestPair = temporaryPair;
     }
 
-    // Roster additions should be genuinely compelling, not merely the highest
-    // available name. Require both a credible Zoo value and a meaningful gain.
-    if (bestPair && (bestPair.verdict === "REQUIRED" || bestPair.verdict === "TEMPORARY" ||
-        (Number(add.zooValueScore || 0) >= 70 && Number(bestPair.rosterValueChange || 0) >= 8))) {
+    // Roster additions are actual roster-move recommendations, so Zoo GM must
+    // have verified current-week expert support instead of elevating a deep
+    // stash merely because of market/news noise.
+    const ranking = add.expertRanking || null;
+    const position = canonicalPosition(add.position);
+    const actionableRankCeiling = {
+      QB: 20, RB: 50, WR: 50, TE: 20, K: 15,
+      LB: 50, DL: 30, CB: 25, S: 30
+    }[position] || 40;
+    const verifiedExpertSupport = Boolean(
+      ranking &&
+      Number(ranking.expertCount || 0) >= 2 &&
+      Number(ranking.confidence || 0) >= 40 &&
+      Number.isFinite(Number(ranking.averageRank)) &&
+      Number(ranking.averageRank) <= actionableRankCeiling
+    );
+
+    if (bestPair?.verdict === "YES" && verifiedExpertSupport) {
+      bestPair.reason = `Verified weekly expert rank ${Number(ranking.averageRank).toFixed(1)} across ${ranking.expertCount} sources · Zoo value ${Number(add.zooValueScore || 0)} vs. keep value ${Number(bestPair.drop?.keepValue || 0)}.`;
+    }
+
+    if (bestPair && (
+      bestPair.verdict === "REQUIRED" ||
+      (bestPair.verdict === "TEMPORARY" && verifiedExpertSupport) ||
+      (bestPair.verdict === "YES" && verifiedExpertSupport && Number(add.zooValueScore || 0) >= 70 && Number(bestPair.rosterValueChange || 0) >= 8)
+    )) {
       decisions.push(bestPair);
     }
 
@@ -4986,81 +5008,109 @@ function buildSourceContext(blocks = [], index = 0) {
 }
 
 function extractFantasyProsStories(html = "") {
-  const plain = cleanSourceText(String(html || "").slice(0, 450000));
-  const marker = /(?:More News\s+)?([A-Z][A-Za-z0-9.'’\- ]{2,55})\s+([^]{0,110}?)\s+(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+([A-Z][a-z]{2})\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{1,2}:\d{2}(?:am|pm))\s+(EDT|EST|CDT|CST|MDT|MST|PDT|PST)\s+By\s+/g;
-  const matches = [...plain.matchAll(marker)].slice(0, 45);
+  const plain = cleanSourceText(String(html || "").slice(0, 650000));
+  const marker = /(?:More News\s+)?([A-Z][A-Za-z0-9.'’\- /&]{2,90})\s+([^]{0,130}?)\s+(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+([A-Z][a-z]{2})\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{1,2}:\d{2}(?:am|pm))\s+(EDT|EST|CDT|CST|MDT|MST|PDT|PST)\s+By\s+/g;
+  const matches = [...plain.matchAll(marker)].slice(0, 60);
   const stories = [];
 
   for (let i = 0; i < matches.length; i += 1) {
     const current = matches[i];
     const next = matches[i + 1];
     const start = current.index || 0;
-    const end = next?.index || Math.min(plain.length, start + 1400);
-    const text = plain.slice(start, Math.min(end, start + 1400)).trim();
+    const end = next?.index || Math.min(plain.length, start + 1800);
+    let text = plain.slice(start, Math.min(end, start + 1800)).trim();
     if (text.length < 60) continue;
-    stories.push(text);
+
+    // The story subject/headline is everything before the timestamp. Matching
+    // players against this short subject prevents unrelated names mentioned in
+    // the analysis from being tagged as the subject of the story.
+    const stampIndex = text.search(/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+[A-Z][a-z]{2}\s+\d{1,2}(?:st|nd|rd|th)?\s+\d{1,2}:\d{2}(?:am|pm)/i);
+    let headline = (stampIndex > 0 ? text.slice(0, stampIndex) : text.slice(0, 220))
+      .replace(/^(?:Week\s+\d+\.?\s*)?(?:Injury Updates|Game Recaps|Player News)\s+/i, "")
+      .replace(/\b(?:QB|RB|WR|TE|K|LB|DL|DE|DT|CB|S|D\/ST)\s*-\s*[A-Z]{2,3}\s*[»›>]+\s*Rankings\s*[»›>]+\s*Stats\s*[»›>]+\s*More News\s*/gi, "")
+      .replace(/^More News\s+/i, "")
+      .trim();
+
+    // We use IDP, so team-defense stories should never enter Zoo intelligence.
+    if (/\b(?:D\/ST|DST|team defense|defense\/special teams)\b/i.test(headline)) continue;
+
+    const impactMatch = text.match(/\bFantasy Impact:\s*([\s\S]+)$/i);
+    const fantasyImpact = impactMatch ? impactMatch[1].trim() : "";
+    let body = text;
+    if (impactMatch) body = text.slice(0, impactMatch.index).trim();
+    body = body.replace(headline, "").trim();
+
+    stories.push({
+      text,
+      headline,
+      matchText: headline,
+      body,
+      fantasyImpact,
+      publishedAt: parseNewsTimestamp(text, ""),
+      timestampEstimated: false
+    });
   }
 
   return stories;
 }
 
 function extractNbcStories(html = "") {
-  const raw = String(html || "").slice(0, 650000);
+  const raw = String(html || "").slice(0, 900000);
+  const plain = cleanSourceText(raw);
   const stories = [];
   const seen = new Set();
 
-  const add = chunk => {
-    const rawChunk = String(chunk || "");
-    const urlDate = rawChunk.match(/player-news\\?\/\\?(20\d{2}-\d{2}-\d{2})\\?\//i)?.[1] || "";
-    const machineDate = rawChunk.match(/(?:datePublished|dateModified|datetime)[^0-9]{0,40}(20\d{2}-\d{2}-\d{2}T[^"' <\\]{5,40})/i)?.[1] || "";
-    const text = cleanSourceText(`${machineDate || urlDate} ${rawChunk}`);
-    const key = normalize(text);
-    if (text.length < 45 || text.length > 1800 || key.length < 35 || seen.has(key)) return;
+  // NBC's live Rotoworld landing page is structured as:
+  // Player name -> TEAM Position # -> Player Stats -> headline -> analysis -> byline/source.
+  // Parse that repeating structure directly instead of looking for generic <article> tags.
+  const positionPattern = "Quarterback|Running Back|Wide Receiver|Tight End|Kicker|Linebacker|Defensive Tackle|Defensive End|Cornerback|Safety";
+  const marker = new RegExp(`([A-Z][A-Za-z.'’\\-]+(?:\\s+[A-Z][A-Za-z.'’\\-]+){1,4})\\s+([A-Z]{2,3})\\s+(${positionPattern})\\s+#?\\d+\\s+Player Stats\\s+`, "g");
+  const matches = [...plain.matchAll(marker)].slice(0, 120);
+
+  for (let i = 0; i < matches.length; i += 1) {
+    const m = matches[i];
+    const next = matches[i + 1];
+    const playerName = String(m[1] || "").trim();
+    const team = String(m[2] || "").trim();
+    const position = String(m[3] || "").trim();
+    const contentStart = (m.index || 0) + m[0].length;
+    const contentEnd = next?.index || Math.min(plain.length, contentStart + 1800);
+    let content = plain.slice(contentStart, Math.min(contentEnd, contentStart + 1800)).trim();
+    if (!playerName || content.length < 35) continue;
+
+    const moreNews = new RegExp(`\\bMore\\s+${escapeRegExp(playerName)}\\s+News\\b`, "i");
+    const moreMatch = content.match(moreNews);
+    if (moreMatch && moreMatch.index > 0) content = content.slice(0, moreMatch.index).trim();
+
+    const bylineAt = content.search(/\s+-\s+[A-Z][A-Za-z.'’\- ]{2,50}(?:\s+(?:Injury|Transaction|Source:)|\s+Source:)/i);
+    const sourceTail = bylineAt > 0 ? content.slice(bylineAt).trim() : "";
+    const main = bylineAt > 0 ? content.slice(0, bylineAt).trim() : content;
+
+    const sentence = main.match(/^(.{15,420}?[.!?])(?:\s|$)/);
+    const headline = (sentence ? sentence[1] : main.slice(0, 260)).trim();
+    const body = sentence ? main.slice(sentence[0].length).trim() : "";
+    const key = normalize(`${playerName}|${headline}|${body.slice(0, 240)}`);
+    if (!key || seen.has(key)) continue;
     seen.add(key);
-    stories.push(text);
-  };
 
-  // Brightspot/NBC commonly renders each player-news item inside article/list/card
-  // markup. Preserve the entire card so player name, blurb and timestamp stay
-  // together instead of being separated into unrelated text blocks.
-  for (const match of raw.matchAll(
-    /<(article|li)[^>]*>[\s\S]*?<\/\1>/gi
-  )) {
-    const chunk = match[0];
-    if (
-      /fantasy\/football\/player-news/i.test(chunk) ||
-      /player news/i.test(chunk) ||
-      /datePublished|dateModified|datetime=/i.test(chunk)
-    ) {
-      add(chunk);
-    }
-    if (stories.length >= 100) break;
+    // The NBC landing page does not expose a reliable visible timestamp per card.
+    // It is a live current-news feed, so use collection time and mark it estimated
+    // rather than silently dropping every NBC item from the 12-hour feed.
+    stories.push({
+      text: `${headline}${body ? ` ${body}` : ""}${sourceTail ? ` ${sourceTail}` : ""}`.trim(),
+      headline,
+      matchText: playerName,
+      playerName,
+      nflTeam: team,
+      position,
+      body,
+      fantasyImpact: "",
+      publishedAt: new Date().toISOString(),
+      timestampEstimated: true
+    });
   }
 
-  // JSON-LD / embedded data fallback. Capture a bounded neighborhood around
-  // each player-news URL, which often contains datePublished/dateModified.
-  for (const match of raw.matchAll(
-    /https?:\\?\/\\?\/www\.nbcsports\.com\\?\/fantasy\\?\/football\\?\/player-news\\?\/20\d{2}-\d{2}-\d{2}\\?\/[^"'\s<]+/gi
-  )) {
-    const start = Math.max(0, (match.index || 0) - 900);
-    const end = Math.min(raw.length, (match.index || 0) + 1800);
-    add(raw.slice(start, end));
-    if (stories.length >= 140) break;
-  }
-
-  // Last fallback for markup changes.
-  if (stories.length < 8) {
-    const blocks = extractHtmlBlocks(raw).slice(0, 350);
-    for (let i = 0; i < blocks.length; i += 1) {
-      const combined = buildSourceContext(blocks, i);
-      if (/\b(Player Stats|More .* News|Source:|Fantasy)\b/i.test(combined)) {
-        add(combined);
-      }
-      if (stories.length >= 140) break;
-    }
-  }
-
-  return stories.slice(0, 140);
+  return stories.slice(0, 80);
 }
 
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
@@ -5078,28 +5128,42 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
     stories = extractHtmlBlocks(String(html || "").slice(0, 350000)).slice(0, 180);
   }
 
-  for (const story of stories) {
-    const direct = findMatchingLeaguePlayers(story, focusPlayers);
+  for (const rawStory of stories) {
+    const story = typeof rawStory === "string" ? { text: rawStory, matchText: rawStory } : rawStory;
+    const text = String(story.text || "").trim();
+    if (!text) continue;
+
+    // For Player News, identify the subject from the headline/player marker only.
+    // Do not tag every player mentioned later in the analysis paragraph.
+    const subjectText = String(story.matchText || story.playerName || story.headline || text.slice(0, 260));
+    if (/\b(?:D\/ST|DST|team defense|defense\/special teams)\b/i.test(subjectText)) continue;
+
+    let direct = findMatchingLeaguePlayers(subjectText, focusPlayers);
+    if (story.playerName && !direct.length) {
+      direct = findMatchingLeaguePlayers(story.playerName, focusPlayers);
+    }
     if (!direct.length) continue;
 
-    // Keep each intelligence item tied only to players actually named in that
-    // individual story. Team/context effects are calculated later by the engine.
-    const playerNames = [...new Set(direct.map(player => player.name).filter(Boolean))].slice(0, 5);
+    const playerNames = [...new Set(direct.map(player => player.name).filter(Boolean))].slice(0, 3);
     if (!playerNames.length) continue;
 
     const publishedAt = source.type === "PLAYER_NEWS"
-      ? parseNewsTimestamp(story, pagePublishedAt)
+      ? (story.publishedAt || parseNewsTimestamp(text, pagePublishedAt))
       : (pagePublishedAt || new Date().toISOString());
 
-    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(story).slice(0, 320)}`;
+    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(story.headline || text).slice(0, 320)}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
     items.push({
       author: source.label,
       handle: source.key,
-      text: story.slice(0, 1400),
-      title: `${source.label}: ${playerNames.join(", ")}`,
+      text: text.slice(0, 1600),
+      headline: String(story.headline || "").slice(0, 420),
+      newsBody: String(story.body || "").slice(0, 1200),
+      fantasyImpact: String(story.fantasyImpact || "").slice(0, 1000),
+      timestampEstimated: Boolean(story.timestampEstimated),
+      title: story.headline || `${source.label}: ${playerNames.join(", ")}`,
       link: source.url,
       publishedAt,
       guid: key,
@@ -5109,7 +5173,7 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
       playerNames
     });
 
-    if (items.length >= 25) break;
+    if (items.length >= 40) break;
   }
 
   return items;
@@ -5269,9 +5333,11 @@ function cbsAbbreviatedRankingsFromPage(source = {}, html = "", playerCatalog = 
   const focus = rankingFocusCatalog(playerCatalog, allowedPositions);
   if (!focus.length) return {};
 
-  const plain = source.cbsExpert
-    ? extractCbsExpertSection(html, source.cbsExpert)
-    : cleanSourceText(String(html || "").slice(0, 500000));
+  const plain = source.cbsDedicated
+    ? cleanSourceText(String(html || "").slice(0, 700000))
+    : (source.cbsExpert
+      ? extractCbsExpertSection(html, source.cbsExpert)
+      : cleanSourceText(String(html || "").slice(0, 500000)));
 
   if (!plain) return {};
 
@@ -5544,7 +5610,7 @@ async function fetchExpertRankingPage(source = {}, page = {}, playerCatalog = []
   try {
     const html = await fetchRankingHtml(page.url);
     const rankings = rankingsFromPage(
-      { ...source, positions: page.positions || source.positions || [] },
+      { ...source, ...page, positions: page.positions || source.positions || [] },
       html,
       playerCatalog
     );
