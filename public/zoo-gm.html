@@ -968,6 +968,18 @@
     .zoo-consensus-scroll { max-height:520px; overflow:auto; }
     .zoo-consensus-scroll thead th { position:sticky; top:0; z-index:3; background:#111820; }
 
+
+    /* High-contrast news links for mobile/dark mode. */
+    .news-card a, .news-story-headline a, .player-news-card a,
+    .player-news-text a, .player-news-meta a {
+      color: #67c7ff !important;
+      text-decoration-color: rgba(103,199,255,.7) !important;
+    }
+
+
+    .zoo-consensus-scroll, .ranking-scroll { overflow-x:auto !important; -webkit-overflow-scrolling:touch; }
+    .zoo-consensus-scroll table, .ranking-scroll table { min-width:760px; }
+
 </style>
 </head>
 
@@ -1108,17 +1120,7 @@
   </div>
 
 
-  <section class="panel">
-    <div class="panel-header">
-      <h2>Potential Additions to Your Roster</h2>
-      <span class="news-time">Best roster-improving adds · future upside, role/usage, injury risk and realistic drop cost</span>
-    </div>
-    <div class="panel-body">
-      <div id="addDropDecisions" class="decision-list">
-        <div class="empty">Comparing available players...</div>
-      </div>
-    </div>
-  </section>
+  
 
   <section class="panel">
     <div class="panel-header">
@@ -1174,6 +1176,18 @@
           <thead><tr><th>Rank</th><th>Player</th><th>Pos</th><th>Team</th><th>Expert Detail</th></tr></thead>
           <tbody id="expertRankingBody"><tr><td colspan="5">Loading rankings...</td></tr></tbody>
         </table>
+      </div>
+    </div>
+  </section>
+
+<section class="panel">
+    <div class="panel-header">
+      <h2>Player News</h2>
+      <span class="news-time" id="playerNewsStatus">NBC Sports + FantasyPros · ranked players, Zoo, Watch List and opponent</span>
+    </div>
+    <div class="panel-body">
+      <div id="playerNewsGrid" class="player-news-grid">
+        <div class="empty">Loading current player news...</div>
       </div>
     </div>
   </section>
@@ -2063,6 +2077,19 @@
     return out;
   }
 
+
+  function cleanDisplayedNewsText(text = "", source = "") {
+    let value = String(text || "").replace(/\s+/g, " ").trim();
+    if (/FantasyPros/i.test(source)) {
+      value = value
+        .replace(/^(?:Ends\s+)?(?:Kickers?\s+)?(?:Defensive Linemen\s+)?(?:Linebackers?\s+)?(?:Defensive Backs\s+)?/i, "")
+        .replace(/^(?:QB|RB|WR|TE|K|DL|LB|DB|CB|S)\s*-\s*[A-Z]{2,3}\s*[»›>]\s*Rankings\s*[»›>]\s*Stats\s*[»›>]\s*More News\s*/i, "")
+        .replace(/^.*?\bMore News\s+(?=[A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3}\s)/i, "")
+        .trim();
+    }
+    return value;
+  }
+
   function newsPresentation(post = {}) {
     const source = String(post.sourceLabel || post.author || "Player News");
     const raw = decodeNewsText(post.text || post.summary || post.description || "");
@@ -2153,7 +2180,11 @@
     const experts = [...new Set(zooRanks.flatMap(item => (item.experts || []).map(e => e.expert)).filter(Boolean))];
     const week = intelligenceData?.expertRankings?.week || espnData?.matchupPeriodId || espnData?.scoringPeriodId || "";
 
-    if (status) status.textContent = `Week ${week} · ${experts.length} validated expert source${experts.length === 1 ? "" : "s"}`;
+    if (status) {
+      const expected = intelligenceData?.expertRankings?.expectedExperts || [];
+      const awaiting = expected.filter(name => !experts.includes(name));
+      status.textContent = `Week ${week} · ${experts.length} expert source${experts.length === 1 ? "" : "s"} reporting${awaiting.length ? ` · awaiting: ${awaiting.join(" · ")}` : ""}`;
+    }
 
     head.innerHTML = `<tr><th>Player</th><th>Pos</th>${experts.map(expert => `<th>${esc(expert)}</th>`).join("")}<th>Consensus</th><th>Sources</th></tr>`;
 
@@ -2193,7 +2224,10 @@
     const limited = sourceStatus.filter(s => s.ok && Number(s.playerCount || 0) > 0 && Number(s.playerCount || 0) < 20).map(s => s.name);
     const week = intelligenceData?.expertRankings?.week || espnData?.matchupPeriodId || espnData?.scoringPeriodId || "";
     if (status) {
-      const parts = [`Week ${week}`, healthyExperts.length ? `Consensus: ${healthyExperts.join(" · ")}` : ""];
+      const expected = intelligenceData?.expertRankings?.expectedExperts || [];
+      const awaiting = expected.filter(name => !healthyExperts.includes(name));
+      const parts = [`Week ${week}`, healthyExperts.length ? `Reporting: ${healthyExperts.join(" · ")}` : "Awaiting current-week rankings"];
+      if (awaiting.length) parts.push(`Awaiting: ${awaiting.join(" · ")}`);
       if (limited.length) parts.push(`${limited.join(", ")} limited coverage excluded where incomplete`);
       status.textContent = parts.filter(Boolean).join(" · ");
     }
@@ -2205,6 +2239,7 @@
     toolbar.querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => {
       rankingPosition = btn.dataset.rankPos || "ALL";
       renderExpertRankings();
+    renderPlayerNews();
     }));
 
     const filtered = rankings.filter(r => rankingPosition === "ALL" || String(r.position || "").toUpperCase() === rankingPosition)
@@ -2248,7 +2283,6 @@
     renderZooConsensusRankings();
     renderExpertRankings();
     renderSuggestedWatchList();
-    renderAddDropDecisions();
     renderOpportunityOpponentAlerts();
   }
 
