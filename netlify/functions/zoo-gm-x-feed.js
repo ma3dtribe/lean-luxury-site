@@ -5122,6 +5122,30 @@ function extractNbcStories(html = "") {
   return stories.slice(0, 100);
 }
 
+
+function cleanPlayerNewsStory(text = "", sourceKey = "") {
+  let value = String(text || "").replace(/\s+/g, " ").trim();
+
+  if (sourceKey === "fantasypros") {
+    // Keep the actual headline/body, but remove the position navigation that
+    // FantasyPros prepends to its player-news cards.
+    value = value
+      .replace(/^(?:Ends\s+)?(?:Kickers?\s+)?(?:Defensive Linemen\s+)?(?:Linebackers?\s+)?(?:Defensive Backs\s+)?/i, "")
+      .replace(/^(?:QB|RB|WR|TE|K|DL|LB|DB|CB|S)\s*-\s*[A-Z]{2,3}\s*[»›>]\s*Rankings\s*[»›>]\s*Stats\s*[»›>]\s*More News\s*/i, "")
+      .replace(/^.*?\bMore News\s+(?=[A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3}\s)/i, "")
+      .trim();
+  }
+
+  if (sourceKey === "nbcsports") {
+    value = value
+      .replace(/^(?:NFL Player News|Player News|Rotoworld|NBC Sports)\s*/i, "")
+      .replace(/^(?:Headline\s+Injury\s+Recap\s+Transaction\s+Positions\s+Assistant GM Center\s+Coaching Staff\s+Commissioner\s+)*/i, "")
+      .trim();
+  }
+
+  return value;
+}
+
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
   const focusPlayers = sourceFocusCatalog(playerCatalog);
   const pagePublishedAt = extractPagePublishedAt(html);
@@ -5150,38 +5174,24 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
       ? parseNewsTimestamp(story, pagePublishedAt)
       : (pagePublishedAt || new Date().toISOString());
 
-    const storyVariants = source.key === "nbcsports" && playerNames.length > 1
-      ? playerNames.map(playerName => {
-          const idx = normalize(story).indexOf(normalize(playerName));
-          if (idx < 0) return null;
-          const rawIdx = Math.max(0, Math.min(story.length, idx));
-          const from = Math.max(0, rawIdx - 140);
-          const to = Math.min(story.length, rawIdx + 1050);
-          return { playerNames: [playerName], text: story.slice(from, to).trim() };
-        }).filter(Boolean)
-      : [{ playerNames, text: story }];
+    const cleanedStory = cleanPlayerNewsStory(story, source.key);
+    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(cleanedStory).slice(0, 320)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
 
-    for (const variant of storyVariants) {
-      const key = `${source.key}|${normalize(variant.playerNames.join("|"))}|${normalize(variant.text).slice(0, 320)}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      items.push({
-        author: source.label,
-        handle: source.key,
-        text: variant.text.slice(0, 1400),
-        title: `${source.label}: ${variant.playerNames.join(", ")}`,
-        link: source.url,
-        publishedAt,
-        guid: key,
-        sourceType: source.type,
-        sourceKey: source.key,
-        sourceLabel: source.label,
-        playerNames: variant.playerNames
-      });
-
-      if (items.length >= 25) break;
-    }
+    items.push({
+      author: source.label,
+      handle: source.key,
+      text: cleanedStory.slice(0, 1400),
+      title: `${source.label}: ${playerNames.join(", ")}`,
+      link: source.url,
+      publishedAt,
+      guid: key,
+      sourceType: source.type,
+      sourceKey: source.key,
+      sourceLabel: source.label,
+      playerNames
+    });
 
     if (items.length >= 25) break;
   }
