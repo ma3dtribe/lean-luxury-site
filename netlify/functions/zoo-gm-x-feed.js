@@ -59,26 +59,14 @@ const EXPERT_RANKING_SOURCES = [
   {
     key: "jamey",
     name: "Jamey Eisenberg",
-    cbsExpert: "Jamey Eisenberg",
-    pages: [
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/QB/jamey-eisenberg/", positions: ["QB"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/RB/jamey-eisenberg/", positions: ["RB"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/WR/jamey-eisenberg/", positions: ["WR"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/TE/jamey-eisenberg/", positions: ["TE"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/K/jamey-eisenberg/", positions: ["K"] }
-    ]
+    cbsExpertSlug: "jamey-eisenberg",
+    positions: ["QB", "RB", "WR", "TE", "K"]
   },
   {
     key: "heath",
     name: "Heath Cummings",
-    cbsExpert: "Heath Cummings",
-    pages: [
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/QB/heath-cummings/", positions: ["QB"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/RB/heath-cummings/", positions: ["RB"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/WR/heath-cummings/", positions: ["WR"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/TE/heath-cummings/", positions: ["TE"] },
-      { url: "https://www.cbssports.com/fantasy/football/rankings/ppr/K/heath-cummings/", positions: ["K"] }
-    ]
+    cbsExpertSlug: "heath-cummings",
+    positions: ["QB", "RB", "WR", "TE", "K"]
   },
   {
     key: "fabiano",
@@ -89,24 +77,14 @@ const EXPERT_RANKING_SOURCES = [
   {
     key: "espn_rankings",
     name: "ESPN",
-    pages: [
-      {
-        url: "https://www.espn.com/fantasy/football/story/_/page/FFWeeklyPlayerRank26main-49797082/fantasy-football-rankings-2026-qb-rb-wr-te-dst",
-        positions: ["QB", "RB", "WR", "TE", "K"]
-      }
-    ]
+    dynamicWeekPages: true,
+    positions: ["QB", "RB", "WR", "TE"]
   },
   {
     key: "fantasypros_rankings",
     name: "FantasyPros",
-    pages: [
-      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-ppr-qb.php?week={week}", positions: ["QB"] },
-      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-ppr-rb.php?week={week}", positions: ["RB"] },
-      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-ppr-wr.php?week={week}", positions: ["WR"] },
-      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-ppr-te.php?week={week}", positions: ["TE"] },
-      { url: "https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-k.php?week={week}", positions: ["K"] },
-      { url: "https://www.fantasypros.com/nfl/rankings/idp", positions: ["LB", "DL", "CB", "S"] }
-    ]
+    dynamicWeekPages: true,
+    positions: ["QB", "RB", "WR", "TE", "K", "LB", "DL", "CB", "S"]
   }
 ];
 
@@ -5392,70 +5370,25 @@ function rankingFocusCatalog(playerCatalog = [], allowedPositions = []) {
 }
 
 
-function expertSectionText(source = {}, html = "") {
-  let plain = cleanSourceText(String(html || "").slice(0, 900000));
-  if (!plain || !source.cbsExpert) return plain;
+function matchRankedPlayerFromRow(rowText = "", focus = []) {
+  const text = ` ${normalize(rowText).replace(/\./g, "")} `;
+  if (!text.trim()) return null;
 
-  const start = plain.indexOf(source.cbsExpert);
-  if (start < 0) return plain;
-
-  let end = plain.length;
-  for (const marker of ["Jamey Eisenberg", "Dave Richard", "Heath Cummings"]) {
-    if (marker === source.cbsExpert) continue;
-    const at = plain.indexOf(marker, start + source.cbsExpert.length);
-    if (at > start && at < end) end = at;
-  }
-  return plain.slice(start, end);
-}
-
-function cbsAbbreviatedRankingsFromPage(source = {}, html = "", playerCatalog = []) {
-  const allowedPositions = (source.positions || []).map(canonicalPosition).filter(Boolean);
-  const focus = rankingFocusCatalog(playerCatalog, allowedPositions);
-  if (!focus.length) return {};
-
-  const plain = expertSectionText(source, html);
-  if (!plain) return {};
-
-  const aliasOwners = new Map();
   for (const player of focus) {
     const normalizedName = normalize(player.name || "").replace(/\./g, "");
+    if (!normalizedName) continue;
+    if (text.includes(` ${normalizedName} `)) return player;
+
     const parts = normalizedName.split(/\s+/).filter(Boolean);
     if (parts.length < 2) continue;
-    const firstInitial = parts[0][0];
+    const first = parts[0];
     const last = parts[parts.length - 1];
-    if (!firstInitial || !last || last.length < 2) continue;
-    const alias = `${firstInitial} ${last}`;
-    if (!aliasOwners.has(alias)) aliasOwners.set(alias, []);
-    aliasOwners.get(alias).push(player);
+    const pattern = new RegExp(
+      `(?:^|\\s)${escapeRegExp(first)}(?:\\s+[a-z])?\\s+${escapeRegExp(last)}(?=\\s|$)`
+    );
+    if (pattern.test(text)) return player;
   }
-
-  const candidates = [];
-  for (const [alias, owners] of aliasOwners.entries()) {
-    if (owners.length !== 1) continue;
-    const player = owners[0];
-    const [initial, last] = alias.split(" ");
-    const lastPattern = escapeRegExp(last).replace(/\\-/g, "[-\\s]?");
-    const re = new RegExp(`\\b${escapeRegExp(initial)}\\.?\\s+${lastPattern}\\b`, "ig");
-    const match = re.exec(plain);
-    if (!match) continue;
-    candidates.push({
-      name: player.name,
-      position: canonicalPosition(player.position),
-      index: match.index
-    });
-  }
-
-  candidates.sort((a, b) => a.index - b.index);
-  const rankings = {};
-  const seen = new Set();
-  for (const item of candidates) {
-    const key = `${item.position}:${normalize(item.name)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    if (!rankings[item.position]) rankings[item.position] = [];
-    if (rankings[item.position].length < 100) rankings[item.position].push(item.name);
-  }
-  return rankings;
+  return null;
 }
 
 function rankingsFromTableRows(source = {}, html = "", playerCatalog = []) {
@@ -5463,127 +5396,87 @@ function rankingsFromTableRows(source = {}, html = "", playerCatalog = []) {
   const focus = rankingFocusCatalog(playerCatalog, allowedPositions);
   if (!focus.length) return {};
 
-  function resolvePlayer(sourceName = "") {
-    const wanted = normalize(sourceName).replace(/\b(?:jr|sr|ii|iii|iv|v)\.?\b/g, "").replace(/\./g, "").trim();
-    if (!wanted) return null;
-    let exact = focus.find(player => normalize(player.name).replace(/\b(?:jr|sr|ii|iii|iv|v)\.?\b/g, "").replace(/\./g, "").trim() === wanted);
-    if (exact) return exact;
-    return focus.find(player => normalizedPlayerAliases(player.name).some(alias => {
-      const a = normalize(alias).replace(/\b(?:jr|sr|ii|iii|iv|v)\.?\b/g, "").replace(/\./g, "").trim();
-      return a === wanted;
-    })) || null;
-  }
+  const cleanHtml = String(html || "")
+    .replace(/\\"/g, '"')
+    .replace(/\\</g, "<")
+    .replace(/\\>/g, ">")
+    .replace(/\\n/g, " ");
 
-  const cleanHtml = String(html || "").replace(/\\"/g, '"').replace(/\\</g, "<").replace(/\\>/g, ">");
   const rows = cleanHtml.match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi) || [];
   const rankings = {};
 
   for (const row of rows) {
+    const rowText = cleanSourceText(row);
+    if (!rowText) continue;
+
     let rank = null;
-    let sourceName = "";
-
-    const cbsRank = row.match(/FantasyRankingsTable-td--rank[^>]*>\s*(\d{1,3})\s*<\/td>/i);
-    const cbsSlug = row.match(/\/nfl\/players\/\d+\/([^/]+)\/fantasy\//i);
-    if (cbsRank && cbsSlug) {
-      rank = Number(cbsRank[1]);
-      sourceName = cbsSlug[1].replace(/-/g, " ");
+    if (source.key === "fantasypros_rankings") {
+      const match = row.match(/<td[^>]*sticky-cell-one[^>]*>\s*(\d{1,3})\s*<\/td>/i);
+      if (match) rank = Number(match[1]);
+    } else if (source.key === "jamey" || source.key === "heath") {
+      const match = row.match(/FantasyRankingsTable-td--rank[^>]*>\s*(\d{1,3})\s*<\/td>/i);
+      if (match) rank = Number(match[1]);
+    } else if (source.key === "fabiano") {
+      const cells = [...row.matchAll(/<td[^>]*>[\s\S]*?<p[^>]*>\s*([^<]+?)\s*<\/p>[\s\S]*?<\/td>/gi)]
+        .map(match => cleanSourceText(match[1]));
+      if (cells.length && /^\d{1,3}$/.test(cells[0])) rank = Number(cells[0]);
+    } else {
+      const match = normalize(rowText).match(/(?:^|\s)(\d{1,3})(?=\s)/);
+      if (match) rank = Number(match[1]);
     }
 
-    if (!rank) {
-      const fpRank = row.match(/<td[^>]*sticky-cell-one[^>]*>\s*(\d{1,3})\s*<\/td>/i);
-      const fpName = row.match(/fp-player-name=["']([^"']+)["']/i);
-      if (fpRank && fpName) {
-        rank = Number(fpRank[1]);
-        sourceName = fpName[1];
-      }
-    }
-
-    if (!rank) {
-      const text = cleanSourceText(row);
-      const genericRank = text.match(/^\s*(\d{1,3})\b/);
-      if (genericRank) {
-        rank = Number(genericRank[1]);
-        const normalizedRow = ` ${normalize(text)} `;
-        const matched = focus.find(player => normalizedPlayerAliases(player.name).some(alias => normalizedRow.includes(` ${alias} `)));
-        if (matched) sourceName = matched.name;
-      }
-    }
-
-    if (!rank || rank > 200 || !sourceName) continue;
-    const matched = resolvePlayer(sourceName);
-    if (!matched) continue;
-    const position = canonicalPosition(matched.position);
+    if (!rank || rank > 200) continue;
+    const player = matchRankedPlayerFromRow(rowText, focus);
+    if (!player) continue;
+    const position = canonicalPosition(player.position);
     if (allowedPositions.length && !allowedPositions.includes(position)) continue;
     if (!rankings[position]) rankings[position] = [];
-    rankings[position][rank - 1] = matched.name;
+    if (!rankings[position][rank - 1]) rankings[position][rank - 1] = player.name;
   }
 
   return rankings;
 }
 
-function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
-  const tableRankings = rankingsFromTableRows(source, html, playerCatalog);
-  const tableCount = Object.values(tableRankings).reduce((sum, names) => sum + names.length, 0);
-  if (tableCount >= 5) return tableRankings;
-
+function rankingsFromEspnPage(source = {}, html = "", playerCatalog = []) {
   const allowedPositions = (source.positions || []).map(canonicalPosition).filter(Boolean);
   const focus = rankingFocusCatalog(playerCatalog, allowedPositions);
   if (!focus.length) return {};
 
-  const page = ` ${normalize(cleanSourceText(String(html || "").slice(0, 900000)))} `;
-  if (!page.trim()) return {};
-
-  const aliasOwners = new Map();
-  for (const player of focus) {
-    for (const alias of normalizedPlayerAliases(player.name)) {
-      if (!alias.includes(" ") || alias.length < 6) continue;
-      if (!aliasOwners.has(alias)) aliasOwners.set(alias, []);
-      aliasOwners.get(alias).push(player);
-    }
-  }
-
-  const aliases = [...aliasOwners.entries()]
-    .filter(([, owners]) => owners.length === 1)
-    .map(([alias]) => alias)
-    .sort((a, b) => b.length - a.length);
-  if (!aliases.length) return {};
-
-  const aliasMap = new Map(
-    aliases.map(alias => [alias, aliasOwners.get(alias)[0]])
-  );
-  const regex = new RegExp(
-    `(?:^|\\s)(${aliases.map(escapeRegExp).join("|")})(?=\\s|$|[.-])`,
-    "g"
-  );
-
-  const ordered = [];
-  const seenPlayers = new Set();
+  const rankings = {};
+  const re = /<div class="rank">\s*(\d{1,3})[\s\S]{0,1800}?(?=<div class="rank">|$)/gi;
   let match;
-  while ((match = regex.exec(page)) !== null) {
-    const player = aliasMap.get(match[1]);
+  while ((match = re.exec(String(html || ""))) !== null) {
+    const rank = Number(match[1]);
+    if (!rank || rank > 200) continue;
+    const block = match[0];
+    const player = matchRankedPlayerFromRow(cleanSourceText(block), focus);
     if (!player) continue;
     const position = canonicalPosition(player.position);
-    const key = `${position}:${normalize(player.name)}`;
-    if (seenPlayers.has(key)) continue;
-    seenPlayers.add(key);
-    ordered.push({ name: player.name, position, index: match.index });
-    if (ordered.length >= 600) break;
-  }
-
-  ordered.sort((a, b) => a.index - b.index);
-  const rankings = {};
-  for (const item of ordered) {
-    if (!rankings[item.position]) rankings[item.position] = [];
-    if (rankings[item.position].length < 100) rankings[item.position].push(item.name);
+    if (!rankings[position]) rankings[position] = [];
+    if (!rankings[position][rank - 1]) rankings[position][rank - 1] = player.name;
   }
   return rankings;
 }
 
-function buildExpertRankingPages(source = {}, week = 1) {
-  if (Array.isArray(source.pages) && source.pages.length) return source.pages.map(page => ({ ...page, url: String(page.url || "").replace(/\{week\}/g, String(Number(week) || 1)) }));
+function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
+  if (source.key === "espn_rankings") {
+    return rankingsFromEspnPage(source, html, playerCatalog);
+  }
+  return rankingsFromTableRows(source, html, playerCatalog);
+}
 
-  if (source.dynamicWeekPages) {
-    const base = `https://www.si.com/fantasy/week-${Number(week) || 1}`;
+function buildExpertRankingPages(source = {}, week = 1) {
+  const currentWeek = Number(week) || 1;
+
+  if (source.cbsExpertSlug) {
+    return (source.positions || []).map(position => ({
+      url: `https://www.cbssports.com/fantasy/football/rankings/ppr/${position}/${source.cbsExpertSlug}/`,
+      positions: [position]
+    }));
+  }
+
+  if (source.key === "fabiano") {
+    const base = `https://www.si.com/fantasy/week-${currentWeek}`;
     return [
       { url: `${base}-quarterback-rankings`, positions: ["QB"] },
       { url: `${base}-running-back-rankings`, positions: ["RB"] },
@@ -5593,18 +5486,36 @@ function buildExpertRankingPages(source = {}, week = 1) {
     ];
   }
 
-  return source.url
-    ? [{ url: source.url, positions: source.positions || [] }]
-    : [];
+  if (source.key === "espn_rankings") {
+    const slots = { QB: 0, RB: 2, WR: 4, TE: 6 };
+    return Object.entries(slots).map(([position, slotCategoryId]) => ({
+      url: `https://fantasy.espn.com/football/tools/fantasyRankings?slotCategoryId=${slotCategoryId}&scoringPeriodId=${currentWeek}&seasonId=2026&rankType=ppr&count=100&rand=${currentWeek}`,
+      positions: [position]
+    }));
+  }
+
+  if (source.key === "fantasypros_rankings") {
+    const offense = ["QB", "RB", "WR", "TE", "K"].map(position => ({
+      url: `https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-${position.toLowerCase()}.php?week=${currentWeek}`,
+      positions: [position]
+    }));
+    return [
+      ...offense,
+      { url: "https://www.fantasypros.com/nfl/rankings/idp.php", positions: ["LB", "DL", "CB", "S"] }
+    ];
+  }
+
+  if (Array.isArray(source.pages) && source.pages.length) return source.pages;
+  return source.url ? [{ url: source.url, positions: source.positions || [] }] : [];
 }
 
 function mergePositionRankings(target = {}, incoming = {}) {
   for (const [position, names] of Object.entries(incoming || {})) {
-    if (!Array.isArray(names) || !names.length) continue;
+    if (!Array.isArray(names) || !names.some(Boolean)) continue;
     if (!target[position]) target[position] = [];
     names.forEach((name, index) => {
-      if (!name) return;
-      if (!target[position][index]) target[position][index] = name;
+      if (!name || target[position][index]) return;
+      target[position][index] = name;
     });
   }
   return target;
@@ -5633,7 +5544,7 @@ async function fetchExpertRankingPage(source = {}, page = {}, playerCatalog = []
       html,
       playerCatalog
     );
-    const playerCount = Object.values(rankings).reduce((sum, names) => sum + names.filter(Boolean).length, 0);
+    const playerCount = Object.values(rankings).reduce((sum, names) => sum + names.length, 0);
     if (!playerCount) throw new Error("no matched players");
 
     return { ok: true, url: page.url, positions: page.positions || [], rankings, playerCount };
@@ -5707,7 +5618,7 @@ async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 
     if (result.ok) mergePositionRankings(rankings, result.rankings);
   }
 
-  const playerCount = Object.values(rankings).reduce((sum, names) => sum + names.filter(Boolean).length, 0);
+  const playerCount = Object.values(rankings).reduce((sum, names) => sum + names.length, 0);
   const ok = playerCount > 0;
 
   return {
@@ -5727,7 +5638,7 @@ async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 
 }
 
 async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
-  const weekKey = `rankings-v4:${String(Number(currentWeek) || 1)}`;
+  const weekKey = `rankings-v3-${String(Number(currentWeek) || 1)}`;
   const cached = RUNTIME_CACHE.expertRankings.get(weekKey);
   if (cached && cacheFresh(cached.at, CACHE_TTL.expertRankingsMs)) {
     return { ...cached.value, cached: true };
@@ -5812,61 +5723,44 @@ async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
 }
 
 function buildExpertRankingConsensus(expertRankings = {}, playerCatalog = []) {
-  // Only use an expert for a position when we captured enough of that list to
-  // treat the page as a real weekly ranking set. This prevents a partially
-  // parsed page (for example, one CBS match) from distorting consensus.
   const minimumCoverage = {
-    QB: 8,
-    RB: 20,
-    WR: 20,
-    TE: 8,
-    K: 8,
-    LB: 20,
-    DL: 10,
-    CB: 5,
-    S: 10
+    QB: 8, RB: 20, WR: 20, TE: 8, K: 8,
+    LB: 20, DL: 10, CB: 5, S: 10
   };
 
   const healthyByPosition = new Map();
-
   for (const expert of expertRankings.experts || []) {
     for (const [rawPosition, names] of Object.entries(expert.rankings || {})) {
       const position = canonicalPosition(rawPosition);
       if (!Array.isArray(names)) continue;
-      const minimum = minimumCoverage[position] || 5;
-      if (names.length < minimum) continue;
+      const captured = names.filter(Boolean).length;
+      if (captured < (minimumCoverage[position] || 5)) continue;
       if (!healthyByPosition.has(position)) healthyByPosition.set(position, []);
       healthyByPosition.get(position).push(expert.name);
     }
   }
 
   const byPlayer = new Map();
-
   for (const expert of expertRankings.experts || []) {
     for (const [rawPosition, names] of Object.entries(expert.rankings || {})) {
       const position = canonicalPosition(rawPosition);
       if (!Array.isArray(names)) continue;
-
       const healthyExperts = healthyByPosition.get(position) || [];
       if (!healthyExperts.includes(expert.name)) continue;
 
       names.forEach((name, index) => {
-        if (!name || !normalize(name)) return;
+        if (!name) return;
         const key = `${position}|${normalize(name)}`;
-
+        if (!normalize(name)) return;
         const current = byPlayer.get(key) || {
           name,
           position,
           ranks: [],
           experts: []
         };
-
-        current.ranks.push(index + 1);
-        current.experts.push({
-          expert: expert.name,
-          rank: index + 1
-        });
-
+        const actualRank = index + 1;
+        current.ranks.push(actualRank);
+        current.experts.push({ expert: expert.name, rank: actualRank });
         byPlayer.set(key, current);
       });
     }
@@ -5880,15 +5774,13 @@ function buildExpertRankingConsensus(expertRankings = {}, playerCatalog = []) {
     const avg = item.ranks.length
       ? item.ranks.reduce((sum, rank) => sum + rank, 0) / item.ranks.length
       : 999;
-
     const player = catalogByName.get(normalize(item.name)) || {};
     const availableExperts = healthyByPosition.get(item.position) || [];
-    const adjustedRank = avg;
 
     return {
       ...item,
       averageRank: Math.round(avg * 100) / 100,
-      adjustedRank: Math.round(adjustedRank * 100) / 100,
+      adjustedRank: Math.round(avg * 100) / 100,
       expertCount: item.ranks.length,
       availableExpertCount: availableExperts.length,
       confidence: availableExperts.length
@@ -5918,10 +5810,7 @@ function buildExpertRankingConsensus(expertRankings = {}, playerCatalog = []) {
         a.name.localeCompare(b.name)
       )
       .forEach((item, index) => {
-        output.push({
-          ...item,
-          consensusRank: index + 1
-        });
+        output.push({ ...item, consensusRank: index + 1 });
       });
   }
 
