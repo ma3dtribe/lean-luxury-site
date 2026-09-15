@@ -2177,16 +2177,18 @@
     const roster = getZooRoster();
     const rosterNames = new Set(roster.map(player => String(player.name || "").toLowerCase()));
     const zooRanks = rankings.filter(item => rosterNames.has(String(item.name || "").toLowerCase()));
-    const experts = [...new Set(zooRanks.flatMap(item => (item.experts || []).map(e => e.expert)).filter(Boolean))];
+    const expectedExperts = intelligenceData?.expertRankings?.expectedExperts || [];
+    const preferredExperts = ["Jamey Eisenberg", "Heath Cummings", "Michael Fabiano", "ESPN", "FantasyPros"];
+    const reportingExperts = [...new Set(zooRanks.flatMap(item => (item.experts || []).map(e => e.expert)).filter(Boolean))];
+    const experts = preferredExperts.filter(name => expectedExperts.includes(name) || reportingExperts.includes(name));
     const week = intelligenceData?.expertRankings?.week || espnData?.matchupPeriodId || espnData?.scoringPeriodId || "";
 
     if (status) {
-      const expected = intelligenceData?.expertRankings?.expectedExperts || [];
-      const awaiting = expected.filter(name => !experts.includes(name));
-      status.textContent = `Week ${week} · ${experts.length} expert source${experts.length === 1 ? "" : "s"} reporting${awaiting.length ? ` · awaiting: ${awaiting.join(" · ")}` : ""}`;
+      const awaiting = expectedExperts.filter(name => !reportingExperts.includes(name));
+      status.textContent = `Week ${week} · ${reportingExperts.length}/${expectedExperts.length || experts.length || 5} expert sources reporting${awaiting.length ? ` · awaiting: ${awaiting.join(" · ")}` : ""}`;
     }
 
-    head.innerHTML = `<tr><th>Player</th><th>Pos</th>${experts.map(expert => `<th>${esc(expert)}</th>`).join("")}<th>Consensus</th><th>Sources</th></tr>`;
+    head.innerHTML = `<tr><th>Player</th><th>Pos</th><th>Consensus</th>${experts.map(expert => `<th>${esc(expert)}</th>`).join("")}<th>Sources</th></tr>`;
 
     if (!zooRanks.length) {
       body.innerHTML = `<tr><td colspan="${experts.length + 4}">No current Zoo consensus rankings available.</td></tr>`;
@@ -2205,9 +2207,9 @@
       return `<tr>
         <td><strong>${esc(item.name)}</strong><div class="rank-meta">${esc(item.nflTeam || "")}</div></td>
         <td>${esc(item.position || "")}</td>
-        ${experts.map(expert => `<td>${rankMap.has(expert) ? `#${esc(rankMap.get(expert))}` : "—"}</td>`).join("")}
         <td class="rank-num">#${esc(item.consensusRank || item.averageRank || "—")}</td>
-        <td>${esc(item.expertCount || 0)}/${esc(item.availableExpertCount || item.expertCount || 0)}</td>
+        ${experts.map(expert => `<td>${rankMap.has(expert) ? `#${esc(rankMap.get(expert))}` : "—"}</td>`).join("")}
+        <td>${esc(item.expertCount || 0)}/${esc(expectedExperts.length || experts.length || 5)}</td>
       </tr>`;
     }).join("");
   }
