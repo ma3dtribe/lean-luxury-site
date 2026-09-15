@@ -1018,7 +1018,7 @@
       <section class="panel">
 
         <div class="panel-header">
-          <h2>Intelligence Feed</h2>
+          <h2>Zoo Intelligence Feed</h2>
 
           <span class="news-time" id="activeFilterLabel">All intelligence</span>
         </div>
@@ -1111,7 +1111,7 @@
   <section class="panel">
     <div class="panel-header">
       <h2>Potential Additions to Your Roster</h2>
-      <span class="news-time">Available players who genuinely clear Zoo's roster-addition threshold</span>
+      <span class="news-time">Best roster-improving adds · future upside, role/usage, injury risk and realistic drop cost</span>
     </div>
     <div class="panel-body">
       <div id="addDropDecisions" class="decision-list">
@@ -1147,19 +1147,6 @@
 
   </section>
 
-
-  <section class="panel zoo-player-updates">
-    <div class="panel-header">
-      <h2>Zoo Player News</h2>
-      <span class="news-time">Every Zoo player story from the last 12 hours</span>
-    </div>
-    <div class="panel-body">
-      <div id="zooPlayerUpdates" class="zoo-updates-grid">
-        <div class="empty">Checking current intelligence for Zoo player news...</div>
-      </div>
-    </div>
-  </section>
-
   <section class="panel">
     <div class="panel-header">
       <h2>Zoo Consensus Rankings</h2>
@@ -1171,18 +1158,6 @@
           <thead id="zooConsensusHead"><tr><th>Player</th><th>Pos</th><th>Consensus</th><th>Sources</th></tr></thead>
           <tbody id="zooConsensusBody"><tr><td colspan="4">Loading Zoo rankings...</td></tr></tbody>
         </table>
-      </div>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-header">
-      <h2>Player News</h2>
-      <span class="news-time" id="playerNewsStatus">NBC Sports + FantasyPros · ranked players, Zoo, Watch List and opponent</span>
-    </div>
-    <div class="panel-body">
-      <div id="playerNewsGrid" class="player-news-grid">
-        <div class="empty">Loading current player news...</div>
       </div>
     </div>
   </section>
@@ -2058,7 +2033,10 @@
     if (!combined.length) { container.innerHTML = '<div class="empty">No meaningful situation changes in the last 12 hours.</div>'; return; }
     container.innerHTML = combined.slice(0,5).map(item => {
       const detail = decodeNewsText(item.reason || item.summary || item.whatHappened || item.text || "");
-      const negative = /out|inactive|injur|limited|doubtful|questionable|suspend|reduced|lost role|demoted|worsen|miss/i.test(`${item.event||""} ${detail}`);
+      const signalText = `${item.event||""} ${detail}`;
+      const positive = /boon|benefit|benefits|benefiting|boost|improve|improved|upgrade|more opportunity|larger role|increased role|expanded role|more targets|more touches|more snaps|named starter|starting role|promoted|elevated/i.test(signalText);
+      const negativeSignal = /\b(out|inactive|injured|injury|limited|doubtful|questionable|suspended|suspension|reduced role|lost role|demoted|worsened|expected to miss|will miss)\b/i.test(signalText);
+      const negative = negativeSignal && !positive;
       const direction = negative ? "− WORSENED" : "+ IMPROVED";
       const context = item._kind === "OPPONENT" ? "OPPONENT" : (item.context || item.ownershipStatus || "AVAILABLE / WATCH");
       const name = item.player || item.playerName || item.name || "Player situation";
@@ -2267,8 +2245,6 @@
     renderExpendability();
     renderRoster();
     renderWatchList();
-    renderZooPlayerUpdates();
-    renderPlayerNews();
     renderZooConsensusRankings();
     renderExpertRankings();
     renderSuggestedWatchList();
