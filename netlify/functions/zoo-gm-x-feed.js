@@ -2522,22 +2522,6 @@ function acquisitionScore(player = {}, rosterCounts = {}, posts = [], watchConte
   const history = historicalProductionIndex(position);
   const context = candidateContext(player, watchContext);
   const availability = playerAvailabilityContext(player, posts);
-  const recentPlayerPosts = recentPostsForPlayer(posts, player.name, 72);
-  const trajectoryText = normalize(
-    recentPlayerPosts.map(post => `${post.title || ""} ${post.text || ""}`).join(" ")
-  );
-  const breakoutSignals = [
-    /career high|career-high|breakout|season high|season-high/,
-    /target share|targets|routes|route participation|snap share|snaps/,
-    /named starter|starting role|first team|first-team|every down|every-down/,
-    /increased role|larger role|expanded role|more work|more touches|workload/,
-    /lead back|rb1|wr1|starting linebacker|green dot/
-  ].filter(pattern => pattern.test(trajectoryText)).length;
-  const trajectoryBonus = clamp(
-    (breakoutSignals * 5) + (availability.roleAdjustment > 0 ? Math.min(10, availability.roleAdjustment) : 0),
-    0,
-    22
-  );
 
   let score =
     (need * 0.70) +
@@ -2547,8 +2531,7 @@ function acquisitionScore(player = {}, rosterCounts = {}, posts = [], watchConte
     (news * 0.85) +
     (context.watchPriorityBonus * 0.80) +
     (profile.benchBias * 0.35) +
-    availability.totalAdjustment +
-    trajectoryBonus;
+    availability.totalAdjustment;
 
   const current = Number(rosterCounts[position] || 0);
   const preferred = getPreferredCount(position);
@@ -3352,12 +3335,7 @@ function buildAddDropDecisions(
 
     // During the week, Zoo may intentionally use its only K slot as temporary
     // roster storage for a genuinely strong target. This is not a permanent cut.
-    if (
-      !protectKicker &&
-      rosterKickers.length === 1 &&
-      Number(add.zooValueScore || 0) >= 88 &&
-      (!bestPair || Number(bestPair.rosterValueChange || 0) <= 0)
-    ) {
+    if (!protectKicker && rosterKickers.length === 1 && Number(add.zooValueScore || 0) >= 75) {
       const kicker = rosterKickers[0];
       const temporaryPair = {
         add: {
@@ -3379,7 +3357,7 @@ function buildAddDropDecisions(
         verdict: "TEMPORARY",
         recommendation: `TEMPORARY K DROP · ADD ${add.name}`,
         strategy: "BUY DECISION TIME",
-        reason: `High-conviction temporary stash only. Zoo must make another move later in the week to restore a starting K before lineup lock.`
+        reason: `Use the kicker slot temporarily, then restore a starting K before Sunday lineup lock.`
       };
 
       if (!bestPair || temporaryPair.rosterValueChange > bestPair.rosterValueChange) bestPair = temporaryPair;
@@ -5066,26 +5044,12 @@ function extractNbcStories(html = "") {
 
     let story = feed.slice(start, end).trim();
 
-    // Remove a trailing source/author fragment from the previous card and
-    // common NBC navigation/player-directory text that can precede a card.
+    // Remove a trailing source/author fragment from the previous card when it
+    // lands at the beginning of this slice, but preserve the actual news text.
     story = story
       .replace(/^Source:\s+[^.]{0,220}\s+/i, "")
       .replace(/^[-–—]\s*[A-Z][A-Za-z.'’\- ]{2,70}\s+/i, "")
-      .replace(/^(?:[A-Z][A-Za-z.'’\- ]{1,45}\s+(?:NFL|NFC|AFC|Free Agent)\s*){3,}/i, "")
-      .replace(/^(?:NFL Player News|Rotoworld|Fantasy Football|Player News|NFL Home|Teams|Scores|Schedule|Standings)\s*/i, "")
       .trim();
-
-    // If navigation still leaked in, prefer the final sentence-sized window
-    // before the timestamp rather than carrying multiple unrelated cards.
-    const stampMatch = story.match(/\b\d{1,3}\s*(?:m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days)\s+ago\b/i);
-    if (stampMatch && Number.isFinite(stampMatch.index) && stampMatch.index > 1050) {
-      const beforeStamp = story.slice(0, stampMatch.index);
-      const sentenceStarts = [...beforeStamp.matchAll(/(?:^|[.!?]\s+)(?=[A-Z])/g)];
-      const cut = sentenceStarts.length >= 4
-        ? sentenceStarts[Math.max(0, sentenceStarts.length - 4)].index || 0
-        : Math.max(0, stampMatch.index - 950);
-      story = story.slice(cut).trim();
-    }
 
     addStory(story);
     if (stories.length >= 80) break;
@@ -5122,30 +5086,6 @@ function extractNbcStories(html = "") {
   return stories.slice(0, 100);
 }
 
-
-
-
-
-function cleanPlayerNewsStory(text = "", sourceKey = "") {
-  let value = String(text || "").replace(/\s+/g, " ").trim();
-
-  if (sourceKey === "fantasypros") {
-    value = value
-      .replace(/^(?:Ends\s+)?(?:Kickers?\s+)?(?:Defensive Linemen\s+)?(?:Linebackers?\s+)?(?:Defensive Backs\s+)?/i, "")
-      .replace(/^(?:QB|RB|WR|TE|K|DL|LB|DB|CB|S)\s*-\s*[A-Z]{2,3}\s*[»›>]\s*Rankings\s*[»›>]\s*Stats\s*[»›>]\s*More News\s*/i, "")
-      .replace(/^.*?\bMore News\s+(?=[A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3}\s)/i, "")
-      .trim();
-  }
-
-  if (sourceKey === "nbcsports") {
-    value = value
-      .replace(/^(?:NFL Player News|Player News|Rotoworld|NBC Sports)\s*/i, "")
-      .trim();
-  }
-
-  return value;
-}
-
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
   const focusPlayers = sourceFocusCatalog(playerCatalog);
   const pagePublishedAt = extractPagePublishedAt(html);
@@ -5170,19 +5110,31 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
     const playerNames = [...new Set(direct.map(player => player.name).filter(Boolean))].slice(0, 5);
     if (!playerNames.length) continue;
 
-    const publishedAt = source.type === "PLAYER_NEWS"
-      ? parseNewsTimestamp(story, pagePublishedAt)
-      : (pagePublishedAt || new Date().toISOString());
+    let publishedAt;
 
-    const cleanedStory = cleanPlayerNewsStory(story, source.key);
-    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(cleanedStory).slice(0, 320)}`;
+if (source.type === "PLAYER_NEWS") {
+  if (source.key === "nbcsports") {
+    publishedAt =
+      parseNewsTimestamp(story, "") ||
+      new Date().toISOString();
+  } else {
+    publishedAt =
+      parseNewsTimestamp(story, pagePublishedAt);
+  }
+} else {
+  publishedAt =
+    pagePublishedAt ||
+    new Date().toISOString();
+}
+
+    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(story).slice(0, 320)}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
     items.push({
       author: source.label,
       handle: source.key,
-      text: cleanedStory.slice(0, 1400),
+      text: story.slice(0, 1400),
       title: `${source.label}: ${playerNames.join(", ")}`,
       link: source.url,
       publishedAt,
@@ -5289,9 +5241,23 @@ async function fetchSourcePage(source = {}) {
       throw new Error(`${source.label} request failed: ${detail}`);
     }
 
-    let html = successful
-      .map(result => result.html)
-      .join("\n<!-- ZOO_GM_NBC_PAGE_BREAK -->\n");
+    let html;
+
+    if (source.key === "nbcsports") {
+      const dedicated = results.find(
+        result => result.ok && result.html && result.url === source.url
+      );
+
+      // Prefer the dedicated Rotoworld Player News page by itself. Only fall
+      // back to the NBC Fantasy Football landing page if the dedicated page
+      // actually failed. This keeps separate page markup from contaminating
+      // Rotoworld card boundaries and player matching.
+      html = dedicated
+        ? dedicated.html
+        : successful[0].html;
+    } else {
+      html = successful[0].html;
+    }
 
     // If NBC sent a consent/interstitial shell, strip the most common script
     // noise before the existing Rotoworld parser sees it. We intentionally do
