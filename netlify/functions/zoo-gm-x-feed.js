@@ -5123,28 +5123,7 @@ function extractNbcStories(html = "") {
 }
 
 
-function cleanPlayerNewsStory(text = "", sourceKey = "") {
-  let value = String(text || "").replace(/\s+/g, " ").trim();
 
-  if (sourceKey === "fantasypros") {
-    // Keep the actual headline/body, but remove the position navigation that
-    // FantasyPros prepends to its player-news cards.
-    value = value
-      .replace(/^(?:Ends\s+)?(?:Kickers?\s+)?(?:Defensive Linemen\s+)?(?:Linebackers?\s+)?(?:Defensive Backs\s+)?/i, "")
-      .replace(/^(?:QB|RB|WR|TE|K|DL|LB|DB|CB|S)\s*-\s*[A-Z]{2,3}\s*[»›>]\s*Rankings\s*[»›>]\s*Stats\s*[»›>]\s*More News\s*/i, "")
-      .replace(/^.*?\bMore News\s+(?=[A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3}\s)/i, "")
-      .trim();
-  }
-
-  if (sourceKey === "nbcsports") {
-    value = value
-      .replace(/^(?:NFL Player News|Player News|Rotoworld|NBC Sports)\s*/i, "")
-      .replace(/^(?:Headline\s+Injury\s+Recap\s+Transaction\s+Positions\s+Assistant GM Center\s+Coaching Staff\s+Commissioner\s+)*/i, "")
-      .trim();
-  }
-
-  return value;
-}
 
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
   const focusPlayers = sourceFocusCatalog(playerCatalog);
