@@ -4942,151 +4942,73 @@ function extractFantasyProsStories(html = "") {
 
 function extractNbcStories(html = "") {
   const raw = String(html || "");
-
   if (!raw) return [];
 
   const stories = [];
   const seen = new Set();
-  const plain = cleanSourceText(raw);
 
-  const addStory = value => {
-    const story = String(value || "")
-      .replace(/\bPlayer Stats\b/gi, " ")
-      .replace(/\bPersonalize your Rotoworld feed by favoriting players\b/gi, " ")
-      .replace(/\bRecap\b/gi, " ")
-      .replace(/\bMore [A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\- ]{1,70} News\b/gi, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+  const cleanNbcBody = value => String(value || "")
+    .replace(/\bPersonalize your Rotoworld feed by favoriting players\b/gi, " ")
+    .replace(/\bLink copied to clipboard!?\b/gi, " ")
+    .replace(/\bPlayer Stats\b/gi, " ")
+    .replace(/\bRecap\b/gi, " ")
+    .replace(/\bMore\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\- ]{1,70}\s+News\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-    if (story.length < 70 || story.length > 2600) return;
+  const addStory = (playerName, body) => {
+    const name = String(playerName || "").replace(/\s+/g, " ").trim();
+    const text = cleanNbcBody(body);
+    if (!name || text.length < 45 || text.length > 2600) return;
 
-    const key = normalize(story).slice(0, 650);
+    const key = `${normalize(name)}|${normalize(text).slice(0, 650)}`;
     if (!key || seen.has(key)) return;
-
     seen.add(key);
-    stories.push(story);
+
+    // Internal marker lets extractItemsFromSource bind the card to the actual
+    // Rotoworld subject instead of every teammate mentioned in the analysis.
+    stories.push(`@@NBC_PLAYER:${name}@@ ${text}`);
   };
 
-  let feed = plain;
-  const rotoworldMarker = feed.indexOf("Rotoworld");
-  if (rotoworldMarker >= 0) {
-    feed = feed.slice(rotoworldMarker);
-  }
+  // NBC's player-news page is structured as one card per player:
+  // Player Name -> TEAM Position # -> Player Stats -> news/analysis -> Recap -> More Player News.
+  // Parse those boundaries directly so neighboring cards and UI text never merge.
+  const plain = cleanSourceText(raw.slice(0, 900000));
+  const cardRegex = /([A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\-]+){1,4})\s+(?:[A-Z]{2,3}|Free Agent)\s+(?:Quarterback|Running Back|Wide Receiver|Tight End|Linebacker|Cornerback|Safety|Defensive(?:\s+(?:End|Tackle|Back))?|Kicker)\s+#?\d*\s+Player Stats\s+(?:Personalize your Rotoworld feed by favoriting players\s+)?([\s\S]*?)\s+Recap\s+More\s+\1\s+News\b/gi;
 
-  // Path 1: NBC's older/desktop Rotoworld card structure. Keep this because
-  // some responses still contain the Player Stats / More [Player] News markers.
-  const playerStatsRegex = /\bPlayer Stats\b/gi;
-  const statsMatches = [...feed.matchAll(playerStatsRegex)];
-
-  for (let i = 0; i < statsMatches.length; i += 1) {
-    const statsIndex = statsMatches[i].index || 0;
-    const start = Math.max(0, statsIndex - 220);
-    const afterStats = feed.slice(statsIndex);
-
-    const moreNewsMatch = afterStats.match(
-      /\bMore\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\- ]{1,70}\s+News\b/i
-    );
-
-    let end;
-
-    if (moreNewsMatch && Number.isFinite(moreNewsMatch.index)) {
-      end = statsIndex + moreNewsMatch.index + moreNewsMatch[0].length;
-    } else {
-      const nextStats = statsMatches[i + 1];
-      end = nextStats
-        ? Math.max(start, (nextStats.index || feed.length) - 220)
-        : Math.min(feed.length, statsIndex + 2400);
-    }
-
-    let story = feed.slice(start, Math.min(end, start + 2400));
-
-    story = story
-      .replace(
-        /^.*?(?=[A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3}\s+(?:[A-Z]{2,3}|Free Agent)\s+(?:Quarterback|Running Back|Wide Receiver|Tight End|Linebacker|Cornerback|Safety|Defensive|Kicker))/i,
-        ""
-      )
-      .trim();
-
-    addStory(story);
-    if (stories.length >= 60) break;
-  }
-
-  // If NBC supplied its normal Player Stats cards, those boundaries are the
-  // cleanest representation of one Rotoworld article per item. Do not also run
-  // the looser timestamp/block fallbacks, which can join adjacent articles.
-  if (stories.length >= 3) {
-    return stories.slice(0, 60);
-  }
-
-  // Path 2: NBC's current Rotoworld feed often renders cards as plain story
-  // text ending in a relative timestamp, for example:
-  //   "Chargers HC Jim Harbaugh said Ladd McConkey ... Injury 2h ago Source: ..."
-  // Build each card around that timestamp instead of requiring Player Stats.
-  const relativeRegex = /\b\d{1,3}\s*(?:m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days)\s+ago\b/gi;
-  const relativeMatches = [...feed.matchAll(relativeRegex)].slice(0, 100);
-
-  for (let i = 0; i < relativeMatches.length; i += 1) {
-    const current = relativeMatches[i];
-    const currentIndex = current.index || 0;
-    const previous = relativeMatches[i - 1];
-    const previousEnd = previous
-      ? (previous.index || 0) + String(previous[0] || "").length
-      : Math.max(0, currentIndex - 1800);
-
-    // The text between the previous timestamp and this timestamp is normally
-    // the current Rotoworld card. Cap the beginning so navigation/UI text from
-    // the page cannot swallow the story.
-    const start = Math.max(previousEnd, currentIndex - 1900, 0);
-    const next = relativeMatches[i + 1];
-    const nextIndex = next?.index || feed.length;
-    const end = Math.min(
-      feed.length,
-      currentIndex + 650,
-      nextIndex
-    );
-
-    let story = feed.slice(start, end).trim();
-
-    // Remove a trailing source/author fragment from the previous card when it
-    // lands at the beginning of this slice, but preserve the actual news text.
-    story = story
-      .replace(/^Source:\s+[^.]{0,220}\s+/i, "")
-      .replace(/^[-–—]\s*[A-Z][A-Za-z.'’\- ]{2,70}\s+/i, "")
-      .trim();
-
-    addStory(story);
+  for (const match of plain.matchAll(cardRegex)) {
+    addStory(match[1], match[2]);
     if (stories.length >= 80) break;
   }
 
-  // Path 3: generic HTML blocks. This catches NBC markup variations where the
-  // relative timestamp and story are split across adjacent elements.
-  const blocks = extractHtmlBlocks(raw.slice(0, 750000));
-  for (let i = 0; i < blocks.length; i += 1) {
-    const block = blocks[i];
-    if (!block) continue;
+  if (stories.length) return stories;
 
-    const hasRelativeTime = /\b\d{1,3}\s*(?:m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days)\s+ago\b/i.test(block);
-    const looksLikeNews = /\b(Injury|News|Transactions?|Source:)\b/i.test(block);
+  // Markup fallback: split around Player Stats, but derive the subject from the
+  // immediately preceding team/position header and stop at that same player's
+  // More ... News marker. This is intentionally conservative: a clean smaller
+  // NBC feed is better than merged cards attributed to the wrong Zoo player.
+  const statsRegex = /\bPlayer Stats\b/gi;
+  const statsMatches = [...plain.matchAll(statsRegex)].slice(0, 100);
 
-    if (!hasRelativeTime && !looksLikeNews) continue;
+  for (let i = 0; i < statsMatches.length; i += 1) {
+    const statsIndex = statsMatches[i].index || 0;
+    const before = plain.slice(Math.max(0, statsIndex - 260), statsIndex);
+    const header = before.match(/([A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\-]+){1,4})\s+(?:[A-Z]{2,3}|Free Agent)\s+(?:Quarterback|Running Back|Wide Receiver|Tight End|Linebacker|Cornerback|Safety|Defensive(?:\s+(?:End|Tackle|Back))?|Kicker)\s+#?\d*\s*$/i);
+    if (!header) continue;
 
-    addStory(buildSourceContext(blocks, i));
-    if (stories.length >= 100) break;
+    const playerName = header[1].trim();
+    const after = plain.slice(statsIndex + String(statsMatches[i][0] || "").length, Math.min(plain.length, statsIndex + 2800));
+    const endMarker = new RegExp(`\\bRecap\\s+More\\s+${escapeRegExp(playerName)}\\s+News\\b`, "i");
+    const endMatch = after.match(endMarker);
+    const body = endMatch && Number.isFinite(endMatch.index)
+      ? after.slice(0, endMatch.index)
+      : after.slice(0, 1800);
+
+    addStory(playerName, body);
+    if (stories.length >= 80) break;
   }
 
-  // Last-resort fallback: never let NBC go completely empty just because its
-  // page structure changes again.
-  if (!stories.length) {
-    return blocks
-      .filter(block =>
-        block.length >= 60 &&
-        block.length <= 1800 &&
-        !/^(NFL Player News|Rotoworld|NFL Home|Teams|Scores|Schedule|Standings)$/i.test(block)
-      )
-      .slice(0, 250);
-  }
-
-  return stories.slice(0, 100);
+  return stories;
 }
 
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
@@ -5104,8 +5026,24 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
     stories = extractHtmlBlocks(String(html || "").slice(0, 350000)).slice(0, 180);
   }
 
-  for (const story of stories) {
-    const direct = findMatchingLeaguePlayers(story, focusPlayers);
+  for (const rawStory of stories) {
+    let story = String(rawStory || "");
+    let direct;
+
+    if (source.key === "nbcsports") {
+      const subjectMatch = story.match(/^@@NBC_PLAYER:([^@]+)@@\s*/);
+      const subjectName = subjectMatch ? subjectMatch[1].trim() : "";
+      story = story.replace(/^@@NBC_PLAYER:[^@]+@@\s*/, "").trim();
+
+      // NBC analysis frequently mentions several teammates. Attribute the card
+      // only to the player whose Rotoworld card this actually is.
+      direct = subjectName
+        ? focusPlayers.filter(player => normalize(player?.name || "") === normalize(subjectName))
+        : findMatchingLeaguePlayers(story, focusPlayers);
+    } else {
+      direct = findMatchingLeaguePlayers(story, focusPlayers);
+    }
+
     if (!direct.length) continue;
 
     // Keep each intelligence item tied only to players actually named in that
