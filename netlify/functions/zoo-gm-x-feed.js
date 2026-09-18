@@ -81,10 +81,10 @@ const EXPERT_RANKING_SOURCES = [
     positions: ["QB", "RB", "WR", "TE"]
   },
   {
-    key: "fantasypros_rankings",
-    name: "FantasyPros",
+    key: "ffc_rankings",
+    name: "Fantasy Football Calculator",
     dynamicWeekPages: true,
-    positions: ["QB", "RB", "WR", "TE", "K", "LB", "DL", "CB", "S"]
+    positions: ["QB", "RB", "WR", "TE", "K"]
   }
 ];
 
@@ -99,7 +99,7 @@ const EXPECTED_EXPERTS = [
   "Heath Cummings",
   "Michael Fabiano",
   "ESPN",
-  "FantasyPros"
+  "Fantasy Football Calculator"
 ];
 
 const FANTASYPROS_API_KEY = process.env.FANTASYPROS_API_KEY || "";
@@ -5410,8 +5410,8 @@ function rankingsFromTableRows(source = {}, html = "", playerCatalog = []) {
     if (!rowText) continue;
 
     let rank = null;
-    if (source.key === "fantasypros_rankings") {
-      const match = row.match(/<td[^>]*sticky-cell-one[^>]*>\s*(\d{1,3})\s*<\/td>/i);
+    if (source.key === "ffc_rankings") {
+      const match = rowText.match(/^(\d{1,3})\.?\s+/);
       if (match) rank = Number(match[1]);
     } else if (source.key === "jamey" || source.key === "heath") {
       const match = row.match(/FantasyRankingsTable-td--rank[^>]*>\s*(\d{1,3})\s*<\/td>/i);
@@ -5494,15 +5494,12 @@ function buildExpertRankingPages(source = {}, week = 1) {
     }));
   }
 
-  if (source.key === "fantasypros_rankings") {
-    const offense = ["QB", "RB", "WR", "TE", "K"].map(position => ({
-      url: `https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-${position.toLowerCase()}.php?week=${currentWeek}`,
+  if (source.key === "ffc_rankings") {
+    const slugs = { QB: "qb", RB: "rb", WR: "wr", TE: "te", K: "kicker" };
+    return Object.entries(slugs).map(([position, slug]) => ({
+      url: `https://fantasyfootballcalculator.com/rankings/ppr/${slug}`,
       positions: [position]
     }));
-    return [
-      ...offense,
-      { url: "https://www.fantasypros.com/nfl/rankings/idp.php", positions: ["LB", "DL", "CB", "S"] }
-    ];
   }
 
   if (Array.isArray(source.pages) && source.pages.length) return source.pages;
@@ -5638,7 +5635,7 @@ async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 
 }
 
 async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
-  const weekKey = `rankings-v3-${String(Number(currentWeek) || 1)}`;
+  const weekKey = `rankings-ffc-v1-${String(Number(currentWeek) || 1)}`;
   const cached = RUNTIME_CACHE.expertRankings.get(weekKey);
   if (cached && cacheFresh(cached.at, CACHE_TTL.expertRankingsMs)) {
     return { ...cached.value, cached: true };
