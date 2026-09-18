@@ -4946,65 +4946,104 @@ function extractNbcStories(html = "") {
 
   const stories = [];
   const seen = new Set();
+  const headlineRegex = /<h3[^>]*class="[^"]*PlayerNewsPost-headline[^"]*"[^>]*>/gi;
+  const headlineStarts = [...raw.matchAll(headlineRegex)];
 
-  const cleanNbcBody = value => String(value || "")
-    .replace(/\bPersonalize your Rotoworld feed by favoriting players\b/gi, " ")
-    .replace(/\bLink copied to clipboard!?\b/gi, " ")
-    .replace(/\bPlayer Stats\b/gi, " ")
-    .replace(/\bRecap\b/gi, " ")
-    .replace(/\bMore\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\- ]{1,70}\s+News\b/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const cleanHtmlFragment = value => decodeHtmlEntities(
+    String(value || "")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
 
-  const addStory = (playerName, body) => {
-    const name = String(playerName || "").replace(/\s+/g, " ").trim();
-    const text = cleanNbcBody(body);
-    if (!name || text.length < 45 || text.length > 2600) return;
-
-    const key = `${normalize(name)}|${normalize(text).slice(0, 650)}`;
-    if (!key || seen.has(key)) return;
-    seen.add(key);
-
-    // Internal marker lets extractItemsFromSource bind the card to the actual
-    // Rotoworld subject instead of every teammate mentioned in the analysis.
-    stories.push(`@@NBC_PLAYER:${name}@@ ${text}`);
+  const firstCapture = (pattern, value) => {
+    const match = String(value || "").match(pattern);
+    return match ? cleanHtmlFragment(match[1]) : "";
   };
 
-  // NBC's player-news page is structured as one card per player:
-  // Player Name -> TEAM Position # -> Player Stats -> news/analysis -> Recap -> More Player News.
-  // Parse those boundaries directly so neighboring cards and UI text never merge.
-  const plain = cleanSourceText(raw.slice(0, 900000));
-  const cardRegex = /([A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\-]+){1,4})\s+(?:[A-Z]{2,3}|Free Agent)\s+(?:Quarterback|Running Back|Wide Receiver|Tight End|Linebacker|Cornerback|Safety|Defensive(?:\s+(?:End|Tackle|Back))?|Kicker)\s+#?\d*\s+Player Stats\s+(?:Personalize your Rotoworld feed by favoriting players\s+)?([\s\S]*?)\s+Recap\s+More\s+\1\s+News\b/gi;
+  for (let i = 0; i < headlineStarts.length; i += 1) {
+    const current = headlineStarts[i];
+    const previousHeadlineStart = i > 0 ? (headlineStarts[i - 1].index || 0) : 0;
+    const headlineStart = current.index || 0;
+    const nextHeadlineStart = headlineStarts[i + 1]?.index || raw.length;
 
-  for (const match of plain.matchAll(cardRegex)) {
-    addStory(match[1], match[2]);
-    if (stories.length >= 80) break;
-  }
+    // NBC places player metadata and the story-specific share URL before the
+    // headline, while analysis/byline/type/timestamp follow it.
+    const before = raw.slice(Math.max(previousHeadlineStart, headlineStart - 8000), headlineStart);
+    const after = raw.slice(headlineStart, nextHeadlineStart);
 
-  if (stories.length) return stories;
+    const headline = firstCapture(
+      /PlayerNewsPost-headline[^>]*>([\s\S]*?)<\/h3>/i,
+      after
+    );
+    if (!headline) continue;
 
-  // Markup fallback: split around Player Stats, but derive the subject from the
-  // immediately preceding team/position header and stop at that same player's
-  // More ... News marker. This is intentionally conservative: a clean smaller
-  // NBC feed is better than merged cards attributed to the wrong Zoo player.
-  const statsRegex = /\bPlayer Stats\b/gi;
-  const statsMatches = [...plain.matchAll(statsRegex)].slice(0, 100);
+    let analysis = firstCapture(
+      /PlayerNewsPost-analysis[^>]*>([\s\S]*?)<\/div>/i,
+      after
+    );
 
-  for (let i = 0; i < statsMatches.length; i += 1) {
-    const statsIndex = statsMatches[i].index || 0;
-    const before = plain.slice(Math.max(0, statsIndex - 260), statsIndex);
-    const header = before.match(/([A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\-]+){1,4})\s+(?:[A-Z]{2,3}|Free Agent)\s+(?:Quarterback|Running Back|Wide Receiver|Tight End|Linebacker|Cornerback|Safety|Defensive(?:\s+(?:End|Tackle|Back))?|Kicker)\s+#?\d*\s*$/i);
-    if (!header) continue;
+    let authorName = firstCapture(
+      /PlayerNewsPost-author[^>]*>([\s\S]*?)<\/(?:a|div|span)>/i,
+      after
+    ).replace(/^[-–—]\s*/, "").trim();
 
-    const playerName = header[1].trim();
-    const after = plain.slice(statsIndex + String(statsMatches[i][0] || "").length, Math.min(plain.length, statsIndex + 2800));
-    const endMarker = new RegExp(`\\bRecap\\s+More\\s+${escapeRegExp(playerName)}\\s+News\\b`, "i");
-    const endMatch = after.match(endMarker);
-    const body = endMatch && Number.isFinite(endMatch.index)
-      ? after.slice(0, endMatch.index)
-      : after.slice(0, 1800);
+    // Some NBC cards nest the byline inside the analysis element. Keep the
+    // author as its own field and remove the duplicated trailing byline.
+    if (authorName && analysis) {
+      analysis = analysis
+        .replace(new RegExp(`\\s*[-–—]\\s*${escapeRegExp(authorName)}\\s*$`, "i"), "")
+        .trim();
+    }
 
-    addStory(playerName, body);
+    const storyType = firstCapture(
+      /PlayerNewsPost-type[^>]*>([\s\S]*?)<\/div>/i,
+      after
+    );
+
+    const timeMatch = after.match(
+      /PlayerNewsPost-date[^>]*data-date="([^"]+)"/i
+    );
+    const publishedAt = timeMatch ? String(timeMatch[1] || "").trim() : "";
+
+    const shareUrls = [...before.matchAll(/data-share-url="([^"]+)"/gi)];
+    const storyUrl = shareUrls.length
+      ? decodeHtmlEntities(String(shareUrls[shareUrls.length - 1][1] || "").trim())
+      : "";
+
+    const playerMatches = [...before.matchAll(/data-object-name="([^"]+)"/gi)];
+    const playerName = playerMatches.length
+      ? decodeHtmlEntities(String(playerMatches[playerMatches.length - 1][1] || "").trim())
+      : "";
+
+    const sourceMatch = headline.match(
+      /^(?:NFL Network(?:[’']s)?|ESPN(?:[’']s)?|FOX Sports(?:[’']s)?|CBS Sports(?:[’']s)?)\s+([A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3})\s+(?:reports?|reported|says?|said)\b/i
+    );
+    const originalSource = sourceMatch ? String(sourceMatch[1] || "").trim() : "";
+
+    const text = `${headline}${analysis ? ` ${analysis}` : ""}`.trim();
+    const key = normalize(`${playerName}|${headline}|${publishedAt}`);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+
+    stories.push({
+      text,
+      headline,
+      matchText: playerName || headline,
+      playerName,
+      body: analysis,
+      newsBody: analysis,
+      authorName,
+      storyType,
+      originalSource,
+      storyUrl,
+      link: storyUrl,
+      publishedAt: publishedAt || new Date().toISOString(),
+      timestampEstimated: !publishedAt
+    });
+
     if (stories.length >= 80) break;
   }
 
@@ -5027,57 +5066,47 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
   }
 
   for (const rawStory of stories) {
-    let story = String(rawStory || "");
-    let direct;
+    const story = typeof rawStory === "string"
+      ? { text: rawStory, matchText: rawStory }
+      : rawStory;
+    const text = String(story.text || "").trim();
+    if (!text) continue;
 
-    if (source.key === "nbcsports") {
-      const subjectMatch = story.match(/^@@NBC_PLAYER:([^@]+)@@\s*/);
-      const subjectName = subjectMatch ? subjectMatch[1].trim() : "";
-      story = story.replace(/^@@NBC_PLAYER:[^@]+@@\s*/, "").trim();
+    const subjectText = String(
+      story.matchText || story.playerName || story.headline || text.slice(0, 260)
+    );
+    if (/\b(?:D\/ST|DST|team defense|defense\/special teams)\b/i.test(subjectText)) continue;
 
-      // NBC analysis frequently mentions several teammates. Attribute the card
-      // only to the player whose Rotoworld card this actually is.
-      direct = subjectName
-        ? focusPlayers.filter(player => normalize(player?.name || "") === normalize(subjectName))
-        : findMatchingLeaguePlayers(story, focusPlayers);
-    } else {
-      direct = findMatchingLeaguePlayers(story, focusPlayers);
+    let direct = findMatchingLeaguePlayers(subjectText, focusPlayers);
+    if (story.playerName && !direct.length) {
+      direct = findMatchingLeaguePlayers(story.playerName, focusPlayers);
     }
-
     if (!direct.length) continue;
 
-    // Keep each intelligence item tied only to players actually named in that
-    // individual story. Team/context effects are calculated later by the engine.
-    const playerNames = [...new Set(direct.map(player => player.name).filter(Boolean))].slice(0, 5);
+    const playerNames = [...new Set(direct.map(player => player.name).filter(Boolean))].slice(0, 3);
     if (!playerNames.length) continue;
 
-    let publishedAt;
+    const publishedAt = source.type === "PLAYER_NEWS"
+      ? (story.publishedAt || parseNewsTimestamp(text, pagePublishedAt))
+      : (pagePublishedAt || new Date().toISOString());
 
-if (source.type === "PLAYER_NEWS") {
-  if (source.key === "nbcsports") {
-    publishedAt =
-      parseNewsTimestamp(story, "") ||
-      new Date().toISOString();
-  } else {
-    publishedAt =
-      parseNewsTimestamp(story, pagePublishedAt);
-  }
-} else {
-  publishedAt =
-    pagePublishedAt ||
-    new Date().toISOString();
-}
-
-    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(story).slice(0, 320)}`;
+    const key = `${source.key}|${normalize(playerNames.join("|"))}|${normalize(story.headline || text).slice(0, 320)}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
     items.push({
       author: source.label,
       handle: source.key,
-      text: story.slice(0, 1400),
-      title: `${source.label}: ${playerNames.join(", ")}`,
-      link: source.url,
+      text: text.slice(0, 1600),
+      headline: String(story.headline || "").slice(0, 500),
+      newsBody: String(story.newsBody || story.body || "").slice(0, 1400),
+      fantasyImpact: String(story.fantasyImpact || "").slice(0, 1000),
+      newsAuthor: String(story.authorName || "").slice(0, 120),
+      newsType: String(story.storyType || "").slice(0, 80),
+      originalSource: String(story.originalSource || "").slice(0, 120),
+      timestampEstimated: Boolean(story.timestampEstimated),
+      title: story.headline || `${source.label}: ${playerNames.join(", ")}`,
+      link: story.storyUrl || story.link || source.url,
       publishedAt,
       guid: key,
       sourceType: source.type,
@@ -5086,7 +5115,7 @@ if (source.type === "PLAYER_NEWS") {
       playerNames
     });
 
-    if (items.length >= 25) break;
+    if (items.length >= 40) break;
   }
 
   return items;
