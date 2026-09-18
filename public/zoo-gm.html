@@ -1473,11 +1473,24 @@
         : esc(presentation.headline);
       const estimated = post.timestampEstimated ? " · live-feed time" : "";
 
+      const isNbc = String(post.sourceKey || "").toLowerCase() === "nbcsports";
+      const nbcAuthor = String(post.newsAuthor || "").trim();
+      const nbcType = String(post.newsType || "").trim();
+      const originalSource = String(post.originalSource || "").trim();
+      const nbcMeta = isNbc
+        ? `${nbcType ? `${esc(nbcType)} · ` : ""}${esc(formatTime(post.publishedAt))}${esc(estimated)}`
+        : `${esc(presentation.source)} · ${esc(formatTime(post.publishedAt))}${esc(estimated)}`;
+      const nbcSourceLine = isNbc
+        ? `<div class="news-story-meta"><strong>Source:</strong> ${post.link ? `<a href="${esc(post.link)}" target="_blank" rel="noopener">NBC Sports Rotoworld</a>` : "NBC Sports Rotoworld"}${originalSource ? ` · <strong>Original report:</strong> ${esc(originalSource)}` : ""}</div>`
+        : "";
+
       return `<article class="news-card">
         ${tags.length ? `<div class="tags player-context">${tags.join("")}</div>` : ""}
         <div class="news-story-headline">${headline}</div>
-        <div class="news-story-meta">${esc(presentation.source)} · ${esc(formatTime(post.publishedAt))}${esc(estimated)}</div>
         ${presentation.body ? `<div class="news-story-body">${esc(presentation.body)}</div>` : ""}
+        ${isNbc && nbcAuthor ? `<div class="news-story-meta">— ${esc(nbcAuthor)}</div>` : ""}
+        <div class="news-story-meta">${nbcMeta}</div>
+        ${nbcSourceLine}
         ${presentation.impact ? `<div class="news-story-impact"><strong>Fantasy Impact:</strong> ${esc(presentation.impact)}</div>` : ""}
         <div class="meter-row">
           <span class="tag">${esc(i.primaryEvent || "GENERAL_NEWS")}</span>
@@ -2152,16 +2165,25 @@
       const players = intel.players || [];
       const primary = (post.playerNames || [])[0] || players[0]?.name || post.title || "Player Update";
       const p = newsPresentation(post);
-      const link = post.link ? `<a href="${esc(post.link)}" target="_blank" rel="noopener">Source</a>` : "";
+      const link = post.link ? `<a href="${esc(post.link)}" target="_blank" rel="noopener">NBC Sports Rotoworld</a>` : "";
       const tags = [intel.actionTier, intel.primaryCategory]
         .concat(players.slice(0,2).map(player => player.classification || player.ownershipStatus))
         .filter(Boolean);
+      const isNbc = String(post.sourceKey || "").toLowerCase() === "nbcsports";
+      const nbcAuthor = String(post.newsAuthor || "").trim();
+      const nbcType = String(post.newsType || "").trim();
+      const originalSource = String(post.originalSource || "").trim();
+      const meta = isNbc
+        ? `${nbcType ? `${esc(nbcType)} · ` : ""}${esc(formatTime(post.publishedAt))}${post.timestampEstimated ? " · live-feed time" : ""}`
+        : `${esc(p.source)} · ${esc(formatTime(post.publishedAt))}${post.timestampEstimated ? " · live-feed time" : ""}`;
       return `<div class="player-news-card">
         <div class="player-news-title">${esc(primary)}</div>
         <div class="news-story-headline">${esc(p.headline)}</div>
-        <div class="player-news-meta">${esc(p.source)} · ${esc(formatTime(post.publishedAt))}${post.timestampEstimated ? " · live-feed time" : ""}${link ? ` · ${link}` : ""}</div>
-        ${tags.length ? `<div class="tags player-context">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div>` : ""}
         ${p.body ? `<div class="player-news-text">${esc(p.body)}</div>` : ""}
+        ${isNbc && nbcAuthor ? `<div class="player-news-meta">— ${esc(nbcAuthor)}</div>` : ""}
+        <div class="player-news-meta">${meta}</div>
+        ${isNbc ? `<div class="player-news-meta"><strong>Source:</strong> ${link || "NBC Sports Rotoworld"}${originalSource ? ` · <strong>Original report:</strong> ${esc(originalSource)}` : ""}</div>` : (link ? `<div class="player-news-meta">${link}</div>` : "")}
+        ${tags.length ? `<div class="tags player-context">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div>` : ""}
         ${p.impact ? `<div class="news-story-impact"><strong>Fantasy Impact:</strong> ${esc(p.impact)}</div>` : ""}
       </div>`;
     }).join("");
