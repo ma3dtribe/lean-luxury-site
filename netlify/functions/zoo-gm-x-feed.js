@@ -4951,6 +4951,10 @@ function extractNbcStories(html = "") {
 
   const addStory = value => {
     const story = String(value || "")
+      .replace(/\bPlayer Stats\b/gi, " ")
+      .replace(/\bPersonalize your Rotoworld feed by favoriting players\b/gi, " ")
+      .replace(/\bRecap\b/gi, " ")
+      .replace(/\bMore [A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\- ]{1,70} News\b/gi, " ")
       .replace(/\s+/g, " ")
       .trim();
 
@@ -5005,6 +5009,13 @@ function extractNbcStories(html = "") {
 
     addStory(story);
     if (stories.length >= 60) break;
+  }
+
+  // If NBC supplied its normal Player Stats cards, those boundaries are the
+  // cleanest representation of one Rotoworld article per item. Do not also run
+  // the looser timestamp/block fallbacks, which can join adjacent articles.
+  if (stories.length >= 3) {
+    return stories.slice(0, 60);
   }
 
   // Path 2: NBC's current Rotoworld feed often renders cards as plain story
@@ -5635,7 +5646,7 @@ async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 
 }
 
 async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
-  const weekKey = `rankings-ffc-v1-${String(Number(currentWeek) || 1)}`;
+  const weekKey = `rankings-ffc-v2-${String(Number(currentWeek) || 1)}`;
   const cached = RUNTIME_CACHE.expertRankings.get(weekKey);
   if (cached && cacheFresh(cached.at, CACHE_TTL.expertRankingsMs)) {
     return { ...cached.value, cached: true };
