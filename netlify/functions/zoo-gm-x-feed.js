@@ -4954,6 +4954,63 @@ function extractNbcStories(html = "") {
   const seen = new Set();
   const plain = cleanSourceText(raw);
 
+  // NBC structured-card path (Sept. 2026 markup).
+  // Extract only the fields that belong to one PlayerNewsPost card so UI text
+  // such as "Link copied to clipboard!", "More ... News", and neighboring
+  // stories cannot bleed into the Rotoworld story body.
+  const headlineMarker = /<h3\s+class=["']PlayerNewsPost-headline["'][^>]*>/gi;
+  const headlineMatches = [...raw.matchAll(headlineMarker)].slice(0, 100);
+
+  for (let i = 0; i < headlineMatches.length; i += 1) {
+    const start = headlineMatches[i].index || 0;
+    const nextStart = headlineMatches[i + 1]?.index || raw.length;
+    const cardStart = Math.max(0, start - 2200);
+    const cardEnd = Math.min(raw.length, nextStart, start + 9000);
+    const card = raw.slice(cardStart, cardEnd);
+
+    const headlineMatch = card.match(
+      /<h3\s+class=["']PlayerNewsPost-headline["'][^>]*>([\s\S]*?)<\/h3>/i
+    );
+    const analysisMatch = card.match(
+      /<div\s+class=["']PlayerNewsPost-analysis["'][^>]*>([\s\S]*?)(?=<div\s+class=["']PlayerNewsPost-author["'])/i
+    );
+    const authorMatch = card.match(
+      /<div\s+class=["']PlayerNewsPost-author["'][^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/i
+    );
+    const dateMatch = card.match(
+      /class=["']PlayerNewsPost-date["'][^>]*data-date=["']([^"']+)["']/i
+    );
+    const sourceMatch = card.match(
+      /<div\s+class=["']PlayerNewsPost-source["'][^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/i
+    );
+
+    const headline = cleanSourceText(headlineMatch?.[1] || "");
+    const analysis = cleanSourceText(analysisMatch?.[1] || "");
+    const author = cleanSourceText(authorMatch?.[1] || "");
+    const originalSource = cleanSourceText(sourceMatch?.[1] || "");
+    const publishedAt = String(dateMatch?.[1] || "").trim();
+
+    if (!headline || headline.length < 35) continue;
+
+    const parts = [`News: ${headline}`];
+    if (analysis) parts.push(`Rotoworld Analysis: ${analysis}`);
+    if (author) parts.push(`Rotoworld Author: ${author}`);
+    if (originalSource) parts.push(`Original Source: ${originalSource}`);
+    if (publishedAt) parts.push(`Published: ${publishedAt}`);
+
+    const story = parts.join(" ").replace(/\s+/g, " ").trim();
+    const key = normalize(story).slice(0, 650);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    stories.push(story);
+  }
+
+  // When NBC's structured PlayerNewsPost markup is present, use it exclusively.
+  // The older fallbacks below remain available for future/alternate NBC markup.
+  if (stories.length) {
+    return stories.slice(0, 100);
+  }
+
   const addStory = value => {
     const story = String(value || "")
       .replace(/\bPlayer Stats\b/gi, " ")
@@ -5122,7 +5179,13 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
 
 if (source.type === "PLAYER_NEWS") {
   if (source.key === "nbcsports") {
+    const structuredDate = String(story || "").match(
+      /\bPublished:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)\b/i
+    );
     publishedAt =
+      (structuredDate && Number.isFinite(new Date(structuredDate[1]).getTime())
+        ? new Date(structuredDate[1]).toISOString()
+        : "") ||
       parseNewsTimestamp(story, "") ||
       new Date().toISOString();
   } else {
