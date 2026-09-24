@@ -1100,12 +1100,13 @@
                 <th>Slot</th>
                 <th>Player</th>
                 <th>Pos</th>
+                <th>Player Score</th>
               </tr>
             </thead>
 
             <tbody id="rosterBody">
               <tr>
-                <td colspan="3">Loading...</td>
+                <td colspan="4">Loading...</td>
               </tr>
             </tbody>
 
@@ -1716,7 +1717,7 @@
     const roster = getZooRoster();
 
     if (!roster.length) {
-      body.innerHTML = '<tr><td colspan="3" class="empty">No roster data.</td></tr>';
+      body.innerHTML = '<tr><td colspan="4" class="empty">No roster data.</td></tr>';
       return;
     }
 
@@ -1734,11 +1735,17 @@
     sorted.forEach(player => {
       const group = rosterGroup(player);
       if (group !== lastGroup) {
-        rows.push(`<tr class="roster-section-row"><td colspan="3">${esc(group)}</td></tr>`);
+        rows.push(`<tr class="roster-section-row"><td colspan="4">${esc(group)}</td></tr>`);
         lastGroup = group;
       }
 
       const team = player.nflTeam || player.proTeam || player.team || "";
+      const rosterScores = intelligenceData?.zooRosterScores || [];
+      const scoreEntry = rosterScores.find(item =>
+        (item.playerId != null && player.playerId != null && String(item.playerId) === String(player.playerId)) ||
+        String(item.name || "").toLowerCase() === String(player.name || "").toLowerCase()
+      );
+      const playerScore = Number.isFinite(Number(scoreEntry?.playerScore)) ? Number(scoreEntry.playerScore) : null;
       rows.push(`
         <tr>
           <td class="roster-slot">${esc(rosterSlotLabel(player))}</td>
@@ -1747,6 +1754,7 @@
             ${team ? `<div class="roster-player-meta">${esc(team)}</div>` : ""}
           </td>
           <td>${esc(player.position)}</td>
+          <td><strong>${playerScore == null ? "—" : esc(playerScore)}</strong></td>
         </tr>
       `);
     });
