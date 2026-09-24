@@ -391,9 +391,69 @@ function getPoolEntry(source) {
 }
 
 
+function finiteNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+
+function playerProductionSnapshot(
+  player,
+  scoringPeriodId = null
+) {
+  const stats = Array.isArray(player?.stats)
+    ? player.stats
+    : [];
+
+  const rows = stats
+    .map(stat => ({
+      seasonId: finiteNumber(stat?.seasonId),
+      scoringPeriodId: finiteNumber(stat?.scoringPeriodId),
+      statSourceId: finiteNumber(stat?.statSourceId),
+      statSplitTypeId: finiteNumber(stat?.statSplitTypeId),
+      appliedTotal: finiteNumber(stat?.appliedTotal ?? stat?.points),
+      appliedAverage: finiteNumber(stat?.appliedAverage)
+    }))
+    .filter(stat => stat.appliedTotal !== null || stat.appliedAverage !== null);
+
+  // ESPN statSourceId 0 is actual production and 1 is projection.
+  const actualRows = rows.filter(stat => stat.statSourceId === 0);
+  const projectedRows = rows.filter(stat => stat.statSourceId === 1);
+
+  const seasonActual = actualRows.find(stat => stat.scoringPeriodId === 0) || null;
+  const seasonProjected = projectedRows.find(stat => stat.scoringPeriodId === 0) || null;
+
+  const requestedWeek = finiteNumber(scoringPeriodId);
+  const weekActual = requestedWeek === null
+    ? null
+    : actualRows.find(stat => stat.scoringPeriodId === requestedWeek) || null;
+  const weekProjected = requestedWeek === null
+    ? null
+    : projectedRows.find(stat => stat.scoringPeriodId === requestedWeek) || null;
+
+  const ratings = player?.ratings?.["0"] || player?.ratings?.[0] || {};
+
+  return {
+    seasonActualPoints: seasonActual?.appliedTotal ?? null,
+    seasonActualAverage: seasonActual?.appliedAverage ?? null,
+    seasonProjectedPoints: seasonProjected?.appliedTotal ?? null,
+    seasonProjectedAverage: seasonProjected?.appliedAverage ?? null,
+    currentWeekPoints: weekActual?.appliedTotal ?? null,
+    currentWeekProjectedPoints: weekProjected?.appliedTotal ?? null,
+    espnPositionalRanking: finiteNumber(ratings?.positionalRanking),
+    espnStatCategoryRanking: finiteNumber(ratings?.statCategoryRanking),
+    espnTotalRanking: finiteNumber(ratings?.totalRanking),
+    espnTotalRating: finiteNumber(ratings?.totalRating),
+    hasActualProduction: actualRows.some(stat => Number(stat.appliedTotal || 0) > 0),
+    statRecordCount: rows.length
+  };
+}
+
+
 function normalizePlayer(
   source,
-  proTeamMap
+  proTeamMap,
+  scoringPeriodId = null
 ) {
   const player =
     getPlayerObject(source);
@@ -435,6 +495,12 @@ function normalizePlayer(
 
   const ownership =
     player.ownership || {};
+
+  const production =
+    playerProductionSnapshot(
+      player,
+      scoringPeriodId
+    );
 
   return {
     playerId:
@@ -491,6 +557,8 @@ function normalizePlayer(
       ownership.percentStarted ??
       null,
 
+    production,
+
     onTeamId:
       Number(
         source?.onTeamId ||
@@ -505,12 +573,14 @@ function normalizePlayer(
 
 function normalizeRosterEntry(
   entry,
-  proTeamMap
+  proTeamMap,
+  scoringPeriodId = null
 ) {
   const player =
     normalizePlayer(
       entry,
-      proTeamMap
+      proTeamMap,
+      scoringPeriodId
     );
 
   if (!player) {
@@ -572,7 +642,8 @@ function normalizeRosterEntry(
 function normalizeTeam(
   team,
   memberMap,
-  proTeamMap
+  proTeamMap,
+  scoringPeriodId = null
 ) {
   const ownerIds =
     Array.isArray(team.owners)
@@ -598,7 +669,8 @@ function normalizeTeam(
         entry =>
           normalizeRosterEntry(
             entry,
-            proTeamMap
+            proTeamMap,
+            scoringPeriodId
           )
       )
       .filter(Boolean);
@@ -975,7 +1047,8 @@ function normalizeTransaction(
 
 function normalizeAvailablePlayers(
   data,
-  proTeamMap
+  proTeamMap,
+  scoringPeriodId = null
 ) {
   return (
     data?.players ||
@@ -986,7 +1059,8 @@ function normalizeAvailablePlayers(
         const player =
           normalizePlayer(
             source,
-            proTeamMap
+            proTeamMap,
+            scoringPeriodId
           );
 
         if (!player) {
@@ -1059,7 +1133,8 @@ function normalizeBoxscorePlayer(
   const player =
     normalizePlayer(
       entry,
-      proTeamMap
+      proTeamMap,
+      reportWeek
     );
 
   if (!player) {
@@ -1434,75 +1509,6 @@ function buildCommishReport({
 }
 
 
-
-// TEMPORARY DIAGNOSTIC: expose raw ESPN records for two test players so we can
-// verify which production/stat fields ESPN returns before normalizePlayer()
-// removes fields that Zoo GM does not currently use.
-function buildRawPlayerDiagnostics({ core = {}, availableData = {}, watchListData = {} } = {}) {
-  const targets = [
-    { name: "Cedric Gray", nflTeam: "TEN" },
-    { name: "Justin Jefferson", nflTeam: "CLE" }
-  ];
-
-  const proTeamAbbrevById = new Map();
-  const seasonTeams = core?.settings?.proTeams || [];
-  for (const team of seasonTeams) {
-    proTeamAbbrevById.set(Number(team.id), String(team.abbrev || team.abbreviation || "").toUpperCase());
-  }
-
-  const playerFrom = value =>
-    value?.playerPoolEntry?.player ||
-    value?.player ||
-    null;
-
-  const describe = (location, value) => {
-    const player = playerFrom(value);
-    if (!player) return null;
-    const name = String(player.fullName || [player.firstName, player.lastName].filter(Boolean).join(" ")).trim();
-    const proTeamId = Number(player.proTeamId || 0);
-    return {
-      location,
-      name,
-      proTeamId,
-      nflTeam: proTeamAbbrevById.get(proTeamId) || "",
-      raw: value
-    };
-  };
-
-  const candidates = [];
-
-  for (const [teamIndex, team] of (core?.teams || []).entries()) {
-    for (const [entryIndex, entry] of (team?.roster?.entries || []).entries()) {
-      const row = describe(`core.teams[${teamIndex}].roster.entries[${entryIndex}]`, entry);
-      if (row) candidates.push(row);
-    }
-  }
-
-  for (const [index, entry] of (availableData?.players || []).entries()) {
-    const row = describe(`availableData.players[${index}]`, entry);
-    if (row) candidates.push(row);
-  }
-
-  for (const [index, entry] of (watchListData?.players || []).entries()) {
-    const row = describe(`watchListData.players[${index}]`, entry);
-    if (row) candidates.push(row);
-  }
-
-  const matches = [];
-  for (const target of targets) {
-    const targetRows = candidates.filter(row => {
-      if (row.name !== target.name) return false;
-      if (target.nflTeam && row.nflTeam && row.nflTeam !== target.nflTeam) return false;
-      return true;
-    });
-    matches.push({ target, records: targetRows });
-  }
-
-  return {
-    purpose: "Temporary raw ESPN stat diagnostic for universal Zoo Player Score design",
-    targets: matches
-  };
-}
 
 exports.handler =
 async function (event = {}) {
@@ -2001,7 +2007,8 @@ async function (event = {}) {
             normalizeTeam(
               team,
               memberMap,
-              proTeamMap
+              proTeamMap,
+              scoringPeriodId
             )
         )
         .sort(
@@ -2056,7 +2063,8 @@ async function (event = {}) {
     const availablePlayers =
       normalizeAvailablePlayers(
         availableData,
-        proTeamMap
+        proTeamMap,
+        scoringPeriodId
       );
 
 
@@ -2066,7 +2074,8 @@ async function (event = {}) {
     const watchListPlayers =
       normalizeAvailablePlayers(
         watchListData,
-        proTeamMap
+        proTeamMap,
+        scoringPeriodId
       );
 
     const playerById =
@@ -2391,16 +2400,6 @@ async function (event = {}) {
 
         pendingTransactions,
 
-
-        ...(String(event?.queryStringParameters?.diagnostic || "") === "1"
-          ? {
-              diagnosticRawEspnPlayers: buildRawPlayerDiagnostics({
-                core,
-                availableData,
-                watchListData
-              })
-            }
-          : {}),
 
         leagueSettings: {
 
