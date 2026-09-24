@@ -5969,6 +5969,53 @@ function dedupeSourceItems(items = []) {
   return output;
 }
 
+function buildEspnPlayerDiagnostic(espnData = {}) {
+  const targets = new Set(["cedric gray", "justin jefferson"]);
+  const matches = [];
+  const seen = new Set();
+
+  function add(player, location = "") {
+    if (!player || typeof player !== "object") return;
+    const name = normalize(player.name || player.fullName || player.displayName || "");
+    if (!targets.has(name)) return;
+
+    const key = `${location}|${player.playerId ?? player.id ?? ""}|${name}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    matches.push({
+      location,
+      raw: player
+    });
+  }
+
+  add(espnData?.zoo, "espnData.zoo");
+
+  for (const player of espnData?.zoo?.roster || []) {
+    add(player, "espnData.zoo.roster");
+  }
+
+  for (const team of espnData?.teams || []) {
+    for (const player of team?.roster || []) {
+      add(player, `espnData.teams[${team?.teamId ?? "?"}].roster`);
+    }
+  }
+
+  for (const player of espnData?.availablePlayers || []) {
+    add(player, "espnData.availablePlayers");
+  }
+
+  for (const player of espnData?.watchList || []) {
+    add(player, "espnData.watchList");
+  }
+
+  return {
+    purpose: "Temporary raw ESPN diagnostic for universal Zoo Player Score design",
+    topLevelEspnKeys: Object.keys(espnData || {}).sort(),
+    players: matches
+  };
+}
+
 exports.handler =
 async function () {
   const runStartedAt = Date.now();
@@ -6473,6 +6520,7 @@ async function () {
           },
 
           sourceStatus,
+          diagnosticEspnPlayers: buildEspnPlayerDiagnostic(espnData),
           expertRankings: {
             week: expertRankings.week,
             source: expertRankings.source,
