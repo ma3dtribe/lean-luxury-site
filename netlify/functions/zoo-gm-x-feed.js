@@ -6243,6 +6243,20 @@ async function () {
         8
       );
 
+    // Give every Zoo roster player the exact same universal 0-100 Player Score
+    // used everywhere else in Zoo GM. Roster status does not change the score.
+    const zooRosterScores = getZooRoster(espnData).map(player => {
+      const universal = universalPlayerScore(player, posts);
+      return {
+        playerId: player.playerId || null,
+        name: player.name || "",
+        position: canonicalPosition(player.position),
+        nflTeam: player.nflTeam || "",
+        playerScore: universal.score,
+        components: universal.components
+      };
+    });
+
     const expendability =
       buildExpendability(
         espnData,
@@ -6557,6 +6571,7 @@ async function () {
           watchList,
           watchListIntelligence,
           suggestedWatchList,
+          zooRosterScores,
           expendability,
           lineupAlerts,
           replacementRecommendations,
