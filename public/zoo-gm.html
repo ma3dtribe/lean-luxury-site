@@ -218,6 +218,15 @@
     .news-story-body { color: #e6edf3; font-size: 16px; line-height: 1.55; }
     .news-story-impact { margin-top: 12px; color: #e6edf3; font-size: 16px; line-height: 1.55; }
     .news-story-impact strong { color: #f3f6f9; }
+    .rotoworld-card { padding: 18px 20px; }
+    .rotoworld-source { color: var(--green); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+    .rotoworld-player { color: #f3f6f9; font-size: 15px; font-weight: 900; margin-bottom: 10px; }
+    .rotoworld-headline { color: #f3f6f9; font-size: 18px; line-height: 1.35; font-weight: 900; margin-bottom: 10px; }
+    .rotoworld-analysis { color: #d8e0e7; font-size: 14px; line-height: 1.55; margin-bottom: 10px; }
+    .rotoworld-byline { color: var(--muted); font-size: 11px; margin-bottom: 12px; }
+    .rotoworld-more { display:inline-block; color:var(--green); font-size:11px; font-weight:900; letter-spacing:.04em; text-decoration:none; margin:2px 0 10px; }
+    .rotoworld-more:hover { text-decoration:underline; }
+    @media (max-width:700px) { .rotoworld-card { padding:14px; } .rotoworld-headline { font-size:16px; } }
 
     .tags {
       display: flex;
@@ -1481,6 +1490,31 @@
         ? `<a href="${esc(post.link)}" target="_blank" rel="noopener">${esc(presentation.headline)}</a>`
         : esc(presentation.headline);
       const estimated = post.timestampEstimated ? " · live-feed time" : "";
+      const isRotoworld = String(post.sourceKey || post.handle || "").toLowerCase() === "nbcsports";
+
+      if (isRotoworld) {
+        const primaryPlayer = (post.playerNames || [])[0] || "Player Update";
+        const byline = post.author && post.author !== "NBC Sports Rotoworld" ? `By ${post.author}` : "NBC Sports Rotoworld";
+        const moreLink = post.link
+          ? `<a class="rotoworld-more" href="${esc(post.link)}" target="_blank" rel="noopener">MORE ${esc(primaryPlayer.toUpperCase())} NEWS →</a>`
+          : "";
+
+        return `<article class="news-card rotoworld-card">
+          ${tags.length ? `<div class="tags player-context">${tags.join("")}</div>` : ""}
+          <div class="rotoworld-source">NBC SPORTS ROTOWORLD</div>
+          <div class="rotoworld-player">${esc(primaryPlayer)}</div>
+          <div class="rotoworld-headline">${headline}</div>
+          ${presentation.body ? `<div class="rotoworld-analysis">${esc(presentation.body)}</div>` : ""}
+          <div class="rotoworld-byline">${esc(byline)} · ${esc(formatTime(post.publishedAt))}${esc(estimated)}</div>
+          ${moreLink}
+          <div class="meter-row">
+            <span class="tag">${esc(i.primaryEvent || "GENERAL_NEWS")}</span>
+            <span class="action-tier ${esc(actionTier.replace(/\s+/g, "-"))}">${esc(actionTier)}</span>
+            <span class="tag">${esc(primaryCategory)}</span>
+            <span class="tag zoo">${esc(recommendation)}</span>
+          </div>
+        </article>`;
+      }
 
       return `<article class="news-card">
         ${tags.length ? `<div class="tags player-context">${tags.join("")}</div>` : ""}
@@ -2068,11 +2102,20 @@
         .trim();
 
       let name = typeof item.player === "string" ? item.player : (item.playerName || item.name || "");
+      if (!name && Array.isArray(item.players) && item.players.length) {
+        const first = item.players[0];
+        name = typeof first === "string" ? first : (first?.name || "");
+      }
       if (!name) {
         const m = detail.match(/^([A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3})(?=\s*\()/);
         if (m) name = m[1].trim();
       }
-      if (!name) name = "Player situation";
+
+      // Never render a generic or malformed situation card. NBC markup leakage
+      // such as data-share-url/button/icon-button means the story boundary was
+      // not clean enough to identify one player's situation reliably.
+      const malformed = /data-share-url=|icon-button|class=|<[^>]+>|PlayerNewsPost-/i.test(detail);
+      if (!name || malformed) return "";
 
       const lead = detail.split(/Fantasy Impact:/i)[0];
       const positive = /expected to play|will play|active|cleared|full practice|benefit|boost|improv|upgrade|more opportunity|larger role|increased role|expanded role|more targets|more touches|more snaps|named starter|promoted|elevated/i.test(lead);
