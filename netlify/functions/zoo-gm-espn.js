@@ -1434,6 +1434,76 @@ function buildCommishReport({
 }
 
 
+
+// TEMPORARY DIAGNOSTIC: expose raw ESPN records for two test players so we can
+// verify which production/stat fields ESPN returns before normalizePlayer()
+// removes fields that Zoo GM does not currently use.
+function buildRawPlayerDiagnostics({ core = {}, availableData = {}, watchListData = {} } = {}) {
+  const targets = [
+    { name: "Cedric Gray", nflTeam: "TEN" },
+    { name: "Justin Jefferson", nflTeam: "CLE" }
+  ];
+
+  const proTeamAbbrevById = new Map();
+  const seasonTeams = core?.settings?.proTeams || [];
+  for (const team of seasonTeams) {
+    proTeamAbbrevById.set(Number(team.id), String(team.abbrev || team.abbreviation || "").toUpperCase());
+  }
+
+  const playerFrom = value =>
+    value?.playerPoolEntry?.player ||
+    value?.player ||
+    null;
+
+  const describe = (location, value) => {
+    const player = playerFrom(value);
+    if (!player) return null;
+    const name = String(player.fullName || [player.firstName, player.lastName].filter(Boolean).join(" ")).trim();
+    const proTeamId = Number(player.proTeamId || 0);
+    return {
+      location,
+      name,
+      proTeamId,
+      nflTeam: proTeamAbbrevById.get(proTeamId) || "",
+      raw: value
+    };
+  };
+
+  const candidates = [];
+
+  for (const [teamIndex, team] of (core?.teams || []).entries()) {
+    for (const [entryIndex, entry] of (team?.roster?.entries || []).entries()) {
+      const row = describe(`core.teams[${teamIndex}].roster.entries[${entryIndex}]`, entry);
+      if (row) candidates.push(row);
+    }
+  }
+
+  for (const [index, entry] of (availableData?.players || []).entries()) {
+    const row = describe(`availableData.players[${index}]`, entry);
+    if (row) candidates.push(row);
+  }
+
+  for (const [index, entry] of (watchListData?.players || []).entries()) {
+    const row = describe(`watchListData.players[${index}]`, entry);
+    if (row) candidates.push(row);
+  }
+
+  const matches = [];
+  for (const target of targets) {
+    const targetRows = candidates.filter(row => {
+      if (row.name !== target.name) return false;
+      if (target.nflTeam && row.nflTeam && row.nflTeam !== target.nflTeam) return false;
+      return true;
+    });
+    matches.push({ target, records: targetRows });
+  }
+
+  return {
+    purpose: "Temporary raw ESPN stat diagnostic for universal Zoo Player Score design",
+    targets: matches
+  };
+}
+
 exports.handler =
 async function (event = {}) {
 
@@ -2321,6 +2391,16 @@ async function (event = {}) {
 
         pendingTransactions,
 
+
+        ...(String(event?.queryStringParameters?.diagnostic || "") === "1"
+          ? {
+              diagnosticRawEspnPlayers: buildRawPlayerDiagnostics({
+                core,
+                availableData,
+                watchListData
+              })
+            }
+          : {}),
 
         leagueSettings: {
 
