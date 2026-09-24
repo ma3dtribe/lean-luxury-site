@@ -1030,6 +1030,10 @@ function buildLeaguePlayerCatalog(
           player.injuryStatus ||
           "ACTIVE",
 
+        production:
+          player.production ||
+          {},
+
         ownershipStatus:
           "UNKNOWN",
 
@@ -1098,6 +1102,11 @@ function buildLeaguePlayerCatalog(
       player.injuryStatus ||
       current.injuryStatus ||
       "ACTIVE";
+
+    next.production =
+      player.production ||
+      current.production ||
+      {};
 
     catalog.set(
       key,
@@ -2498,6 +2507,71 @@ function expertRankingValueScore(player = {}) {
   return clamp(Math.round((rankScore * 0.90) + (confidence * 0.10)), 0, 100);
 }
 
+
+function productionSnapshot(player = {}) {
+  return player?.production && typeof player.production === "object" ? player.production : {};
+}
+function lflProductionScore(player = {}) {
+  const production = productionSnapshot(player);
+  const actualAverage = Number(production.seasonActualAverage);
+  const actualPoints = Number(production.seasonActualPoints);
+  const historicalAverage = historicalPositionAverage(player.position);
+  const history = historicalProductionIndex(player.position);
+  if (!(actualAverage > 0) || !(actualPoints > 0) || historicalAverage <= 0) {
+    return clamp(Math.round(history * 0.25), 0, 100);
+  }
+  const actual = clamp((actualAverage / historicalAverage) * 100, 0, 100);
+  return clamp(Math.round((actual * 0.80) + (history * 0.20)), 0, 100);
+}
+function roleOpportunityScore(player = {}, posts = []) {
+  const production = productionSnapshot(player);
+  const actualAverage = Number(production.seasonActualAverage);
+  const historicalAverage = historicalPositionAverage(player.position);
+  const started = clamp(Number(player.percentStarted || 0), 0, 100);
+  const role = roleOpportunitySignal(player, posts);
+  const productionRole = actualAverage > 0 && historicalAverage > 0
+    ? clamp((actualAverage / historicalAverage) * 100, 0, 100) : 0;
+  const marketRole = clamp(started * 2.25, 0, 100);
+  let score = (productionRole * 0.70) + (marketRole * 0.30) + (role.adjustment * 1.5);
+  if (productionRole === 0 && started < 1 && role.adjustment <= 0) score = Math.min(score, 8);
+  return clamp(Math.round(score), 0, 100);
+}
+function healthAvailabilityScore(player = {}) {
+  return clamp(Math.round(100 + (injuryAvailabilityAdjustment(player) * 2.5)), 0, 100);
+}
+function newsMomentumScore(player = {}, posts = []) {
+  const news = liveNewsScore(posts, player.name);
+  const role = roleOpportunitySignal(player, posts);
+  if (!news && !role.adjustment) return 50;
+  return clamp(Math.round(50 + (news * 2) + (role.adjustment * 1.5)), 0, 100);
+}
+function universalPlayerScore(player = {}, posts = []) {
+  const expert = expertRankingValueScore(player);
+  const production = lflProductionScore(player);
+  const roleOpportunity = roleOpportunityScore(player, posts);
+  const marketValue = playerMarketQuality(player);
+  const healthAvailability = healthAvailabilityScore(player);
+  const newsMomentum = newsMomentumScore(player, posts);
+  const score = clamp(Math.round(
+    ((expert == null ? 50 : expert) * 0.25) +
+    (production * 0.30) +
+    (roleOpportunity * 0.20) +
+    (marketValue * 0.10) +
+    (healthAvailability * 0.10) +
+    (newsMomentum * 0.05)
+  ), 0, 100);
+  return { score, components: {
+    expertConsensus: expert,
+    lflProductionHistoricalValue: production,
+    roleOpportunity,
+    marketValue: Math.round(marketValue),
+    healthAvailability,
+    newsMomentum,
+    production: productionSnapshot(player),
+    historicalPositionAverage: historicalPositionAverage(player.position)
+  }};
+}
+
 function blendExpertRanking(baseScore, player = {}) {
   const rankingScore = expertRankingValueScore(player);
   if (rankingScore == null) return clamp(Math.round(baseScore), 0, 100);
@@ -2565,39 +2639,7 @@ function acquisitionScore(player = {}, rosterCounts = {}, posts = [], watchConte
 }
 
 function lflBestPlayerScore(player = {}, rosterCounts = {}, posts = [], watchContext = null) {
-  const position = canonicalPosition(player.position);
-  const profile = getPositionProfile(position);
-  const marketQuality = playerMarketQuality(player);
-  const news = liveNewsScore(posts, player.name);
-  const lflValue = positionLflValue(position);
-  const history = historicalProductionIndex(position);
-  const need = rosterNeedScore(position, rosterCounts);
-  const context = candidateContext(player, watchContext);
-  const availability = playerAvailabilityContext(player, posts);
-
-  // TRUE LFL BEST-PLAYER BOARD:
-  // Player quality/market signal, LFL scoring fit, historical positional production,
-  // live role/news and availability drive the ranking. Zoo roster need is deliberately
-  // only a small tie-breaker so an elite QB, DL, CB, S, TE or K can outrank a merely
-  // useful RB/WR/LB even when Zoo already starts someone at that position.
-  let score =
-    (marketQuality * 0.36) +
-    (lflValue * 0.25) +
-    (history * 0.14) +
-    (profile.scarcity * 0.06) +
-    (profile.market * 0.04) +
-    (news * 1.10) +
-    ((need - 10) * 0.18) +
-    (context.watchPriorityBonus * 0.20) +
-    availability.totalAdjustment;
-
-  const rankingScore = expertRankingValueScore(player);
-  if (rankingScore != null) {
-    // Expert consensus is a core Watch List factor, not a small adjustment.
-    // 25% gives it weight comparable to the other major quality signals.
-    score = (score * 0.75) + (rankingScore * 0.25);
-  }
-  return clamp(Math.round(score), 0, 100);
+  return universalPlayerScore(player, posts).score;
 }
 
 function buildWatchListIntelligence(
@@ -2653,14 +2695,7 @@ function buildWatchListIntelligence(
       LFL_CONFIG.philosophy.singleCarryPositions.includes(position) &&
       currentCount >= preferred;
 
-    // The Watch List is now a true best-player-for-the-LFL board. Do not penalize
-    // QB/TE/DL/CB/S simply because Zoo currently carries one starter. Existing
-    // roster construction is only reflected by the small tie-breaker inside
-    // lflBestPlayerScore().
-    if (String(watchPlayer.priority || "").toLowerCase() === "high") score += 2;
-    if (catalogPlayer.ownershipStatus === "LFL OWNED") score -= 15;
-
-    score = clamp(Math.round(score), 0, 100);
+    score = universalPlayerScore(catalogPlayer, posts).score;
 
     let recommendation = "IGNORE";
     if (catalogPlayer.ownershipStatus === "LFL OWNED") {
@@ -2698,20 +2733,10 @@ function buildWatchListIntelligence(
       zooValueScore: score,
       recommendation,
       components: {
-        zooNeed: need,
-        lflPositionValue: lflValue,
-        positionalScarcity: profile.scarcity,
-        starterDemand: profile.starterDemand,
-        scoringLeverage: profile.scoringLeverage,
-        historicalProduction: historicalIndex,
-        liveNews: news,
-        replacementValue,
-        tradeMarketValue: profile.market,
+        ...universalPlayerScore(catalogPlayer, posts).components,
+        expertRanking: catalogPlayer.expertRanking || null,
         claimRisk,
-        injuryAvailabilityAdjustment: availability.injuryAdjustment,
-        roleOpportunityAdjustment: availability.roleAdjustment,
-        expertRankingScore: expertRankingValueScore(catalogPlayer),
-        expertRanking: catalogPlayer.expertRanking || null
+        replacementValue
       },
       injuryStatus: catalogPlayer.injuryStatus || "ACTIVE",
       historicalPositionAverage: historicalPositionAverage(position),
@@ -2789,16 +2814,7 @@ function buildSuggestedWatchList(
         percentOwned: player.percentOwned ?? null,
         percentStarted: player.percentStarted ?? null,
         components: {
-          zooNeed: rosterNeedScore(position, counts),
-          lflPositionValue: positionLflValue(position),
-          positionalScarcity: profile.scarcity,
-          starterDemand: profile.starterDemand,
-          scoringLeverage: profile.scoringLeverage,
-          liveNews: news,
-          marketQuality,
-          injuryAvailabilityAdjustment: availability.injuryAdjustment,
-          roleOpportunityAdjustment: availability.roleAdjustment,
-          expertRankingScore: expertRankingValueScore(player),
+          ...universalPlayerScore(player, posts).components,
           expertRanking: player.expertRanking || null
         },
         reasons
@@ -2841,9 +2857,7 @@ function buildBestAvailableOptions(
         watchMap.get(`name:${normalize(player.name)}`) ||
         null;
 
-      const baseScore = acquisitionScore(player, counts, posts, watchContext);
-      const watchScore = Number(watchContext?.priorityScore || 0);
-      const zooValueScore = clamp(Math.round(Math.max(baseScore, watchScore)), 0, 100);
+      const zooValueScore = universalPlayerScore(player, posts).score;
 
       return {
         ...player,
