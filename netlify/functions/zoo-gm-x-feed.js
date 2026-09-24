@@ -3393,18 +3393,31 @@ function buildOpponentIntelligence(posts = [], hours = 12) {
         ["INACTIVE", "INJURY", "PRACTICE", "DEPTH_CHART", "ROLE_WORKLOAD", "TRANSACTION"].includes(i.primaryEvent)
       );
     })
-    .map(post => ({
-      players: post.intelligence.opponentPlayers || [],
-      event: getZooUpdateEvent(
-        post.intelligence.primaryEvent,
-        post.intelligence.eventTypes || [],
-        `${post.title || ""} ${post.text || ""}`
-      ),
-      whatHappened: post.text || post.title || "",
-      source: post.author || post.handle || "Player News",
-      publishedAt: post.publishedAt || "",
-      link: post.link || ""
-    }))
+    .map(post => {
+      const players = post.intelligence.opponentPlayers || [];
+      const primaryPlayer = players[0] || null;
+      const rawText = post.text || post.title || "";
+      const whatHappened = cleanSourceText(rawText)
+        .replace(/Link copied to clipboard!/gi, " ")
+        .replace(/\s+Category:\s*.*$/i, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      return {
+        players,
+        player: typeof primaryPlayer === "string" ? primaryPlayer : (primaryPlayer?.name || ""),
+        playerName: typeof primaryPlayer === "string" ? primaryPlayer : (primaryPlayer?.name || ""),
+        event: getZooUpdateEvent(
+          post.intelligence.primaryEvent,
+          post.intelligence.eventTypes || [],
+          `${post.title || ""} ${post.text || ""}`
+        ),
+        whatHappened,
+        source: post.author || post.handle || "Player News",
+        publishedAt: post.publishedAt || "",
+        link: post.link || ""
+      };
+    })
     .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime())
     .slice(0, 5);
 }
@@ -4952,50 +4965,65 @@ function extractNbcStories(html = "") {
 
   const stories = [];
   const seen = new Set();
-  const addStory = value => {
-    let story = cleanSourceText(String(value || ""))
-      .replace(/Link copied to clipboard!/gi, " ")
-      .replace(/\bPlayer Stats\b/gi, " ")
-      .replace(/\bPersonalize your Rotoworld feed by favoriting players\b/gi, " ")
-      .replace(/\bMore [A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\- ]{1,70} News\b/gi, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    if (story.length < 70 || story.length > 3000) return;
-    const key = normalize(story).slice(0, 700);
-    if (!key || seen.has(key)) return;
-    seen.add(key);
-    stories.push(story);
-  };
-
-  // NBC currently exposes a unique data-share-url for each Rotoworld article.
-  // Use those URLs as hard card boundaries so adjacent player stories cannot be
-  // merged into one Zoo GM item.
   const marker = /data-share-url=["']([^"']*\/fantasy\/football\/player-news\/[^"']+)["']/gi;
   const matches = [...raw.matchAll(marker)].slice(0, 100);
+
   for (let i = 0; i < matches.length; i += 1) {
+    const storyUrl = String(matches[i][1] || "").replace(/&amp;/g, "&");
+    if (!storyUrl || seen.has(storyUrl)) continue;
+
     const start = matches[i].index || 0;
     const end = matches[i + 1]?.index || Math.min(raw.length, start + 12000);
     const chunk = raw.slice(start, Math.min(end, start + 12000));
-    addStory(chunk);
-  }
-  if (stories.length) return stories.slice(0, 80);
 
-  // Fallback for alternate NBC markup: keep each timestamp-centered card small.
-  const plain = cleanSourceText(raw);
-  const relativeRegex = /\b\d{1,3}\s*(?:m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days)\s+ago\b/gi;
-  const times = [...plain.matchAll(relativeRegex)].slice(0, 100);
-  for (let i = 0; i < times.length; i += 1) {
-    const current = times[i];
-    const previousEnd = i ? (times[i - 1].index || 0) + String(times[i - 1][0] || "").length : 0;
-    const start = Math.max(previousEnd, (current.index || 0) - 1700);
-    const end = Math.min(plain.length, (current.index || 0) + 650, times[i + 1]?.index || plain.length);
-    addStory(plain.slice(start, end));
+    let text = cleanSourceText(chunk)
+      .replace(/Link copied to clipboard!/gi, " ")
+      .replace(/\bPlayer Stats\b/gi, " ")
+      .replace(/\bPersonalize your Rotoworld feed by favoriting players\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // The Rotoworld card begins with its headline after the clipboard helper.
+    // Stop before the next profile/category/navigation material if it leaked
+    // into this bounded article chunk.
+    const junkAt = text.search(/\s(?:More [A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\- ]{1,70} News|Player Stats|Footer Sections of the Site)\b/i);
+    if (junkAt > 0) text = text.slice(0, junkAt).trim();
+    if (text.length < 50) continue;
+
+    const dateMatch = chunk.match(/data-date=["']([^"']+)["']/i);
+    const publishedAt = dateMatch ? dateMatch[1] : "";
+
+    // Headline is the first complete sentence in the card. This is the safest
+    // subject boundary: players mentioned later in analysis are context only.
+    const sentenceMatch = text.match(/^(.+?[.!?])(?:\s|$)/);
+    const headline = (sentenceMatch ? sentenceMatch[1] : text.slice(0, 260)).trim();
+    let remainder = text.slice(headline.length).trim();
+
+    // Rotoworld places "- Author" after the analysis. Capture it and remove
+    // category/profile spillover from the displayed analysis.
+    let author = "";
+    const authorMatch = remainder.match(/\s-\s+([A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3})(?:\s+(?:Injury|News|Transaction|Analysis|Rumor|Game Recap|Waivers?|Rankings?))?(?:\s|$)/i);
+    if (authorMatch) {
+      author = authorMatch[1].trim();
+      remainder = remainder.slice(0, authorMatch.index).trim();
+    }
+
+    remainder = remainder
+      .replace(/\s+(?:Injury|News|Transaction|Analysis|Rumor|Game Recap|Waivers?|Rankings?)\s*$/i, "")
+      .trim();
+
+    seen.add(storyUrl);
+    stories.push({
+      text: [headline, remainder].filter(Boolean).join(" "),
+      headline,
+      newsBody: remainder,
+      author,
+      link: storyUrl,
+      publishedAt
+    });
   }
 
-  if (stories.length) return stories.slice(0, 80);
-  return extractHtmlBlocks(raw.slice(0, 750000))
-    .filter(block => block.length >= 70 && block.length <= 1800)
-    .slice(0, 100);
+  return stories.slice(0, 80);
 }
 
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
@@ -5013,13 +5041,23 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
     stories = extractHtmlBlocks(String(html || "").slice(0, 350000)).slice(0, 180);
   }
 
-  for (const story of stories) {
+  for (const storyRecord of stories) {
+    const story = typeof storyRecord === "string" ? storyRecord : String(storyRecord?.text || "");
+    const storyHeadline = typeof storyRecord === "string" ? "" : String(storyRecord?.headline || "");
     const direct = findMatchingLeaguePlayers(story, focusPlayers);
     if (!direct.length) continue;
 
-    // Keep each intelligence item tied only to players actually named in that
-    // individual story. Team/context effects are calculated later by the engine.
-    const playerNames = [...new Set(direct.map(player => player.name).filter(Boolean))].slice(0, 5);
+    // For NBC, the headline determines the subject. Players mentioned only in
+    // Rotoworld analysis are context and must not become the card's player.
+    let matchedPlayers = direct;
+    if (source.key === "nbcsports" && storyHeadline) {
+      const headlinePlayers = direct.filter(player =>
+        normalize(storyHeadline).includes(normalize(player.name))
+      );
+      if (headlinePlayers.length) matchedPlayers = [headlinePlayers[0]];
+    }
+
+    const playerNames = [...new Set(matchedPlayers.map(player => player.name).filter(Boolean))].slice(0, source.key === "nbcsports" ? 1 : 5);
     if (!playerNames.length) continue;
 
     let publishedAt;
@@ -5027,6 +5065,7 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
 if (source.type === "PLAYER_NEWS") {
   if (source.key === "nbcsports") {
     publishedAt =
+      (typeof storyRecord === "object" && storyRecord?.publishedAt) ||
       parseNewsTimestamp(story, "") ||
       new Date().toISOString();
   } else {
@@ -5044,11 +5083,13 @@ if (source.type === "PLAYER_NEWS") {
     seen.add(key);
 
     items.push({
-      author: source.label,
+      author: (typeof storyRecord === "object" && storyRecord?.author) || source.label,
       handle: source.key,
       text: story.slice(0, 1400),
+      headline: (typeof storyRecord === "object" && storyRecord?.headline) || "",
+      newsBody: (typeof storyRecord === "object" && storyRecord?.newsBody) || "",
       title: `${source.label}: ${playerNames.join(", ")}`,
-      link: source.url,
+      link: (typeof storyRecord === "object" && storyRecord?.link) || source.url,
       publishedAt,
       guid: key,
       sourceType: source.type,
