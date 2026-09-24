@@ -4977,6 +4977,10 @@ function extractNbcStories(html = "") {
     const chunk = raw.slice(start, Math.min(end, start + 12000));
 
     let text = cleanSourceText(chunk)
+      // chunk begins at the data-share-url attribute, which means the opening
+      // <button> is outside the slice and normal HTML stripping cannot remove
+      // the orphaned attribute. Strip it before headline detection.
+      .replace(/^data-share-url=["'][^"']+["']\s*>?\s*/i, "")
       .replace(/Link copied to clipboard!/gi, " ")
       .replace(/\bPlayer Stats\b/gi, " ")
       .replace(/\bPersonalize your Rotoworld feed by favoriting players\b/gi, " ")
