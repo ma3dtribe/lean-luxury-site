@@ -81,10 +81,15 @@ const EXPERT_RANKING_SOURCES = [
     positions: ["QB", "RB", "WR", "TE"]
   },
   {
-    key: "fantasypros_rankings",
-    name: "FantasyPros",
+    key: "ffc_rankings",
+    name: "Fantasy Football Calculator",
     dynamicWeekPages: true,
-    positions: ["QB", "RB", "WR", "TE", "K", "LB", "DL", "CB", "S"]
+    positions: ["QB", "RB", "WR", "TE", "K"]
+  },
+  {
+    key: "fantasypros_idp_rankings",
+    name: "FantasyPros IDP",
+    positions: ["LB", "DL", "CB", "S"]
   },
   {
     key: "fourforfour_idp_rankings",
@@ -104,7 +109,8 @@ const EXPECTED_EXPERTS = [
   "Heath Cummings",
   "Michael Fabiano",
   "ESPN",
-  "FantasyPros",
+  "Fantasy Football Calculator",
+  "FantasyPros IDP",
   "4for4 IDP"
 ];
 
@@ -2591,22 +2597,27 @@ function lflBestPlayerScore(player = {}, rosterCounts = {}, posts = [], watchCon
   const availability = playerAvailabilityContext(player, posts);
 
   // TRUE LFL BEST-PLAYER BOARD:
-  // Player quality/market signal, LFL scoring fit, historical positional production,
-  // live role/news and availability drive the ranking. Zoo roster need is deliberately
-  // only a small tie-breaker so an elite QB, DL, CB, S, TE or K can outrank a merely
-  // useful RB/WR/LB even when Zoo already starts someone at that position.
+  // Expert consensus is now a core signal with the SAME weight as each other
+  // major player-value signal: market quality, LFL positional/scoring value and
+  // historical positional production. If a position has no expert ranking
+  // source (for example IDP), average only the available core signals rather
+  // than penalizing the player for missing expert coverage. Live news/role,
+  // injury availability and Zoo roster construction remain contextual
+  // adjustments/tie-breakers instead of overpowering player quality.
+  const expertScore = expertRankingValueScore(player);
+  const coreSignals = [marketQuality, lflValue, history];
+  if (expertScore != null) coreSignals.push(expertScore);
+
+  const coreScore = coreSignals.reduce((sum, value) => sum + Number(value || 0), 0) / coreSignals.length;
+
   let score =
-    (marketQuality * 0.36) +
-    (lflValue * 0.25) +
-    (history * 0.14) +
-    (profile.scarcity * 0.06) +
-    (profile.market * 0.04) +
+    coreScore +
     (news * 1.10) +
     ((need - 10) * 0.18) +
     (context.watchPriorityBonus * 0.20) +
     availability.totalAdjustment;
 
-  return blendExpertRanking(score, player);
+  return clamp(Math.round(score), 0, 100);
 }
 
 function buildWatchListIntelligence(
@@ -5425,8 +5436,8 @@ function rankingsFromTableRows(source = {}, html = "", playerCatalog = []) {
     if (!rowText) continue;
 
     let rank = null;
-    if (source.key === "fantasypros_rankings") {
-      const match = row.match(/<td[^>]*sticky-cell-one[^>]*>\s*(\d{1,3})\s*<\/td>/i);
+    if (source.key === "ffc_rankings") {
+      const match = rowText.match(/^(\d{1,3})\.?\s+/);
       if (match) rank = Number(match[1]);
     } else if (source.key === "jamey" || source.key === "heath") {
       const match = row.match(/FantasyRankingsTable-td--rank[^>]*>\s*(\d{1,3})\s*<\/td>/i);
@@ -5441,7 +5452,26 @@ function rankingsFromTableRows(source = {}, html = "", playerCatalog = []) {
     }
 
     if (!rank || rank > 200) continue;
-    const player = matchRankedPlayerFromRow(rowText, focus);
+
+    // CBS kicker rows render a redundant first-name initial between the
+    // player's first and last name (for example "Ka'imi K. Fairbairn" or
+    // "Brandon B. Aubrey"). The ESPN player catalog stores those players as
+    // "Ka'imi Fairbairn" and "Brandon Aubrey". Remove only that CBS K
+    // presentation artifact before matching; other positions/sources keep the
+    // existing parser unchanged.
+    let matchText = rowText;
+    if (
+      (source.key === "jamey" || source.key === "heath") &&
+      allowedPositions.length === 1 &&
+      allowedPositions[0] === "K"
+    ) {
+      matchText = matchText.replace(
+        /\b([A-Za-zÀ-ÖØ-öø-ÿ’'-]+)\s+[A-Z]\.\s+([A-Za-zÀ-ÖØ-öø-ÿ’'-]+)\b/g,
+        "$1 $2"
+      );
+    }
+
+    const player = matchRankedPlayerFromRow(matchText, focus);
     if (!player) continue;
     const position = canonicalPosition(player.position);
     if (allowedPositions.length && !allowedPositions.includes(position)) continue;
@@ -5472,6 +5502,7 @@ function rankingsFromEspnPage(source = {}, html = "", playerCatalog = []) {
   }
   return rankings;
 }
+
 
 // IDP expert parsing: tested FantasyPros ECR + 4for4 positional ranks.
 function extractBalancedJson(text = "", marker = "var ecrData = ") {
@@ -5582,7 +5613,7 @@ function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
   }
   const pagePositions = (source.positions || []).map(canonicalPosition).filter(Boolean);
   const idpOnlyPage = pagePositions.length > 0 && pagePositions.every(position => ["LB", "DL", "CB", "S"].includes(position));
-  if (source.key === "fantasypros_rankings" && idpOnlyPage) {
+  if (source.key === "fantasypros_idp_rankings" && idpOnlyPage) {
     return rankingsFromFantasyProsIdp(html, playerCatalog);
   }
   if (source.key === "fourforfour_idp_rankings") {
@@ -5620,15 +5651,19 @@ function buildExpertRankingPages(source = {}, week = 1) {
     }));
   }
 
-  if (source.key === "fantasypros_rankings") {
-    const offense = ["QB", "RB", "WR", "TE", "K"].map(position => ({
-      url: `https://www.fantasypros.com/nfl/fantasy-football-rankings/weekly-${position.toLowerCase()}.php?week=${currentWeek}`,
+  if (source.key === "ffc_rankings") {
+    const slugs = { QB: "qb", RB: "rb", WR: "wr", TE: "te", K: "kicker" };
+    return Object.entries(slugs).map(([position, slug]) => ({
+      url: `https://fantasyfootballcalculator.com/rankings/ppr/${slug}`,
       positions: [position]
     }));
-    return [
-      ...offense,
-      { url: "https://www.fantasypros.com/nfl/rankings/idp.php", positions: ["LB", "DL", "CB", "S"] }
-    ];
+  }
+
+  if (source.key === "fantasypros_idp_rankings") {
+    return [{
+      url: "https://www.fantasypros.com/nfl/rankings/idp.php",
+      positions: ["LB", "DL", "CB", "S"]
+    }];
   }
 
   if (source.key === "fourforfour_idp_rankings") {
@@ -5772,7 +5807,7 @@ async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 
 }
 
 async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
-  const weekKey = `rankings-v3-idp-safe-${String(Number(currentWeek) || 1)}`;
+  const weekKey = `rankings-v4-idp-offense-preserved-${String(Number(currentWeek) || 1)}`;
   const cached = RUNTIME_CACHE.expertRankings.get(weekKey);
   if (cached && cacheFresh(cached.at, CACHE_TTL.expertRankingsMs)) {
     return { ...cached.value, cached: true };
@@ -5868,7 +5903,7 @@ function buildExpertRankingConsensus(expertRankings = {}, playerCatalog = []) {
       const position = canonicalPosition(rawPosition);
       if (!Array.isArray(names)) continue;
       const captured = names.filter(Boolean).length;
-      const approvedIdpSource = ["FantasyPros", "4for4 IDP"].includes(expert.name) && ["LB", "DL", "CB", "S"].includes(position);
+      const approvedIdpSource = ["FantasyPros IDP", "4for4 IDP"].includes(expert.name) && ["LB", "DL", "CB", "S"].includes(position);
       if (!approvedIdpSource && captured < (minimumCoverage[position] || 5)) continue;
       if (approvedIdpSource && captured < 1) continue;
       if (!healthyByPosition.has(position)) healthyByPosition.set(position, []);
@@ -5968,7 +6003,11 @@ function attachExpertRankingSignals(espnData = {}, playerCatalog = [], consensus
 
   const attach = player => {
     if (!player?.name) return;
-    const item = byKey.get(`${canonicalPosition(player.position)}|${normalize(player.name)}`) || byName.get(normalize(player.name));
+    const position = canonicalPosition(player.position);
+    const exact = byKey.get(`${position}|${normalize(player.name)}`);
+    const item = ["LB", "DL", "CB", "S"].includes(position)
+      ? exact
+      : (exact || byName.get(normalize(player.name)));
     if (!item) {
       player.expertRanking = null;
       return;
