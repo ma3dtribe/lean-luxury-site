@@ -2491,19 +2491,32 @@ function playerAvailabilityContext(player = {}, posts = []) {
 
 function expertRankingValueScore(player = {}) {
   const ranking = player.expertRanking || null;
-  if (!ranking || !Number.isFinite(Number(ranking.averageRank))) return null;
-
   const position = canonicalPosition(player.position);
+  const idpPosition = ["LB", "DL", "CB", "S"].includes(position);
+
+  // IDP rule: no valid FantasyPros/4for4 ranking means 0 Expert points.
+  // Offense keeps the existing behavior unchanged.
+  if (!ranking || !Number.isFinite(Number(ranking.averageRank))) {
+    return idpPosition ? 0 : null;
+  }
+
   const ceilings = {
     QB: 20, RB: 60, WR: 60, TE: 24, K: 20,
     LB: 60, DL: 36, CB: 30, S: 36
   };
   const ceiling = Number(ceilings[position] || 40);
-  const rank = Math.max(1, Number(ranking.averageRank));
+  const rank = clamp(Number(ranking.averageRank), 1, ceiling);
   const rankScore = clamp(100 - (((rank - 1) / Math.max(1, ceiling - 1)) * 100), 0, 100);
+
+  // IDP: one valid source is used at full value; two valid sources are averaged
+  // equally before reaching this function. Expert count is informational only.
+  if (idpPosition) {
+    return clamp(Math.round(rankScore * 100) / 100, 0, 100);
+  }
+
   const confidence = clamp(Number(ranking.confidence ?? 100), 0, 100);
 
-  // Ranking quality is the main signal; source coverage slightly tempers one-source lists.
+  // Existing offensive ranking behavior remains unchanged.
   return clamp(Math.round((rankScore * 0.90) + (confidence * 0.10)), 0, 100);
 }
 
@@ -5636,6 +5649,324 @@ async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 
   };
 }
 
+
+// -----------------------------------------------------------------------------
+// IDP EXPERT CONSENSUS — FantasyPros + 4for4
+// Safe, independent layer: failures here never stop the main Zoo GM feed.
+// One valid source = use it at full value. Two = equal average. None = no
+// expert ranking signal (expertRankingValueScore returns 0 for IDP).
+// -----------------------------------------------------------------------------
+const IDP_RANK_LIMITS = Object.freeze({ LB: 60, DL: 36, CB: 30, S: 36 });
+
+function idpRankingKey(name = "", position = "") {
+  return `${canonicalPosition(position)}|${normalize(name)}`;
+}
+
+function balancedJsonAfter(text = "", marker = "") {
+  const markerIndex = String(text).indexOf(marker);
+  if (markerIndex < 0) return null;
+
+  const arrayStart = String(text).indexOf("[", markerIndex + marker.length);
+  const objectStart = String(text).indexOf("{", markerIndex + marker.length);
+  let start = arrayStart;
+  let opener = "[";
+  let closer = "]";
+
+  if (objectStart >= 0 && (arrayStart < 0 || objectStart < arrayStart)) {
+    start = objectStart;
+    opener = "{";
+    closer = "}";
+  }
+  if (start < 0) return null;
+
+  let depth = 0;
+  let quote = null;
+  let escaped = false;
+
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (ch === opener) depth += 1;
+    if (ch === closer) depth -= 1;
+    if (depth === 0) {
+      try {
+        return JSON.parse(text.slice(start, i + 1));
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+function parseFantasyProsIdpRanks(html = "", playerCatalog = []) {
+  const data =
+    balancedJsonAfter(html, "var ecrData =") ||
+    balancedJsonAfter(html, "var ecrData=");
+
+  if (!data) return new Map();
+
+  let records = [];
+  if (Array.isArray(data)) {
+    records = data;
+  } else {
+    for (const value of Object.values(data)) {
+      if (Array.isArray(value) && value.length > records.length) records = value;
+    }
+  }
+
+  const catalogByName = new Map();
+  for (const player of playerCatalog || []) {
+    const position = canonicalPosition(player?.position);
+    if (!player?.name || !IDP_RANK_LIMITS[position]) continue;
+    const nameKey = normalize(player.name);
+    if (!catalogByName.has(nameKey)) catalogByName.set(nameKey, player);
+  }
+
+  const candidates = [];
+  for (const row of records) {
+    if (!row || typeof row !== "object") continue;
+    const name = row.player_name || row.playerName || row.name || row.player || "";
+    if (!name) continue;
+
+    const player = catalogByName.get(normalize(name));
+    if (!player) continue;
+
+    const position = canonicalPosition(player.position);
+    if (!IDP_RANK_LIMITS[position]) continue;
+
+    const overallRank = Number(
+      row.rank_ecr ?? row.ecr ?? row.rank ?? row.consensus_rank ?? 0
+    );
+    if (!Number.isFinite(overallRank) || overallRank <= 0) continue;
+
+    candidates.push({ name: player.name, position, overallRank });
+  }
+
+  candidates.sort((a, b) => a.overallRank - b.overallRank);
+  const counters = { LB: 0, DL: 0, CB: 0, S: 0 };
+  const output = new Map();
+
+  for (const row of candidates) {
+    counters[row.position] += 1;
+    const key = idpRankingKey(row.name, row.position);
+    if (!output.has(key)) output.set(key, counters[row.position]);
+  }
+
+  return output;
+}
+
+function parse4for4IdpRanks(html = "", playerCatalog = []) {
+  const output = new Map();
+  const rows = String(html).match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi) || [];
+  const idpPlayers = (playerCatalog || []).filter(player =>
+    player?.name && IDP_RANK_LIMITS[canonicalPosition(player.position)]
+  );
+
+  const found = [];
+  for (const row of rows) {
+    const text = stripHtml(row);
+    if (!text) continue;
+    const normalizedRow = ` ${normalize(text)} `;
+
+    let matched = null;
+    for (const player of idpPlayers) {
+      const playerName = normalize(player.name);
+      if (playerName && normalizedRow.includes(` ${playerName} `)) {
+        matched = player;
+        break;
+      }
+    }
+    if (!matched) continue;
+
+    const numbers = text.match(/\b\d{1,3}\b/g) || [];
+    if (!numbers.length) continue;
+    const rank = Number(numbers[0]);
+    if (!Number.isFinite(rank) || rank <= 0 || rank > 200) continue;
+
+    found.push({
+      name: matched.name,
+      position: canonicalPosition(matched.position),
+      rank
+    });
+  }
+
+  found.sort((a, b) => a.rank - b.rank);
+  const counters = { LB: 0, DL: 0, CB: 0, S: 0 };
+
+  for (const row of found) {
+    counters[row.position] += 1;
+    const key = idpRankingKey(row.name, row.position);
+    if (!output.has(key)) output.set(key, counters[row.position]);
+  }
+
+  return output;
+}
+
+async function fetchIdpRankingPage(url = "", label = "") {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.3; +https://ma3dtribe.com)",
+        "Accept": "text/html,application/xhtml+xml",
+        "Cache-Control": "no-cache"
+      },
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { ok: true, status: response.status, html: await response.text(), error: "" };
+  } catch (error) {
+    console.warn(`${label} IDP rankings unavailable:`, error.message);
+    return { ok: false, status: 0, html: "", error: error.message };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function loadIdpExpertConsensus(playerCatalog = [], currentWeek = 1) {
+  const week = Number(currentWeek) || 1;
+  const season = 2026;
+  const fantasyProsUrl = "https://www.fantasypros.com/nfl/rankings/idp.php";
+  const fourForFourUrl =
+    `https://www.4for4.com/fantasy-football-rankings/idp/${season}/week${week}`;
+
+  try {
+    const [fpResult, f4Result] = await Promise.all([
+      fetchIdpRankingPage(fantasyProsUrl, "FantasyPros"),
+      fetchIdpRankingPage(fourForFourUrl, "4for4")
+    ]);
+
+    const fpRanks = fpResult.ok
+      ? parseFantasyProsIdpRanks(fpResult.html, playerCatalog)
+      : new Map();
+
+    const f4Ranks = f4Result.ok
+      ? parse4for4IdpRanks(f4Result.html, playerCatalog)
+      : new Map();
+
+    const consensus = [];
+    for (const player of playerCatalog || []) {
+      if (!player?.name) continue;
+      const position = canonicalPosition(player.position);
+      if (!IDP_RANK_LIMITS[position]) continue;
+
+      const key = idpRankingKey(player.name, position);
+      const fpRank = fpRanks.has(key) ? Number(fpRanks.get(key)) : null;
+      const f4Rank = f4Ranks.has(key) ? Number(f4Ranks.get(key)) : null;
+
+      const validRanks = [fpRank, f4Rank].filter(value =>
+        value !== null &&
+        value !== undefined &&
+        value !== "" &&
+        Number.isFinite(Number(value)) &&
+        Number(value) > 0
+      );
+
+      if (!validRanks.length) continue;
+
+      const averageRank =
+        validRanks.reduce((sum, value) => sum + Number(value), 0) /
+        validRanks.length;
+
+      const experts = [];
+      if (fpRank !== null && Number.isFinite(fpRank) && fpRank > 0) {
+        experts.push({ expert: "FantasyPros IDP", rank: fpRank });
+      }
+      if (f4Rank !== null && Number.isFinite(f4Rank) && f4Rank > 0) {
+        experts.push({ expert: "4for4 IDP", rank: f4Rank });
+      }
+
+      consensus.push({
+        name: player.name,
+        position,
+        ranks: validRanks,
+        experts,
+        averageRank: Math.round(averageRank * 100) / 100,
+        adjustedRank: Math.round(averageRank * 100) / 100,
+        expertCount: validRanks.length,
+        availableExpertCount: validRanks.length,
+        confidence: 100,
+        playerId: player.playerId || "",
+        nflTeam: normalizeNflTeam(player.nflTeam || ""),
+        ownershipStatus: player.ownershipStatus || "UNKNOWN",
+        lflTeam: player.lflTeam || "",
+        onWatchList: Boolean(player.onWatchList),
+        opponentThisWeek: Boolean(player.opponentThisWeek)
+      });
+    }
+
+    const grouped = new Map();
+    for (const item of consensus) {
+      if (!grouped.has(item.position)) grouped.set(item.position, []);
+      grouped.get(item.position).push(item);
+    }
+
+    const rankedConsensus = [];
+    for (const [position, items] of grouped.entries()) {
+      items
+        .sort((a, b) =>
+          a.averageRank - b.averageRank ||
+          b.expertCount - a.expertCount ||
+          a.name.localeCompare(b.name)
+        )
+        .forEach((item, index) => {
+          rankedConsensus.push({ ...item, consensusRank: index + 1 });
+        });
+    }
+
+    return {
+      week,
+      consensus: rankedConsensus,
+      sourceStatus: [
+        {
+          key: "fantasypros_idp_rankings",
+          name: "FantasyPros IDP",
+          url: fantasyProsUrl,
+          ok: fpResult.ok,
+          playerCount: fpRanks.size,
+          error: fpResult.ok ? "" : fpResult.error
+        },
+        {
+          key: "fourforfour_idp_rankings",
+          name: "4for4 IDP",
+          url: fourForFourUrl,
+          ok: f4Result.ok,
+          playerCount: f4Ranks.size,
+          error: f4Result.ok ? "" : f4Result.error
+        }
+      ]
+    };
+  } catch (error) {
+    console.warn("IDP expert consensus unavailable:", error.message);
+    return {
+      week,
+      consensus: [],
+      sourceStatus: [
+        {
+          key: "idp_rankings",
+          name: "FantasyPros + 4for4 IDP",
+          url: "",
+          ok: false,
+          playerCount: 0,
+          error: error.message
+        }
+      ]
+    };
+  }
+}
+
 async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
   const weekKey = `rankings-ffc-v2-${String(Number(currentWeek) || 1)}`;
   const cached = RUNTIME_CACHE.expertRankings.get(weekKey);
@@ -6106,11 +6437,26 @@ async function () {
         currentWeek
       );
 
-    const expertRankingConsensus =
+    const offensiveExpertRankingConsensus =
       buildExpertRankingConsensus(
         expertRankings,
         playerCatalog
       );
+
+    // IDP rankings are intentionally isolated from the offensive expert loader.
+    // A FantasyPros/4for4 failure cannot crash or erase the offensive rankings.
+    const idpExpertRankings =
+      await loadIdpExpertConsensus(
+        playerCatalog,
+        currentWeek
+      );
+
+    const expertRankingConsensus = [
+      ...offensiveExpertRankingConsensus.filter(
+        item => !["LB", "DL", "CB", "S"].includes(canonicalPosition(item.position))
+      ),
+      ...(idpExpertRankings.consensus || [])
+    ];
 
     attachExpertRankingSignals(
       espnData,
@@ -6533,7 +6879,7 @@ async function () {
               "NBC Sports Rotoworld + FantasyPros",
 
             weeklyIdp:
-              "Footballguys + FantasyPros + SI reference layer",
+              "FantasyPros + 4for4 live IDP expert rankings",
 
             expertRankings:
               expertRankings.experts.length
@@ -6554,8 +6900,12 @@ async function () {
             source: expertRankings.source,
             expertsLoaded: expertRankings.experts.map(expert => expert.name),
             expectedExperts: expertRankings.expectedExperts,
-            note: "Weekly consensus uses Jamey Eisenberg, Heath Cummings, Michael Fabiano, ESPN, and FantasyPros when each source returns a valid current-week list.",
-            sourceStatus: expertRankings.sourceStatus || [],
+            note: "Offense keeps the existing weekly expert consensus. IDP uses FantasyPros + 4for4 only; one valid source is used at full value and two valid sources are averaged equally.",
+            sourceStatus: [
+              ...(expertRankings.sourceStatus || []),
+              ...(idpExpertRankings.sourceStatus || [])
+            ],
+            idpSources: idpExpertRankings.sourceStatus || [],
             consensus: expertRankingConsensus
           },
 
