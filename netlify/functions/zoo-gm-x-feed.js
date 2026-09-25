@@ -85,16 +85,6 @@ const EXPERT_RANKING_SOURCES = [
     name: "Fantasy Football Calculator",
     dynamicWeekPages: true,
     positions: ["QB", "RB", "WR", "TE", "K"]
-  },
-  {
-    key: "fantasypros_idp_rankings",
-    name: "FantasyPros IDP",
-    positions: ["LB", "DL", "CB", "S"]
-  },
-  {
-    key: "fourforfour_idp_rankings",
-    name: "4for4 IDP",
-    positions: ["LB", "DL"]
   }
 ];
 
@@ -109,9 +99,7 @@ const EXPECTED_EXPERTS = [
   "Heath Cummings",
   "Michael Fabiano",
   "ESPN",
-  "Fantasy Football Calculator",
-  "FantasyPros IDP",
-  "4for4 IDP"
+  "Fantasy Football Calculator"
 ];
 
 const FANTASYPROS_API_KEY = process.env.FANTASYPROS_API_KEY || "";
@@ -1042,6 +1030,10 @@ function buildLeaguePlayerCatalog(
           player.injuryStatus ||
           "ACTIVE",
 
+        production:
+          player.production ||
+          {},
+
         ownershipStatus:
           "UNKNOWN",
 
@@ -1110,6 +1102,11 @@ function buildLeaguePlayerCatalog(
       player.injuryStatus ||
       current.injuryStatus ||
       "ACTIVE";
+
+    next.production =
+      player.production ||
+      current.production ||
+      {};
 
     catalog.set(
       key,
@@ -2494,29 +2491,85 @@ function playerAvailabilityContext(player = {}, posts = []) {
 
 function expertRankingValueScore(player = {}) {
   const ranking = player.expertRanking || null;
+  if (!ranking || !Number.isFinite(Number(ranking.averageRank))) return null;
+
   const position = canonicalPosition(player.position);
   const ceilings = {
     QB: 20, RB: 60, WR: 60, TE: 24, K: 20,
     LB: 60, DL: 36, CB: 30, S: 36
   };
-
-  // IDP ONLY: tested FantasyPros + 4for4 model.
-  // Expert count is informational; missing one source carries no penalty.
-  // Unranked by both sources = bottom of positional pool = 0 expert value.
-  if (["LB", "DL", "CB", "S"].includes(position)) {
-    if (!ranking || !Number.isFinite(Number(ranking.averageRank))) return 0;
-    const ceiling = Number(ceilings[position]);
-    const rank = clamp(Number(ranking.averageRank), 1, ceiling);
-    return clamp(((ceiling - rank) / Math.max(1, ceiling - 1)) * 100, 0, 100);
-  }
-
-  // OFFENSE/K: unchanged from the current working website.
-  if (!ranking || !Number.isFinite(Number(ranking.averageRank))) return null;
   const ceiling = Number(ceilings[position] || 40);
   const rank = Math.max(1, Number(ranking.averageRank));
   const rankScore = clamp(100 - (((rank - 1) / Math.max(1, ceiling - 1)) * 100), 0, 100);
   const confidence = clamp(Number(ranking.confidence ?? 100), 0, 100);
+
+  // Ranking quality is the main signal; source coverage slightly tempers one-source lists.
   return clamp(Math.round((rankScore * 0.90) + (confidence * 0.10)), 0, 100);
+}
+
+
+function productionSnapshot(player = {}) {
+  return player?.production && typeof player.production === "object" ? player.production : {};
+}
+function lflProductionScore(player = {}) {
+  const production = productionSnapshot(player);
+  const actualAverage = Number(production.seasonActualAverage);
+  const actualPoints = Number(production.seasonActualPoints);
+  const historicalAverage = historicalPositionAverage(player.position);
+  const history = historicalProductionIndex(player.position);
+  if (!(actualAverage > 0) || !(actualPoints > 0) || historicalAverage <= 0) {
+    return clamp(Math.round(history * 0.25), 0, 100);
+  }
+  const actual = clamp((actualAverage / historicalAverage) * 100, 0, 100);
+  return clamp(Math.round((actual * 0.80) + (history * 0.20)), 0, 100);
+}
+function roleOpportunityScore(player = {}, posts = []) {
+  const production = productionSnapshot(player);
+  const actualAverage = Number(production.seasonActualAverage);
+  const historicalAverage = historicalPositionAverage(player.position);
+  const started = clamp(Number(player.percentStarted || 0), 0, 100);
+  const role = roleOpportunitySignal(player, posts);
+  const productionRole = actualAverage > 0 && historicalAverage > 0
+    ? clamp((actualAverage / historicalAverage) * 100, 0, 100) : 0;
+  const marketRole = clamp(started * 2.25, 0, 100);
+  let score = (productionRole * 0.70) + (marketRole * 0.30) + (role.adjustment * 1.5);
+  if (productionRole === 0 && started < 1 && role.adjustment <= 0) score = Math.min(score, 8);
+  return clamp(Math.round(score), 0, 100);
+}
+function healthAvailabilityScore(player = {}) {
+  return clamp(Math.round(100 + (injuryAvailabilityAdjustment(player) * 2.5)), 0, 100);
+}
+function newsMomentumScore(player = {}, posts = []) {
+  const news = liveNewsScore(posts, player.name);
+  const role = roleOpportunitySignal(player, posts);
+  if (!news && !role.adjustment) return 50;
+  return clamp(Math.round(50 + (news * 2) + (role.adjustment * 1.5)), 0, 100);
+}
+function universalPlayerScore(player = {}, posts = []) {
+  const expert = expertRankingValueScore(player);
+  const production = lflProductionScore(player);
+  const roleOpportunity = roleOpportunityScore(player, posts);
+  const marketValue = playerMarketQuality(player);
+  const healthAvailability = healthAvailabilityScore(player);
+  const newsMomentum = newsMomentumScore(player, posts);
+  const score = clamp(Math.round(
+    ((expert == null ? 50 : expert) * 0.25) +
+    (production * 0.30) +
+    (roleOpportunity * 0.20) +
+    (marketValue * 0.10) +
+    (healthAvailability * 0.10) +
+    (newsMomentum * 0.05)
+  ), 0, 100);
+  return { score, components: {
+    expertConsensus: expert,
+    lflProductionHistoricalValue: production,
+    roleOpportunity,
+    marketValue: Math.round(marketValue),
+    healthAvailability,
+    newsMomentum,
+    production: productionSnapshot(player),
+    historicalPositionAverage: historicalPositionAverage(player.position)
+  }};
 }
 
 function blendExpertRanking(baseScore, player = {}) {
@@ -2586,38 +2639,7 @@ function acquisitionScore(player = {}, rosterCounts = {}, posts = [], watchConte
 }
 
 function lflBestPlayerScore(player = {}, rosterCounts = {}, posts = [], watchContext = null) {
-  const position = canonicalPosition(player.position);
-  const profile = getPositionProfile(position);
-  const marketQuality = playerMarketQuality(player);
-  const news = liveNewsScore(posts, player.name);
-  const lflValue = positionLflValue(position);
-  const history = historicalProductionIndex(position);
-  const need = rosterNeedScore(position, rosterCounts);
-  const context = candidateContext(player, watchContext);
-  const availability = playerAvailabilityContext(player, posts);
-
-  // TRUE LFL BEST-PLAYER BOARD:
-  // Expert consensus is now a core signal with the SAME weight as each other
-  // major player-value signal: market quality, LFL positional/scoring value and
-  // historical positional production. If a position has no expert ranking
-  // source (for example IDP), average only the available core signals rather
-  // than penalizing the player for missing expert coverage. Live news/role,
-  // injury availability and Zoo roster construction remain contextual
-  // adjustments/tie-breakers instead of overpowering player quality.
-  const expertScore = expertRankingValueScore(player);
-  const coreSignals = [marketQuality, lflValue, history];
-  if (expertScore != null) coreSignals.push(expertScore);
-
-  const coreScore = coreSignals.reduce((sum, value) => sum + Number(value || 0), 0) / coreSignals.length;
-
-  let score =
-    coreScore +
-    (news * 1.10) +
-    ((need - 10) * 0.18) +
-    (context.watchPriorityBonus * 0.20) +
-    availability.totalAdjustment;
-
-  return clamp(Math.round(score), 0, 100);
+  return universalPlayerScore(player, posts).score;
 }
 
 function buildWatchListIntelligence(
@@ -2673,14 +2695,7 @@ function buildWatchListIntelligence(
       LFL_CONFIG.philosophy.singleCarryPositions.includes(position) &&
       currentCount >= preferred;
 
-    // The Watch List is now a true best-player-for-the-LFL board. Do not penalize
-    // QB/TE/DL/CB/S simply because Zoo currently carries one starter. Existing
-    // roster construction is only reflected by the small tie-breaker inside
-    // lflBestPlayerScore().
-    if (String(watchPlayer.priority || "").toLowerCase() === "high") score += 2;
-    if (catalogPlayer.ownershipStatus === "LFL OWNED") score -= 15;
-
-    score = clamp(Math.round(score), 0, 100);
+    score = universalPlayerScore(catalogPlayer, posts).score;
 
     let recommendation = "IGNORE";
     if (catalogPlayer.ownershipStatus === "LFL OWNED") {
@@ -2718,20 +2733,10 @@ function buildWatchListIntelligence(
       zooValueScore: score,
       recommendation,
       components: {
-        zooNeed: need,
-        lflPositionValue: lflValue,
-        positionalScarcity: profile.scarcity,
-        starterDemand: profile.starterDemand,
-        scoringLeverage: profile.scoringLeverage,
-        historicalProduction: historicalIndex,
-        liveNews: news,
-        replacementValue,
-        tradeMarketValue: profile.market,
+        ...universalPlayerScore(catalogPlayer, posts).components,
+        expertRanking: catalogPlayer.expertRanking || null,
         claimRisk,
-        injuryAvailabilityAdjustment: availability.injuryAdjustment,
-        roleOpportunityAdjustment: availability.roleAdjustment,
-        expertRankingScore: expertRankingValueScore(catalogPlayer),
-        expertRanking: catalogPlayer.expertRanking || null
+        replacementValue
       },
       injuryStatus: catalogPlayer.injuryStatus || "ACTIVE",
       historicalPositionAverage: historicalPositionAverage(position),
@@ -2809,16 +2814,7 @@ function buildSuggestedWatchList(
         percentOwned: player.percentOwned ?? null,
         percentStarted: player.percentStarted ?? null,
         components: {
-          zooNeed: rosterNeedScore(position, counts),
-          lflPositionValue: positionLflValue(position),
-          positionalScarcity: profile.scarcity,
-          starterDemand: profile.starterDemand,
-          scoringLeverage: profile.scoringLeverage,
-          liveNews: news,
-          marketQuality,
-          injuryAvailabilityAdjustment: availability.injuryAdjustment,
-          roleOpportunityAdjustment: availability.roleAdjustment,
-          expertRankingScore: expertRankingValueScore(player),
+          ...universalPlayerScore(player, posts).components,
           expertRanking: player.expertRanking || null
         },
         reasons
@@ -2861,9 +2857,7 @@ function buildBestAvailableOptions(
         watchMap.get(`name:${normalize(player.name)}`) ||
         null;
 
-      const baseScore = acquisitionScore(player, counts, posts, watchContext);
-      const watchScore = Number(watchContext?.priorityScore || 0);
-      const zooValueScore = clamp(Math.round(Math.max(baseScore, watchScore)), 0, 100);
+      const zooValueScore = universalPlayerScore(player, posts).score;
 
       return {
         ...player,
@@ -3413,18 +3407,31 @@ function buildOpponentIntelligence(posts = [], hours = 12) {
         ["INACTIVE", "INJURY", "PRACTICE", "DEPTH_CHART", "ROLE_WORKLOAD", "TRANSACTION"].includes(i.primaryEvent)
       );
     })
-    .map(post => ({
-      players: post.intelligence.opponentPlayers || [],
-      event: getZooUpdateEvent(
-        post.intelligence.primaryEvent,
-        post.intelligence.eventTypes || [],
-        `${post.title || ""} ${post.text || ""}`
-      ),
-      whatHappened: post.text || post.title || "",
-      source: post.author || post.handle || "Player News",
-      publishedAt: post.publishedAt || "",
-      link: post.link || ""
-    }))
+    .map(post => {
+      const players = post.intelligence.opponentPlayers || [];
+      const primaryPlayer = players[0] || null;
+      const rawText = post.text || post.title || "";
+      const whatHappened = cleanSourceText(rawText)
+        .replace(/Link copied to clipboard!/gi, " ")
+        .replace(/\s+Category:\s*.*$/i, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      return {
+        players,
+        player: typeof primaryPlayer === "string" ? primaryPlayer : (primaryPlayer?.name || ""),
+        playerName: typeof primaryPlayer === "string" ? primaryPlayer : (primaryPlayer?.name || ""),
+        event: getZooUpdateEvent(
+          post.intelligence.primaryEvent,
+          post.intelligence.eventTypes || [],
+          `${post.title || ""} ${post.text || ""}`
+        ),
+        whatHappened,
+        source: post.author || post.handle || "Player News",
+        publishedAt: post.publishedAt || "",
+        link: post.link || ""
+      };
+    })
     .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime())
     .slice(0, 5);
 }
@@ -4968,140 +4975,73 @@ function extractFantasyProsStories(html = "") {
 
 function extractNbcStories(html = "") {
   const raw = String(html || "");
-
   if (!raw) return [];
 
   const stories = [];
   const seen = new Set();
-  const plain = cleanSourceText(raw);
+  const marker = /data-share-url=["']([^"']*\/fantasy\/football\/player-news\/[^"']+)["']/gi;
+  const matches = [...raw.matchAll(marker)].slice(0, 100);
 
-  const addStory = value => {
-    const story = String(value || "")
+  for (let i = 0; i < matches.length; i += 1) {
+    const storyUrl = String(matches[i][1] || "").replace(/&amp;/g, "&");
+    if (!storyUrl || seen.has(storyUrl)) continue;
+
+    const start = matches[i].index || 0;
+    const end = matches[i + 1]?.index || Math.min(raw.length, start + 12000);
+    const chunk = raw.slice(start, Math.min(end, start + 12000));
+
+    let text = cleanSourceText(chunk)
+      // chunk begins at the data-share-url attribute, which means the opening
+      // <button> is outside the slice and normal HTML stripping cannot remove
+      // the orphaned attribute. Strip it before headline detection.
+      .replace(/^data-share-url=["'][^"']+["']\s*>?\s*/i, "")
+      .replace(/Link copied to clipboard!/gi, " ")
+      .replace(/\bPlayer Stats\b/gi, " ")
+      .replace(/\bPersonalize your Rotoworld feed by favoriting players\b/gi, " ")
       .replace(/\s+/g, " ")
       .trim();
 
-    if (story.length < 70 || story.length > 2600) return;
+    // The Rotoworld card begins with its headline after the clipboard helper.
+    // Stop before the next profile/category/navigation material if it leaked
+    // into this bounded article chunk.
+    const junkAt = text.search(/\s(?:More [A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\- ]{1,70} News|Player Stats|Footer Sections of the Site)\b/i);
+    if (junkAt > 0) text = text.slice(0, junkAt).trim();
+    if (text.length < 50) continue;
 
-    const key = normalize(story).slice(0, 650);
-    if (!key || seen.has(key)) return;
+    const dateMatch = chunk.match(/data-date=["']([^"']+)["']/i);
+    const publishedAt = dateMatch ? dateMatch[1] : "";
 
-    seen.add(key);
-    stories.push(story);
-  };
+    // Headline is the first complete sentence in the card. This is the safest
+    // subject boundary: players mentioned later in analysis are context only.
+    const sentenceMatch = text.match(/^(.+?[.!?])(?:\s|$)/);
+    const headline = (sentenceMatch ? sentenceMatch[1] : text.slice(0, 260)).trim();
+    let remainder = text.slice(headline.length).trim();
 
-  let feed = plain;
-  const rotoworldMarker = feed.indexOf("Rotoworld");
-  if (rotoworldMarker >= 0) {
-    feed = feed.slice(rotoworldMarker);
-  }
-
-  // Path 1: NBC's older/desktop Rotoworld card structure. Keep this because
-  // some responses still contain the Player Stats / More [Player] News markers.
-  const playerStatsRegex = /\bPlayer Stats\b/gi;
-  const statsMatches = [...feed.matchAll(playerStatsRegex)];
-
-  for (let i = 0; i < statsMatches.length; i += 1) {
-    const statsIndex = statsMatches[i].index || 0;
-    const start = Math.max(0, statsIndex - 220);
-    const afterStats = feed.slice(statsIndex);
-
-    const moreNewsMatch = afterStats.match(
-      /\bMore\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ0-9.'’\- ]{1,70}\s+News\b/i
-    );
-
-    let end;
-
-    if (moreNewsMatch && Number.isFinite(moreNewsMatch.index)) {
-      end = statsIndex + moreNewsMatch.index + moreNewsMatch[0].length;
-    } else {
-      const nextStats = statsMatches[i + 1];
-      end = nextStats
-        ? Math.max(start, (nextStats.index || feed.length) - 220)
-        : Math.min(feed.length, statsIndex + 2400);
+    // Rotoworld places "- Author" after the analysis. Capture it and remove
+    // category/profile spillover from the displayed analysis.
+    let author = "";
+    const authorMatch = remainder.match(/\s-\s+([A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3})(?:\s+(?:Injury|News|Transaction|Analysis|Rumor|Game Recap|Waivers?|Rankings?))?(?:\s|$)/i);
+    if (authorMatch) {
+      author = authorMatch[1].trim();
+      remainder = remainder.slice(0, authorMatch.index).trim();
     }
 
-    let story = feed.slice(start, Math.min(end, start + 2400));
-
-    story = story
-      .replace(
-        /^.*?(?=[A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3}\s+(?:[A-Z]{2,3}|Free Agent)\s+(?:Quarterback|Running Back|Wide Receiver|Tight End|Linebacker|Cornerback|Safety|Defensive|Kicker))/i,
-        ""
-      )
+    remainder = remainder
+      .replace(/\s+(?:Injury|News|Transaction|Analysis|Rumor|Game Recap|Waivers?|Rankings?)\s*$/i, "")
       .trim();
 
-    addStory(story);
-    if (stories.length >= 60) break;
+    seen.add(storyUrl);
+    stories.push({
+      text: [headline, remainder].filter(Boolean).join(" "),
+      headline,
+      newsBody: remainder,
+      author,
+      link: storyUrl,
+      publishedAt
+    });
   }
 
-  // Path 2: NBC's current Rotoworld feed often renders cards as plain story
-  // text ending in a relative timestamp, for example:
-  //   "Chargers HC Jim Harbaugh said Ladd McConkey ... Injury 2h ago Source: ..."
-  // Build each card around that timestamp instead of requiring Player Stats.
-  const relativeRegex = /\b\d{1,3}\s*(?:m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days)\s+ago\b/gi;
-  const relativeMatches = [...feed.matchAll(relativeRegex)].slice(0, 100);
-
-  for (let i = 0; i < relativeMatches.length; i += 1) {
-    const current = relativeMatches[i];
-    const currentIndex = current.index || 0;
-    const previous = relativeMatches[i - 1];
-    const previousEnd = previous
-      ? (previous.index || 0) + String(previous[0] || "").length
-      : Math.max(0, currentIndex - 1800);
-
-    // The text between the previous timestamp and this timestamp is normally
-    // the current Rotoworld card. Cap the beginning so navigation/UI text from
-    // the page cannot swallow the story.
-    const start = Math.max(previousEnd, currentIndex - 1900, 0);
-    const next = relativeMatches[i + 1];
-    const nextIndex = next?.index || feed.length;
-    const end = Math.min(
-      feed.length,
-      currentIndex + 650,
-      nextIndex
-    );
-
-    let story = feed.slice(start, end).trim();
-
-    // Remove a trailing source/author fragment from the previous card when it
-    // lands at the beginning of this slice, but preserve the actual news text.
-    story = story
-      .replace(/^Source:\s+[^.]{0,220}\s+/i, "")
-      .replace(/^[-–—]\s*[A-Z][A-Za-z.'’\- ]{2,70}\s+/i, "")
-      .trim();
-
-    addStory(story);
-    if (stories.length >= 80) break;
-  }
-
-  // Path 3: generic HTML blocks. This catches NBC markup variations where the
-  // relative timestamp and story are split across adjacent elements.
-  const blocks = extractHtmlBlocks(raw.slice(0, 750000));
-  for (let i = 0; i < blocks.length; i += 1) {
-    const block = blocks[i];
-    if (!block) continue;
-
-    const hasRelativeTime = /\b\d{1,3}\s*(?:m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days)\s+ago\b/i.test(block);
-    const looksLikeNews = /\b(Injury|News|Transactions?|Source:)\b/i.test(block);
-
-    if (!hasRelativeTime && !looksLikeNews) continue;
-
-    addStory(buildSourceContext(blocks, i));
-    if (stories.length >= 100) break;
-  }
-
-  // Last-resort fallback: never let NBC go completely empty just because its
-  // page structure changes again.
-  if (!stories.length) {
-    return blocks
-      .filter(block =>
-        block.length >= 60 &&
-        block.length <= 1800 &&
-        !/^(NFL Player News|Rotoworld|NFL Home|Teams|Scores|Schedule|Standings)$/i.test(block)
-      )
-      .slice(0, 250);
-  }
-
-  return stories.slice(0, 100);
+  return stories.slice(0, 80);
 }
 
 function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
@@ -5119,13 +5059,23 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
     stories = extractHtmlBlocks(String(html || "").slice(0, 350000)).slice(0, 180);
   }
 
-  for (const story of stories) {
+  for (const storyRecord of stories) {
+    const story = typeof storyRecord === "string" ? storyRecord : String(storyRecord?.text || "");
+    const storyHeadline = typeof storyRecord === "string" ? "" : String(storyRecord?.headline || "");
     const direct = findMatchingLeaguePlayers(story, focusPlayers);
     if (!direct.length) continue;
 
-    // Keep each intelligence item tied only to players actually named in that
-    // individual story. Team/context effects are calculated later by the engine.
-    const playerNames = [...new Set(direct.map(player => player.name).filter(Boolean))].slice(0, 5);
+    // For NBC, the headline determines the subject. Players mentioned only in
+    // Rotoworld analysis are context and must not become the card's player.
+    let matchedPlayers = direct;
+    if (source.key === "nbcsports" && storyHeadline) {
+      const headlinePlayers = direct.filter(player =>
+        normalize(storyHeadline).includes(normalize(player.name))
+      );
+      if (headlinePlayers.length) matchedPlayers = [headlinePlayers[0]];
+    }
+
+    const playerNames = [...new Set(matchedPlayers.map(player => player.name).filter(Boolean))].slice(0, source.key === "nbcsports" ? 1 : 5);
     if (!playerNames.length) continue;
 
     let publishedAt;
@@ -5133,6 +5083,7 @@ function extractItemsFromSource(source = {}, html = "", playerCatalog = []) {
 if (source.type === "PLAYER_NEWS") {
   if (source.key === "nbcsports") {
     publishedAt =
+      (typeof storyRecord === "object" && storyRecord?.publishedAt) ||
       parseNewsTimestamp(story, "") ||
       new Date().toISOString();
   } else {
@@ -5150,11 +5101,13 @@ if (source.type === "PLAYER_NEWS") {
     seen.add(key);
 
     items.push({
-      author: source.label,
+      author: (typeof storyRecord === "object" && storyRecord?.author) || source.label,
       handle: source.key,
       text: story.slice(0, 1400),
+      headline: (typeof storyRecord === "object" && storyRecord?.headline) || "",
+      newsBody: (typeof storyRecord === "object" && storyRecord?.newsBody) || "",
       title: `${source.label}: ${playerNames.join(", ")}`,
-      link: source.url,
+      link: (typeof storyRecord === "object" && storyRecord?.link) || source.url,
       publishedAt,
       guid: key,
       sourceType: source.type,
@@ -5400,19 +5353,42 @@ function matchRankedPlayerFromRow(rowText = "", focus = []) {
   const text = ` ${normalize(rowText).replace(/\./g, "")} `;
   if (!text.trim()) return null;
 
-  for (const player of focus) {
-    const normalizedName = normalize(player.name || "").replace(/\./g, "");
-    if (!normalizedName) continue;
-    if (text.includes(` ${normalizedName} `)) return player;
+  const stripSuffix = value => String(value || "")
+    .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-    const parts = normalizedName.split(/\s+/).filter(Boolean);
+  for (const player of focus) {
+    const rawName = normalize(player.name || "").replace(/\./g, "");
+    if (!rawName) continue;
+
+    // Exact catalog name first.
+    if (text.includes(` ${rawName} `)) return player;
+
+    // CBS frequently inserts a middle initial (Ka'imi K. Fairbairn) or omits a
+    // suffix (Marvin Harrison Jr.). Match first + optional middle token + last.
+    const baseName = stripSuffix(rawName);
+    const parts = baseName.split(/\s+/).filter(Boolean);
     if (parts.length < 2) continue;
+
     const first = parts[0];
     const last = parts[parts.length - 1];
+    const middle = parts.slice(1, -1).map(escapeRegExp).join('\\s+');
+    const between = middle
+      ? `\\s+${middle}(?:\\s+[a-z])?\\s+`
+      : `(?:\\s+[a-z])?\\s+`;
+    const suffix = `(?:\\s+(?:jr|sr|ii|iii|iv|v))?`;
     const pattern = new RegExp(
-      `(?:^|\\s)${escapeRegExp(first)}(?:\\s+[a-z])?\\s+${escapeRegExp(last)}(?=\\s|$)`
+      `(?:^|\\s)${escapeRegExp(first)}${between}${escapeRegExp(last)}${suffix}(?=\\s|$)`
     );
     if (pattern.test(text)) return player;
+
+    // Final safe fallback: unique first + last sequence with up to two short
+    // middle-name/initial tokens. This handles CBS non-breaking-space markup.
+    const loose = new RegExp(
+      `(?:^|\\s)${escapeRegExp(first)}(?:\\s+[a-z0-9-]{1,18}){0,2}\\s+${escapeRegExp(last)}${suffix}(?=\\s|$)`
+    );
+    if (loose.test(text)) return player;
   }
   return null;
 }
@@ -5452,26 +5428,7 @@ function rankingsFromTableRows(source = {}, html = "", playerCatalog = []) {
     }
 
     if (!rank || rank > 200) continue;
-
-    // CBS kicker rows render a redundant first-name initial between the
-    // player's first and last name (for example "Ka'imi K. Fairbairn" or
-    // "Brandon B. Aubrey"). The ESPN player catalog stores those players as
-    // "Ka'imi Fairbairn" and "Brandon Aubrey". Remove only that CBS K
-    // presentation artifact before matching; other positions/sources keep the
-    // existing parser unchanged.
-    let matchText = rowText;
-    if (
-      (source.key === "jamey" || source.key === "heath") &&
-      allowedPositions.length === 1 &&
-      allowedPositions[0] === "K"
-    ) {
-      matchText = matchText.replace(
-        /\b([A-Za-zÀ-ÖØ-öø-ÿ’'-]+)\s+[A-Z]\.\s+([A-Za-zÀ-ÖØ-öø-ÿ’'-]+)\b/g,
-        "$1 $2"
-      );
-    }
-
-    const player = matchRankedPlayerFromRow(matchText, focus);
+    const player = matchRankedPlayerFromRow(rowText, focus);
     if (!player) continue;
     const position = canonicalPosition(player.position);
     if (allowedPositions.length && !allowedPositions.includes(position)) continue;
@@ -5503,121 +5460,9 @@ function rankingsFromEspnPage(source = {}, html = "", playerCatalog = []) {
   return rankings;
 }
 
-
-// IDP expert parsing: tested FantasyPros ECR + 4for4 positional ranks.
-function extractBalancedJson(text = "", marker = "var ecrData = ") {
-  const source = String(text || "");
-  const markerIndex = source.indexOf(marker);
-  if (markerIndex < 0) return null;
-  let start = -1;
-  for (let i = markerIndex + marker.length; i < source.length; i += 1) {
-    if (source[i] === "[" || source[i] === "{") { start = i; break; }
-  }
-  if (start < 0) return null;
-  const open = source[start];
-  const close = open === "[" ? "]" : "}";
-  let depth = 0, inString = false, escaped = false;
-  for (let i = start; i < source.length; i += 1) {
-    const ch = source[i];
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (ch === "\\") escaped = true;
-      else if (ch === '"') inString = false;
-      continue;
-    }
-    if (ch === '"') { inString = true; continue; }
-    if (ch === open) depth += 1;
-    else if (ch === close) {
-      depth -= 1;
-      if (depth === 0) {
-        try { return JSON.parse(source.slice(start, i + 1)); }
-        catch (_) { return null; }
-      }
-    }
-  }
-  return null;
-}
-
-function fantasyProsIdpRecords(html = "") {
-  const root = extractBalancedJson(html, "var ecrData = ");
-  if (!root) return [];
-  const records = [];
-  const seen = new Set();
-  const walk = value => {
-    if (!value || typeof value !== "object") return;
-    if (Array.isArray(value)) { value.forEach(walk); return; }
-    const name = value.player_name || value.playerName || value.name || value.player?.name || "";
-    const ecr = Number(value.rank_ecr ?? value.ecr ?? value.rank ?? value.rk ?? value.consensus_rank);
-    const rawPos = value.player_positions || value.player_position || value.position || value.pos || value.player?.position || "";
-    if (name && Number.isFinite(ecr) && ecr > 0) {
-      const key = `${normalize(name)}|${ecr}|${normalize(String(rawPos))}`;
-      if (!seen.has(key)) { seen.add(key); records.push({ name: String(name), ecr, rawPos: String(rawPos) }); }
-    }
-    Object.values(value).forEach(walk);
-  };
-  walk(root);
-  return records;
-}
-
-function fantasyProsEligibleForLfl(rawPos = "", lflPos = "") {
-  const raw = String(rawPos || "").toUpperCase().replace(/[^A-Z/,-]/g, "");
-  const tokens = raw.split(/[\/,;-]+/).filter(Boolean);
-  const p = canonicalPosition(lflPos);
-  if (p === "LB") return tokens.some(x => x === "LB" || x === "ILB" || x === "OLB");
-  if (p === "DL") return tokens.some(x => ["DL","DE","DT","EDGE","EDR"].includes(x));
-  if (p === "CB") return tokens.some(x => x === "CB" || x === "DB");
-  if (p === "S") return tokens.some(x => ["S","FS","SS","DB"].includes(x));
-  return false;
-}
-
-function rankingsFromFantasyProsIdp(html = "", playerCatalog = []) {
-  const records = fantasyProsIdpRecords(html);
-  if (!records.length) return {};
-  const idp = playerCatalog.filter(p => ["LB","DL","CB","S"].includes(canonicalPosition(p.position)));
-  const rankings = { LB: [], DL: [], CB: [], S: [] };
-  for (const targetPos of ["LB","DL","CB","S"]) {
-    const matched = [];
-    for (const player of idp) {
-      if (canonicalPosition(player.position) !== targetPos) continue;
-      const rec = records.find(r => normalize(r.name) === normalize(player.name) && fantasyProsEligibleForLfl(r.rawPos, targetPos));
-      if (rec) matched.push({ player, ecr: rec.ecr });
-    }
-    matched.sort((a,b) => a.ecr - b.ecr || a.player.name.localeCompare(b.player.name));
-    matched.forEach((item,index) => { rankings[targetPos][index] = item.player.name; });
-  }
-  return rankings;
-}
-
-function rankingsFrom4for4Idp(html = "", playerCatalog = []) {
-  const focus = playerCatalog.filter(p => ["LB","DL"].includes(canonicalPosition(p.position)));
-  const rankings = { LB: [], DL: [] };
-  const rows = String(html || "").match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi) || [];
-  for (const row of rows) {
-    const text = cleanSourceText(row);
-    if (!text) continue;
-    const group = text.match(/\b(LB|DL)-(\d{1,3})\b/i);
-    if (!group) continue;
-    const targetPos = group[1].toUpperCase();
-    const rank = Number(group[2]);
-    if (!rank || rank > 100) continue;
-    const player = matchRankedPlayerFromRow(text, focus.filter(p => canonicalPosition(p.position) === targetPos));
-    if (!player) continue;
-    if (!rankings[targetPos][rank - 1]) rankings[targetPos][rank - 1] = player.name;
-  }
-  return rankings;
-}
-
 function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
   if (source.key === "espn_rankings") {
     return rankingsFromEspnPage(source, html, playerCatalog);
-  }
-  const pagePositions = (source.positions || []).map(canonicalPosition).filter(Boolean);
-  const idpOnlyPage = pagePositions.length > 0 && pagePositions.every(position => ["LB", "DL", "CB", "S"].includes(position));
-  if (source.key === "fantasypros_idp_rankings" && idpOnlyPage) {
-    return rankingsFromFantasyProsIdp(html, playerCatalog);
-  }
-  if (source.key === "fourforfour_idp_rankings") {
-    return rankingsFrom4for4Idp(html, playerCatalog);
   }
   return rankingsFromTableRows(source, html, playerCatalog);
 }
@@ -5659,20 +5504,6 @@ function buildExpertRankingPages(source = {}, week = 1) {
     }));
   }
 
-  if (source.key === "fantasypros_idp_rankings") {
-    return [{
-      url: "https://www.fantasypros.com/nfl/rankings/idp.php",
-      positions: ["LB", "DL", "CB", "S"]
-    }];
-  }
-
-  if (source.key === "fourforfour_idp_rankings") {
-    return [{
-      url: `https://www.4for4.com/fantasy-football-rankings/idp/2026/week${currentWeek}`,
-      positions: ["LB", "DL"]
-    }];
-  }
-
   if (Array.isArray(source.pages) && source.pages.length) return source.pages;
   return source.url ? [{ url: source.url, positions: source.positions || [] }] : [];
 }
@@ -5691,8 +5522,7 @@ function mergePositionRankings(target = {}, incoming = {}) {
 
 async function fetchExpertRankingPage(source = {}, page = {}, playerCatalog = []) {
   const controller = new AbortController();
-  const pageTimeoutMs = source.key === "fourforfour_idp_rankings" ? 1200 : 3200;
-  const timer = setTimeout(() => controller.abort(), pageTimeoutMs);
+  const timer = setTimeout(() => controller.abort(), 3200);
 
   try {
     const response = await fetch(page.url, {
@@ -5807,7 +5637,7 @@ async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 
 }
 
 async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
-  const weekKey = `rankings-v4-idp-offense-preserved-${String(Number(currentWeek) || 1)}`;
+  const weekKey = `rankings-ffc-v2-${String(Number(currentWeek) || 1)}`;
   const cached = RUNTIME_CACHE.expertRankings.get(weekKey);
   if (cached && cacheFresh(cached.at, CACHE_TTL.expertRankingsMs)) {
     return { ...cached.value, cached: true };
@@ -5903,9 +5733,7 @@ function buildExpertRankingConsensus(expertRankings = {}, playerCatalog = []) {
       const position = canonicalPosition(rawPosition);
       if (!Array.isArray(names)) continue;
       const captured = names.filter(Boolean).length;
-      const approvedIdpSource = ["FantasyPros IDP", "4for4 IDP"].includes(expert.name) && ["LB", "DL", "CB", "S"].includes(position);
-      if (!approvedIdpSource && captured < (minimumCoverage[position] || 5)) continue;
-      if (approvedIdpSource && captured < 1) continue;
+      if (captured < (minimumCoverage[position] || 5)) continue;
       if (!healthyByPosition.has(position)) healthyByPosition.set(position, []);
       healthyByPosition.get(position).push(expert.name);
     }
@@ -6003,11 +5831,7 @@ function attachExpertRankingSignals(espnData = {}, playerCatalog = [], consensus
 
   const attach = player => {
     if (!player?.name) return;
-    const position = canonicalPosition(player.position);
-    const exact = byKey.get(`${position}|${normalize(player.name)}`);
-    const item = ["LB", "DL", "CB", "S"].includes(position)
-      ? exact
-      : (exact || byName.get(normalize(player.name)));
+    const item = byKey.get(`${canonicalPosition(player.position)}|${normalize(player.name)}`) || byName.get(normalize(player.name));
     if (!item) {
       player.expertRanking = null;
       return;
@@ -6157,6 +5981,53 @@ function dedupeSourceItems(items = []) {
   }
 
   return output;
+}
+
+function buildEspnPlayerDiagnostic(espnData = {}) {
+  const targets = new Set(["cedric gray", "justin jefferson"]);
+  const matches = [];
+  const seen = new Set();
+
+  function add(player, location = "") {
+    if (!player || typeof player !== "object") return;
+    const name = normalize(player.name || player.fullName || player.displayName || "");
+    if (!targets.has(name)) return;
+
+    const key = `${location}|${player.playerId ?? player.id ?? ""}|${name}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    matches.push({
+      location,
+      raw: player
+    });
+  }
+
+  add(espnData?.zoo, "espnData.zoo");
+
+  for (const player of espnData?.zoo?.roster || []) {
+    add(player, "espnData.zoo.roster");
+  }
+
+  for (const team of espnData?.teams || []) {
+    for (const player of team?.roster || []) {
+      add(player, `espnData.teams[${team?.teamId ?? "?"}].roster`);
+    }
+  }
+
+  for (const player of espnData?.availablePlayers || []) {
+    add(player, "espnData.availablePlayers");
+  }
+
+  for (const player of espnData?.watchList || []) {
+    add(player, "espnData.watchList");
+  }
+
+  return {
+    purpose: "Temporary raw ESPN diagnostic for universal Zoo Player Score design",
+    topLevelEspnKeys: Object.keys(espnData || {}).sort(),
+    players: matches
+  };
 }
 
 exports.handler =
@@ -6371,6 +6242,20 @@ async function () {
         posts,
         8
       );
+
+    // Give every Zoo roster player the exact same universal 0-100 Player Score
+    // used everywhere else in Zoo GM. Roster status does not change the score.
+    const zooRosterScores = getZooRoster(espnData).map(player => {
+      const universal = universalPlayerScore(player, posts);
+      return {
+        playerId: player.playerId || null,
+        name: player.name || "",
+        position: canonicalPosition(player.position),
+        nflTeam: player.nflTeam || "",
+        playerScore: universal.score,
+        components: universal.components
+      };
+    });
 
     const expendability =
       buildExpendability(
@@ -6663,6 +6548,7 @@ async function () {
           },
 
           sourceStatus,
+          diagnosticEspnPlayers: buildEspnPlayerDiagnostic(espnData),
           expertRankings: {
             week: expertRankings.week,
             source: expertRankings.source,
@@ -6685,6 +6571,7 @@ async function () {
           watchList,
           watchListIntelligence,
           suggestedWatchList,
+          zooRosterScores,
           expendability,
           lineupAlerts,
           replacementRecommendations,
