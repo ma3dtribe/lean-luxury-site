@@ -85,16 +85,6 @@ const EXPERT_RANKING_SOURCES = [
     name: "Fantasy Football Calculator",
     dynamicWeekPages: true,
     positions: ["QB", "RB", "WR", "TE", "K"]
-  },
-  {
-    key: "fantasypros_idp_rankings",
-    name: "FantasyPros IDP",
-    positions: ["LB", "DL", "CB", "S"]
-  },
-  {
-    key: "fourforfour_idp_rankings",
-    name: "4for4 IDP",
-    positions: ["LB", "DL"]
   }
 ];
 
@@ -109,9 +99,7 @@ const EXPECTED_EXPERTS = [
   "Heath Cummings",
   "Michael Fabiano",
   "ESPN",
-  "Fantasy Football Calculator",
-  "FantasyPros IDP",
-  "4for4 IDP"
+  "Fantasy Football Calculator"
 ];
 
 const FANTASYPROS_API_KEY = process.env.FANTASYPROS_API_KEY || "";
@@ -2503,28 +2491,19 @@ function playerAvailabilityContext(player = {}, posts = []) {
 
 function expertRankingValueScore(player = {}) {
   const ranking = player.expertRanking || null;
+  if (!ranking || !Number.isFinite(Number(ranking.averageRank))) return null;
+
   const position = canonicalPosition(player.position);
   const ceilings = {
     QB: 20, RB: 60, WR: 60, TE: 24, K: 20,
     LB: 60, DL: 36, CB: 30, S: 36
   };
-
-  // IDP ONLY: the tested FantasyPros + 4for4 model.
-  // Missing one source carries no penalty; expert count is informational only.
-  // Unranked by both sources = bottom of the positional pool = 0.
-  if (["LB", "DL", "CB", "S"].includes(position)) {
-    if (!ranking || !Number.isFinite(Number(ranking.averageRank))) return 0;
-    const ceiling = Number(ceilings[position]);
-    const rank = clamp(Number(ranking.averageRank), 1, ceiling);
-    return clamp(((ceiling - rank) / Math.max(1, ceiling - 1)) * 100, 0, 100);
-  }
-
-  // OFFENSE/KICKERS: intentionally unchanged from the current website.
-  if (!ranking || !Number.isFinite(Number(ranking.averageRank))) return null;
   const ceiling = Number(ceilings[position] || 40);
   const rank = Math.max(1, Number(ranking.averageRank));
   const rankScore = clamp(100 - (((rank - 1) / Math.max(1, ceiling - 1)) * 100), 0, 100);
   const confidence = clamp(Number(ranking.confidence ?? 100), 0, 100);
+
+  // Ranking quality is the main signal; source coverage slightly tempers one-source lists.
   return clamp(Math.round((rankScore * 0.90) + (confidence * 0.10)), 0, 100);
 }
 
@@ -5481,125 +5460,9 @@ function rankingsFromEspnPage(source = {}, html = "", playerCatalog = []) {
   return rankings;
 }
 
-
-// -----------------------------------------------------------------------------
-// IDP EXPERT RANKINGS — FantasyPros + 4for4 only.
-// This layer is intentionally isolated from the existing offensive ranking code.
-// -----------------------------------------------------------------------------
-function extractBalancedJson(text = "", marker = "var ecrData = ") {
-  const source = String(text || "");
-  const markerIndex = source.indexOf(marker);
-  if (markerIndex < 0) return null;
-  let start = -1;
-  for (let i = markerIndex + marker.length; i < source.length; i += 1) {
-    if (source[i] === "[" || source[i] === "{") { start = i; break; }
-  }
-  if (start < 0) return null;
-  const open = source[start];
-  const close = open === "[" ? "]" : "}";
-  let depth = 0, inString = false, escaped = false;
-  for (let i = start; i < source.length; i += 1) {
-    const ch = source[i];
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (ch === "\\") escaped = true;
-      else if (ch === '"') inString = false;
-      continue;
-    }
-    if (ch === '"') { inString = true; continue; }
-    if (ch === open) depth += 1;
-    else if (ch === close) {
-      depth -= 1;
-      if (depth === 0) {
-        try { return JSON.parse(source.slice(start, i + 1)); }
-        catch (_) { return null; }
-      }
-    }
-  }
-  return null;
-}
-
-function fantasyProsIdpRecords(html = "") {
-  const root = extractBalancedJson(html, "var ecrData = ");
-  if (!root) return [];
-  const records = [];
-  const seen = new Set();
-  const walk = value => {
-    if (!value || typeof value !== "object") return;
-    if (Array.isArray(value)) { value.forEach(walk); return; }
-    const name = value.player_name || value.playerName || value.name || value.player?.name || "";
-    const ecr = Number(value.rank_ecr ?? value.ecr ?? value.rank ?? value.rk ?? value.consensus_rank);
-    const rawPos = value.player_positions || value.player_position || value.position || value.pos || value.player?.position || "";
-    if (name && Number.isFinite(ecr) && ecr > 0) {
-      const key = `${normalize(name)}|${ecr}|${normalize(String(rawPos))}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        records.push({ name: String(name), ecr, rawPos: String(rawPos) });
-      }
-    }
-    Object.values(value).forEach(walk);
-  };
-  walk(root);
-  return records;
-}
-
-function fantasyProsEligibleForLfl(rawPos = "", lflPos = "") {
-  const raw = String(rawPos || "").toUpperCase().replace(/[^A-Z/,-]/g, "");
-  const tokens = raw.split(/[\/,;-]+/).filter(Boolean);
-  const p = canonicalPosition(lflPos);
-  if (p === "LB") return tokens.some(x => x === "LB" || x === "ILB" || x === "OLB");
-  if (p === "DL") return tokens.some(x => ["DL","DE","DT","EDGE","EDR"].includes(x));
-  if (p === "CB") return tokens.some(x => x === "CB" || x === "DB");
-  if (p === "S") return tokens.some(x => ["S","FS","SS","DB"].includes(x));
-  return false;
-}
-
-function rankingsFromFantasyProsIdp(html = "", playerCatalog = []) {
-  const records = fantasyProsIdpRecords(html);
-  if (!records.length) return {};
-  const idp = playerCatalog.filter(p => ["LB","DL","CB","S"].includes(canonicalPosition(p.position)));
-  const rankings = { LB: [], DL: [], CB: [], S: [] };
-  for (const targetPos of ["LB","DL","CB","S"]) {
-    const matched = [];
-    for (const player of idp) {
-      if (canonicalPosition(player.position) !== targetPos) continue;
-      const rec = records.find(r => normalize(r.name) === normalize(player.name) && fantasyProsEligibleForLfl(r.rawPos, targetPos));
-      if (rec) matched.push({ player, ecr: rec.ecr });
-    }
-    matched.sort((a,b) => a.ecr - b.ecr || a.player.name.localeCompare(b.player.name));
-    matched.forEach((item,index) => { rankings[targetPos][index] = item.player.name; });
-  }
-  return rankings;
-}
-
-function rankingsFrom4for4Idp(html = "", playerCatalog = []) {
-  const focus = playerCatalog.filter(p => ["LB","DL"].includes(canonicalPosition(p.position)));
-  const rankings = { LB: [], DL: [] };
-  const rows = String(html || "").match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi) || [];
-  for (const row of rows) {
-    const text = cleanSourceText(row);
-    if (!text) continue;
-    const group = text.match(/\b(LB|DL)-(\d{1,3})\b/i);
-    if (!group) continue;
-    const targetPos = group[1].toUpperCase();
-    const rank = Number(group[2]);
-    if (!rank || rank > 100) continue;
-    const player = matchRankedPlayerFromRow(text, focus.filter(p => canonicalPosition(p.position) === targetPos));
-    if (!player) continue;
-    if (!rankings[targetPos][rank - 1]) rankings[targetPos][rank - 1] = player.name;
-  }
-  return rankings;
-}
-
 function rankingsFromPage(source = {}, html = "", playerCatalog = []) {
   if (source.key === "espn_rankings") {
     return rankingsFromEspnPage(source, html, playerCatalog);
-  }
-  if (source.key === "fantasypros_idp_rankings") {
-    return rankingsFromFantasyProsIdp(html, playerCatalog);
-  }
-  if (source.key === "fourforfour_idp_rankings") {
-    return rankingsFrom4for4Idp(html, playerCatalog);
   }
   return rankingsFromTableRows(source, html, playerCatalog);
 }
@@ -5631,20 +5494,6 @@ function buildExpertRankingPages(source = {}, week = 1) {
       url: `https://fantasy.espn.com/football/tools/fantasyRankings?slotCategoryId=${slotCategoryId}&scoringPeriodId=${currentWeek}&seasonId=2026&rankType=ppr&count=100&rand=${currentWeek}`,
       positions: [position]
     }));
-  }
-
-  if (source.key === "fantasypros_idp_rankings") {
-    return [{
-      url: "https://www.fantasypros.com/nfl/rankings/idp.php",
-      positions: ["LB", "DL", "CB", "S"]
-    }];
-  }
-
-  if (source.key === "fourforfour_idp_rankings") {
-    return [{
-      url: `https://www.4for4.com/fantasy-football-rankings/idp/2026/week${currentWeek}`,
-      positions: ["LB", "DL"]
-    }];
   }
 
   if (source.key === "ffc_rankings") {
@@ -5788,7 +5637,7 @@ async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 
 }
 
 async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
-  const weekKey = `rankings-idp-fp-4for4-v1-${String(Number(currentWeek) || 1)}`;
+  const weekKey = `rankings-ffc-v2-${String(Number(currentWeek) || 1)}`;
   const cached = RUNTIME_CACHE.expertRankings.get(weekKey);
   if (cached && cacheFresh(cached.at, CACHE_TTL.expertRankingsMs)) {
     return { ...cached.value, cached: true };
@@ -5982,13 +5831,7 @@ function attachExpertRankingSignals(espnData = {}, playerCatalog = [], consensus
 
   const attach = player => {
     if (!player?.name) return;
-    const playerPosition = canonicalPosition(player.position);
-    const exact = byKey.get(`${playerPosition}|${normalize(player.name)}`);
-    // IDP must match BOTH name and LFL position. Never allow a QB/WR/etc.
-    // with the same name to leak an offensive ranking into an IDP score.
-    const item = ["LB", "DL", "CB", "S"].includes(playerPosition)
-      ? exact
-      : (exact || byName.get(normalize(player.name)));
+    const item = byKey.get(`${canonicalPosition(player.position)}|${normalize(player.name)}`) || byName.get(normalize(player.name));
     if (!item) {
       player.expertRanking = null;
       return;
@@ -6400,6 +6243,20 @@ async function () {
         8
       );
 
+    // Give every Zoo roster player the exact same universal 0-100 Player Score
+    // used everywhere else in Zoo GM. Roster status does not change the score.
+    const zooRosterScores = getZooRoster(espnData).map(player => {
+      const universal = universalPlayerScore(player, posts);
+      return {
+        playerId: player.playerId || null,
+        name: player.name || "",
+        position: canonicalPosition(player.position),
+        nflTeam: player.nflTeam || "",
+        playerScore: universal.score,
+        components: universal.components
+      };
+    });
+
     const expendability =
       buildExpendability(
         espnData,
@@ -6714,6 +6571,7 @@ async function () {
           watchList,
           watchListIntelligence,
           suggestedWatchList,
+          zooRosterScores,
           expendability,
           lineupAlerts,
           replacementRecommendations,
