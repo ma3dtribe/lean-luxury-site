@@ -2585,6 +2585,182 @@ function universalPlayerScore(player = {}, posts = []) {
   }};
 }
 
+
+// ============================================================
+// WEEKLY ADVICE RATING (0-100)
+// Separate from the existing season-long Player Score.
+// 40% weekly expert consensus
+// 25% current role / opportunity
+// 20% LFL production + current-week projection/actual
+// 10% health / availability
+//  5% matchup/news (neutral 50 until a reliable NFL matchup feed is added)
+// ============================================================
+const WEEKLY_ADVICE_POOLS = {
+  QB: 32, RB: 60, WR: 60, TE: 30, K: 30,
+  LB: 60, DL: 36, CB: 30, S: 36
+};
+
+function weeklyExpertScore(player = {}) {
+  const position = canonicalPosition(player.position);
+  const ranking = player.expertRanking || null;
+  const idpPosition = ["LB", "DL", "CB", "S"].includes(position);
+
+  if (!ranking || !Number.isFinite(Number(ranking.averageRank)) || Number(ranking.averageRank) <= 0) {
+    // Final IDP rule: missing both FantasyPros + 4for4 = 0 Expert points.
+    // Offense keeps a true missing value so the remaining weekly components can normalize.
+    return idpPosition ? 0 : null;
+  }
+
+  const ceiling = Number(WEEKLY_ADVICE_POOLS[position] || 40);
+  const rank = clamp(Number(ranking.averageRank), 1, ceiling);
+  return clamp(Math.round(100 - (((rank - 1) / Math.max(1, ceiling - 1)) * 100)), 0, 100);
+}
+
+function weeklyProductionScore(player = {}) {
+  const production = productionSnapshot(player);
+  const avg = Number(production.seasonActualAverage);
+  const projection = Number(production.currentWeekProjectedPoints);
+  const actual = Number(production.currentWeekPoints);
+  const values = [];
+
+  if (Number.isFinite(avg) && avg > 0) values.push({ value: avg, weight: 0.55 });
+  if (Number.isFinite(projection) && projection > 0) values.push({ value: projection, weight: 0.45 });
+  // Keep current-week points once a game has begun. Locked Thursday players should
+  // reflect what they actually produced while the rest of the week is still active.
+  if (Number.isFinite(actual) && actual > 0) values.push({ value: actual, weight: 0.30 });
+
+  if (!values.length) {
+    return { score: 50, average: null, projection: null, actual: null };
+  }
+
+  const totalWeight = values.reduce((sum, item) => sum + item.weight, 0);
+  const weightedPoints = values.reduce((sum, item) => sum + (item.value * item.weight), 0) / totalWeight;
+
+  return {
+    score: clamp(Math.round((weightedPoints / 50) * 100), 0, 100),
+    average: Number.isFinite(avg) ? Math.round(avg * 10) / 10 : null,
+    projection: Number.isFinite(projection) ? Math.round(projection * 10) / 10 : null,
+    actual: Number.isFinite(actual) ? Math.round(actual * 10) / 10 : null
+  };
+}
+
+function weeklyHealthScore(player = {}) {
+  const rawStatus = String(player.injuryStatus || player.status || "").trim().toUpperCase();
+  const projection = Number(player?.production?.currentWeekProjectedPoints);
+  const rank = Number(player?.expertRanking?.averageRank);
+  const hasProjection = Number.isFinite(projection) && projection > 0;
+  const hasRanking = Number.isFinite(rank) && rank > 0;
+
+  // Do not let a likely stale OUT tag erase strong live ranking/projection signals.
+  if (rawStatus === "OUT" && hasProjection && hasRanking) {
+    return { score: 60, status: "CONFLICT", rawStatus: "OUT", conflict: true };
+  }
+  if (!rawStatus || rawStatus === "ACTIVE" || rawStatus === "HEALTHY") {
+    return { score: 100, status: rawStatus || "ACTIVE", rawStatus: rawStatus || "ACTIVE", conflict: false };
+  }
+  if (rawStatus === "Q" || rawStatus.includes("QUESTION") || rawStatus.includes("DTD")) {
+    return { score: 70, status: rawStatus, rawStatus, conflict: false };
+  }
+  if (rawStatus === "D" || rawStatus.includes("DOUBT")) {
+    return { score: 40, status: rawStatus, rawStatus, conflict: false };
+  }
+  if (rawStatus === "OUT" || rawStatus.includes("INACTIVE")) {
+    return { score: 15, status: rawStatus, rawStatus, conflict: false };
+  }
+  if (rawStatus.includes("IR") || rawStatus.includes("SUSP")) {
+    return { score: 5, status: rawStatus, rawStatus, conflict: false };
+  }
+  return { score: 85, status: rawStatus, rawStatus, conflict: false };
+}
+
+function weeklyRoleScore(player = {}, expertScore = null) {
+  let score = 50;
+  const projection = Number(player?.production?.currentWeekProjectedPoints);
+  const started = Number(player.percentStarted);
+  const rosterStatus = String(player.rosterStatus || "").toUpperCase();
+
+  if (expertScore != null) {
+    if (expertScore >= 90) score += 25;
+    else if (expertScore >= 75) score += 20;
+    else if (expertScore >= 60) score += 15;
+    else if (expertScore >= 45) score += 10;
+    else if (expertScore >= 25) score += 5;
+    else score -= 5;
+  }
+
+  if (Number.isFinite(projection) && projection > 0) {
+    if (projection >= 40) score += 15;
+    else if (projection >= 25) score += 12;
+    else if (projection >= 15) score += 8;
+    else score += 4;
+  }
+
+  if (Number.isFinite(started) && started >= 0) {
+    if (started >= 80) score += 15;
+    else if (started >= 50) score += 12;
+    else if (started >= 25) score += 8;
+    else if (started >= 10) score += 4;
+  }
+
+  if (rosterStatus === "STARTER") score += 5;
+  return clamp(Math.round(score), 0, 100);
+}
+
+function weeklyAdviceRating(player = {}) {
+  const position = canonicalPosition(player.position);
+  const expert = weeklyExpertScore(player);
+  const production = weeklyProductionScore(player);
+  const health = weeklyHealthScore(player);
+  const role = weeklyRoleScore(player, expert);
+  const matchupNews = 50;
+  const idpPosition = ["LB", "DL", "CB", "S"].includes(position);
+
+  let score;
+  if (expert != null) {
+    score =
+      (expert * 0.40) +
+      (role * 0.25) +
+      (production.score * 0.20) +
+      (health.score * 0.10) +
+      (matchupNews * 0.05);
+  } else if (!idpPosition) {
+    // Offensive player with no weekly expert rank: normalize the other 60%.
+    score =
+      (role * (0.25 / 0.60)) +
+      (production.score * (0.20 / 0.60)) +
+      (health.score * (0.10 / 0.60)) +
+      (matchupNews * (0.05 / 0.60));
+  } else {
+    // Defensive players should never reach this branch because missing IDP rank = 0.
+    score =
+      (role * 0.25) +
+      (production.score * 0.20) +
+      (health.score * 0.10) +
+      (matchupNews * 0.05);
+  }
+
+  return {
+    score: clamp(Math.round(score), 0, 100),
+    components: {
+      weeklyExpertConsensus: expert,
+      currentRoleOpportunity: role,
+      recentLflProduction: production.score,
+      healthAvailability: health.score,
+      matchupNews,
+      averagePoints: production.average,
+      currentWeekProjection: production.projection,
+      currentWeekActual: production.actual,
+      status: health.status,
+      rawStatus: health.rawStatus,
+      statusConflict: health.conflict,
+      averageRank: Number.isFinite(Number(player?.expertRanking?.averageRank))
+        ? Number(player.expertRanking.averageRank)
+        : null,
+      expertCount: Number(player?.expertRanking?.expertCount || 0)
+    }
+  };
+}
+
 function blendExpertRanking(baseScore, player = {}) {
   const rankingScore = expertRankingValueScore(player);
   if (rankingScore == null) return clamp(Math.round(baseScore), 0, 100);
@@ -6593,15 +6769,46 @@ async function () {
     // used everywhere else in Zoo GM. Roster status does not change the score.
     const zooRosterScores = getZooRoster(espnData).map(player => {
       const universal = universalPlayerScore(player, posts);
+      const weekly = weeklyAdviceRating(player);
       return {
         playerId: player.playerId || null,
         name: player.name || "",
         position: canonicalPosition(player.position),
         nflTeam: player.nflTeam || "",
         playerScore: universal.score,
-        components: universal.components
+        seasonLongRating: universal.score,
+        weeklyAdviceRating: weekly.score,
+        components: universal.components,
+        weeklyComponents: weekly.components
       };
     });
+
+    // Weekly ratings are also exposed as a lookup list for Zoo, Watch List and
+    // available-player UI cards without changing the existing Season Player Score.
+    const weeklyAdviceCandidates = [
+      ...getZooRoster(espnData),
+      ...(Array.isArray(watchList) ? watchList : []),
+      ...(Array.isArray(espnData?.availablePlayers) ? espnData.availablePlayers : [])
+    ];
+    const weeklyAdviceSeen = new Set();
+    const weeklyAdviceScores = weeklyAdviceCandidates
+      .filter(player => {
+        const key = `${player?.playerId || ""}|${String(player?.name || "").toLowerCase()}|${canonicalPosition(player?.position)}`;
+        if (!player?.name || weeklyAdviceSeen.has(key)) return false;
+        weeklyAdviceSeen.add(key);
+        return true;
+      })
+      .map(player => {
+        const weekly = weeklyAdviceRating(player);
+        return {
+          playerId: player.playerId || null,
+          name: player.name || "",
+          position: canonicalPosition(player.position),
+          nflTeam: player.nflTeam || "",
+          weeklyAdviceRating: weekly.score,
+          components: weekly.components
+        };
+      });
 
     const expendability =
       buildExpendability(
@@ -6922,6 +7129,7 @@ async function () {
           watchListIntelligence,
           suggestedWatchList,
           zooRosterScores,
+          weeklyAdviceScores,
           expendability,
           lineupAlerts,
           replacementRecommendations,
