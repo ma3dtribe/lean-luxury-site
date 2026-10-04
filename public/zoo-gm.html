@@ -1100,7 +1100,7 @@
                 <th>Slot</th>
                 <th>Player</th>
                 <th>Pos</th>
-                <th>Player Score</th>
+                <th>Season | This Week</th>
               </tr>
             </thead>
 
@@ -1745,7 +1745,13 @@
         (item.playerId != null && player.playerId != null && String(item.playerId) === String(player.playerId)) ||
         String(item.name || "").toLowerCase() === String(player.name || "").toLowerCase()
       );
-      const playerScore = Number.isFinite(Number(scoreEntry?.playerScore)) ? Number(scoreEntry.playerScore) : null;
+      const seasonLongRating = Number.isFinite(Number(scoreEntry?.seasonLongRating))
+        ? Number(scoreEntry.seasonLongRating)
+        : (Number.isFinite(Number(scoreEntry?.playerScore)) ? Number(scoreEntry.playerScore) : null);
+      const weeklyAdviceRating = Number.isFinite(Number(scoreEntry?.weeklyAdviceRating))
+        ? Number(scoreEntry.weeklyAdviceRating)
+        : null;
+
       rows.push(`
         <tr>
           <td class="roster-slot">${esc(rosterSlotLabel(player))}</td>
@@ -1754,7 +1760,10 @@
             ${team ? `<div class="roster-player-meta">${esc(team)}</div>` : ""}
           </td>
           <td>${esc(player.position)}</td>
-          <td><strong>${playerScore == null ? "—" : esc(playerScore)}</strong></td>
+          <td>
+            <strong>Season ${seasonLongRating == null ? "—" : esc(seasonLongRating)}</strong>
+            <div class="roster-player-meta">This Week ${weeklyAdviceRating == null ? "—" : esc(weeklyAdviceRating)}</div>
+          </td>
         </tr>
       `);
     });
