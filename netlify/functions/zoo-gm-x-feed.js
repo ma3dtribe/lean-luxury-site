@@ -3766,10 +3766,17 @@ function buildExpendability(espnData = {}, posts = [], watchListIntelligence = [
     const rosterProtection = rosterPct == null ? 0 : (rosterPct / 100) * 12;
     const startProtection = startPct == null ? 0 : (startPct / 100) * (isInjured ? 2 : 6);
     score -= rosterProtection + startProtection;
+    // ADDITIVE injury/market retention guard: high ESPN ownership signals
+    // long-term value even when current injury depresses the start percentage.
+    // This is only a roster-decision adjustment; core scores stay untouched.
+    const injuredMarketProtection = isInjured && rosterPct != null && rosterPct >= 80
+      ? ((rosterPct - 80) / 20) * 16 + 7 : 0;
+    score -= injuredMarketProtection;
     score = clamp(Math.round(score));
     const reasons = [`Season player value: ${Math.round(value)}/100`];
     if (rosterPct != null) reasons.push(`ESPN rostered: ${rosterPct.toFixed(1)}% (retention protection)`);
     if (startPct != null) reasons.push(`ESPN started: ${startPct.toFixed(1)}%${isInjured ? ' (injury-adjusted)' : ''}`);
+    if (injuredMarketProtection > 0) reasons.push('High roster ownership protects long-term value during injury');
     if (surplus && betterTeammates) reasons.push(`A higher-rated ${position} is already on Zoo's roster`);
     else if (surplus) reasons.push(`${position} depth exceeds the preferred count, but value still controls`);
     if (isNegativeAvailabilityStatus(currentAvailability.status)) reasons.push(`Availability: ${currentAvailability.status}`);
@@ -3779,24 +3786,38 @@ function buildExpendability(espnData = {}, posts = [], watchListIntelligence = [
       injuryStatus: player.injuryStatus || 'ACTIVE', currentAvailabilityStatus: currentAvailability.status || '',
       expendabilityScore: score, seasonPlayerValue: Math.round(value),
       percentOwned: rosterPct, percentStarted: startPct,
-      marketRetentionProtection: Math.round((rosterProtection + startProtection) * 10) / 10,
+      marketRetentionProtection: Math.round((rosterProtection + startProtection + injuredMarketProtection) * 10) / 10,
       currentPositionCount: samePosition.length, preferredPositionCount: preferred,
       surplusAtPosition: surplus, reasons, bestAvailableReplacement: null };
   }).sort((a,b) => b.expendabilityScore - a.expendabilityScore || a.seasonPlayerValue - b.seasonPlayerValue);
 
-  // Pick distinct free agents across the three cards, reserving the top kicker
-  // for the highest-priority cut when Zoo has no starting kicker.
+  // Evaluate each proposed move against the roster after earlier recommendations.
+  // Avoid duplicate adds, redundant kickers and QB3 when Zoo has two QBs.
+  const projectedCounts = { ...counts };
   const top3 = results.slice(0, 3).map((drop, index) => {
-    let add = null;
-    if (index === 0 && !hasKicker) {
-      add = available.filter(p => canonicalPosition(p.position) === 'K')
-        .sort((a,b) => b.zooValueScore - a.zooValueScore)[0] || null;
+    const dropPos = canonicalPosition(drop.position);
+    const afterDrop = { ...projectedCounts,
+      [dropPos]: Math.max(0, Number(projectedCounts[dropPos] || 0) - 1) };
+    const options = available.filter(p => {
+      const pos = canonicalPosition(p.position);
+      if (!pos || usedAdds.has(normalize(p.name)) || rosterNames.has(normalize(p.name))) return false;
+      if (pos === 'K' && Number(afterDrop.K || 0) >= 1) return false;
+      if (pos === 'QB' && Number(afterDrop.QB || 0) >= 2) return false;
+      if (pos === 'TE' && Number(afterDrop.TE || 0) >= 2) return false;
+      return true;
+    });
+    // Fill an uncovered starting slot first; otherwise seek strongest season value.
+    const needsKicker = Number(afterDrop.K || 0) === 0;
+    const add = (needsKicker
+      ? options.filter(p => canonicalPosition(p.position) === 'K')
+      : options).sort((a,b) => Number(b.zooValueScore || 0) - Number(a.zooValueScore || 0))[0] || null;
+    if (add) {
+      usedAdds.add(normalize(add.name));
+      const addPos = canonicalPosition(add.position);
+      projectedCounts[dropPos] = afterDrop[dropPos];
+      projectedCounts[addPos] = Number(afterDrop[addPos] || 0) + 1;
     }
-    if (!add) add = available.find(p => !usedAdds.has(normalize(p.name)) &&
-      !rosterNames.has(normalize(p.name)) &&
-      (!hasKicker || canonicalPosition(p.position) !== 'K')) || null;
-    if (add) usedAdds.add(normalize(add.name));
-    const gain = add ? Math.round(add.zooValueScore - drop.seasonPlayerValue) : null;
+    const gain = add ? Math.round(Number(add.zooValueScore || 0) - drop.seasonPlayerValue) : null;
     return { ...drop, rank: index + 1,
       bestAvailableReplacement: add ? {
         playerId: add.playerId || null, name: add.name, position: add.position,
@@ -3804,7 +3825,7 @@ function buildExpendability(espnData = {}, posts = [], watchListIntelligence = [
         zooValueScore: add.zooValueScore, onWatchList: Boolean(add.onWatchList)
       } : null,
       projectedValueGain: gain,
-      reasons: [...drop.reasons, ...(add ? [!hasKicker && index === 0 && canonicalPosition(add.position) === 'K'
+      reasons: [...drop.reasons, ...(add ? [needsKicker && canonicalPosition(add.position) === 'K'
         ? 'Fills Zoo’s empty starting kicker position'
         : gain >= 8 ? `Available player rates ${gain} points higher` : 'Review before making a move; upgrade is not established'] : [])]
     };
