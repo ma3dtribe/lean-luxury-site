@@ -3748,8 +3748,28 @@ function buildExpendability(espnData = {}, posts = [], watchListIntelligence = [
       (surplus && betterTeammates ? 9 : 0) + (starter ? -5 : 0);
     if (isNegativeAvailabilityStatus(currentAvailability.status)) score += 5;
     if (position === "K" && samePosition.length === 1) score -= 24;
+
+    // ADDITIVE market evidence for Roster Decisions ONLY. Do not replace or
+    // reweight the existing season score, weekly score, or other measurements.
+    // Missing ESPN percentages remain neutral instead of counting as zero.
+    const rosterPctRaw = Number(player.percentOwned);
+    const startPctRaw = Number(player.percentStarted);
+    const rosterPct = player.percentOwned != null && Number.isFinite(rosterPctRaw)
+      ? clamp(rosterPctRaw) : null;
+    const startPct = player.percentStarted != null && Number.isFinite(startPctRaw)
+      ? clamp(startPctRaw) : null;
+    const isInjured = isNegativeAvailabilityStatus(currentAvailability.status) ||
+      isNegativeAvailabilityStatus(player.injuryStatus);
+    // A widely rostered player gets up to 12 points of drop protection;
+    // high start usage gives up to 6 more. Injury reduces start-% influence,
+    // since managers may bench a valuable player temporarily.
+    const rosterProtection = rosterPct == null ? 0 : (rosterPct / 100) * 12;
+    const startProtection = startPct == null ? 0 : (startPct / 100) * (isInjured ? 2 : 6);
+    score -= rosterProtection + startProtection;
     score = clamp(Math.round(score));
     const reasons = [`Season player value: ${Math.round(value)}/100`];
+    if (rosterPct != null) reasons.push(`ESPN rostered: ${rosterPct.toFixed(1)}% (retention protection)`);
+    if (startPct != null) reasons.push(`ESPN started: ${startPct.toFixed(1)}%${isInjured ? ' (injury-adjusted)' : ''}`);
     if (surplus && betterTeammates) reasons.push(`A higher-rated ${position} is already on Zoo's roster`);
     else if (surplus) reasons.push(`${position} depth exceeds the preferred count, but value still controls`);
     if (isNegativeAvailabilityStatus(currentAvailability.status)) reasons.push(`Availability: ${currentAvailability.status}`);
@@ -3758,6 +3778,8 @@ function buildExpendability(espnData = {}, posts = [], watchListIntelligence = [
       nflTeam: player.nflTeam || '', lineupStatus: player.rosterStatus || player.lineupSlot || '',
       injuryStatus: player.injuryStatus || 'ACTIVE', currentAvailabilityStatus: currentAvailability.status || '',
       expendabilityScore: score, seasonPlayerValue: Math.round(value),
+      percentOwned: rosterPct, percentStarted: startPct,
+      marketRetentionProtection: Math.round((rosterProtection + startProtection) * 10) / 10,
       currentPositionCount: samePosition.length, preferredPositionCount: preferred,
       surplusAtPosition: surplus, reasons, bestAvailableReplacement: null };
   }).sort((a,b) => b.expendabilityScore - a.expendabilityScore || a.seasonPlayerValue - b.seasonPlayerValue);
