@@ -1169,7 +1169,7 @@
 
     <div class="panel-header">
       <h2>Zoo Roster Decisions</h2>
-      <span class="news-time">Top 3 most expendable · cross-position waiver comparison</span>
+      <span class="news-time">Top 3 most expendable · 3 distinct waiver targets</span>
     </div>
 
     <div class="panel-body">
@@ -1683,7 +1683,7 @@
 
           <div class="decision-replacement">
             ${replacement
-              ? `Best available replacement: <strong>${esc(replacement.name)}</strong> · ${esc(replacement.position)} · Score ${Number(replacement.acquisitionScore || 0)}`
+              ? `Suggested available addition: <strong>${esc(replacement.name)}</strong> · ${esc(replacement.position)} · Season Score ${Number(replacement.acquisitionScore || 0)}`
               : "No stronger waiver replacement identified."
             }
           </div>
@@ -2092,56 +2092,24 @@
   function renderOpportunityOpponentAlerts() {
     const container = document.getElementById("opportunityOpponentAlerts");
     if (!container) return;
-    const cutoff = Date.now() - (12 * 60 * 60 * 1000);
-    const raw = [
-      ...(intelligenceData?.opportunityAlerts || []).map(item => ({...item, _kind:"OPPORTUNITY"})),
-      ...(intelligenceData?.opponentActionableUpdates || []).map(item => ({...item, _kind:"OPPONENT"}))
-    ];
-
-    const combined = raw.filter(item => {
-      const pos = String(item.position || item.player?.position || "").toUpperCase();
-      const text = `${item.player || ""} ${item.reason || item.whatHappened || item.text || ""}`.toUpperCase();
-      if (pos === "D/ST" || pos === "DST" || /\bD\/ST\b/.test(text)) return false;
-      const t = new Date(item.publishedAt || 0).getTime();
-      return Number.isFinite(t) && t >= cutoff;
-    }).sort((a,b) => Number(b.impactScore||0)-Number(a.impactScore||0) || new Date(b.publishedAt||0)-new Date(a.publishedAt||0));
-
-    if (!combined.length) {
-      container.innerHTML = '<div class="empty">No meaningful situation changes in the last 12 hours.</div>';
+    const rows = intelligenceData?.situationChanges || [];
+    if (!rows.length) {
+      container.innerHTML = '<div class="empty">No verified meaningful Zoo or available-player changes in the last 12 hours.</div>';
       return;
     }
-
-    container.innerHTML = combined.slice(0,5).map(item => {
-      let detail = decodeNewsText(item.reason || item.summary || item.whatHappened || item.text || "")
-        .replace(/^OPPONENT\s*[·:\-]\s*/i, "")
-        .replace(/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+[A-Z][a-z]{2}\s+\d{1,2}(?:st|nd|rd|th)?\s+\d{1,2}:\d{2}(?:am|pm)\s+(?:EDT|EST|CDT|CST|MDT|MST|PDT|PST)\s+By\s+[A-Z][A-Za-z.'’\- ]+/i, "")
-        .replace(/\s+Category:\s*.*$/i, "")
-        .trim();
-
-      let name = typeof item.player === "string" ? item.player : (item.playerName || item.name || "");
-      if (!name && Array.isArray(item.players) && item.players.length) {
-        const first = item.players[0];
-        name = typeof first === "string" ? first : (first?.name || "");
-      }
-      if (!name) {
-        const m = detail.match(/^([A-Z][A-Za-z.'’\-]+(?:\s+[A-Z][A-Za-z.'’\-]+){1,3})(?=\s*\()/);
-        if (m) name = m[1].trim();
-      }
-
-      // Never render a generic or malformed situation card. NBC markup leakage
-      // such as data-share-url/button/icon-button means the story boundary was
-      // not clean enough to identify one player's situation reliably.
-      const malformed = /data-share-url=|icon-button|class=|<[^>]+>|PlayerNewsPost-/i.test(detail);
-      if (!name || malformed) return "";
-
-      const lead = detail.split(/Fantasy Impact:/i)[0];
-      const positive = /expected to play|will play|active|cleared|full practice|benefit|boost|improv|upgrade|more opportunity|larger role|increased role|expanded role|more targets|more touches|more snaps|named starter|promoted|elevated/i.test(lead);
-      const negativeSignal = /unlikely to play|expected to miss|will miss|ruled out|inactive|doubtful|injured|injury|limited|suspended|reduced role|lost role|demoted/i.test(lead);
-      const negative = negativeSignal && !positive;
-      const direction = negative ? "− WORSENED" : "+ IMPROVED";
-      const context = item._kind === "OPPONENT" ? "OPPONENT" : (item.context || item.ownershipStatus || "AVAILABLE / WATCH");
-
-      return `<div class="decision-row"><div class="decision-row-top"><div class="decision-row-name">${esc(name)}</div><span class="tag ${negative ? "opponent" : "available"}">${esc(direction)}</span></div><div class="decision-row-detail">${esc(context)} · ${esc(detail)}</div></div>`;
+    const seen = new Set();
+    container.innerHTML = rows.filter(item => {
+      const key = String(item.player || "").trim().toLowerCase();
+      if (!key || seen.has(key) || !["ZOO", "AVAILABLE"].includes(item.context)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 8).map(item => {
+      const negative = item.direction === "WORSENED";
+      const detail = decodeNewsText(item.reason || item.headline || "").slice(0, 370);
+      return `<div class="decision-row"><div class="decision-row-top">
+        <div class="decision-row-name">${esc(item.player)}</div>
+        <span class="tag ${negative ? "opponent" : "available"}">${negative ? "− WORSENED" : "+ IMPROVED"}</span>
+        </div><div class="decision-row-detail">${esc(item.context)} · ${esc(detail)}</div></div>`;
     }).join("");
   }
 
