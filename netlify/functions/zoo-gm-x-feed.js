@@ -3727,147 +3727,103 @@ function buildOpportunityAlerts(
 function buildExpendability(espnData = {}, posts = [], watchListIntelligence = [], playerCatalog = []) {
   const roster = getZooRoster(espnData);
   const counts = countRosterPositions(roster);
-  const results = [];
-
-  for (const player of roster) {
-    const position = canonicalPosition(player.position);
-    if (!position || String(player.rosterStatus || player.lineupSlot || "").toUpperCase() === "IR") {
-      continue;
-    }
-
-    const profile = getPositionProfile(position);
+  const scored = roster.filter(player => player?.name &&
+    String(player.rosterStatus || player.lineupSlot || "").toUpperCase() !== "IR")
+    .map(player => ({ player, value: universalPlayerScore(player, posts).score,
+      position: canonicalPosition(player.position) }));
+  const available = buildBestAvailableOptions(espnData, posts, counts, 150, watchListIntelligence)
+    .filter(player => player.ownershipStatus !== "ZOO");
+  const usedAdds = new Set();
+  const hasKicker = scored.some(item => item.position === "K");
+  const rosterNames = new Set(roster.map(p => normalize(p.name)));
+  const results = scored.map(({player, value, position}) => {
+    const samePosition = scored.filter(item => item.position === position);
     const preferred = getPreferredCount(position);
-    const positionCount = Number(counts[position] || 0);
-    const surplus = Math.max(0, positionCount - preferred);
-    const lineupStatus = String(player.rosterStatus || player.lineupSlot || "").toUpperCase();
-    const marketQuality = playerMarketQuality(player);
-    const news = liveNewsScore(posts, player.name);
-    const availability = playerAvailabilityContext(player, posts);
-    const teammateContext = teammateOpportunityContext(player, posts, playerCatalog);
+    const surplus = Math.max(0, samePosition.length - preferred);
+    const betterTeammates = samePosition.filter(item => item.value > value).length;
+    const starter = !/BENCH|^BE$/.test(String(player.rosterStatus || player.lineupSlot || "").toUpperCase());
     const currentAvailability = currentNewsAvailability(player, posts);
+    // Value is the primary factor. Positional duplication is only a tie-breaker.
+    let score = (100 - value) * 0.78 + (surplus ? 8 : 0) +
+      (surplus && betterTeammates ? 9 : 0) + (starter ? -5 : 0);
+    if (isNegativeAvailabilityStatus(currentAvailability.status)) score += 5;
+    if (position === "K" && samePosition.length === 1) score -= 24;
+    score = clamp(Math.round(score));
+    const reasons = [`Season player value: ${Math.round(value)}/100`];
+    if (surplus && betterTeammates) reasons.push(`A higher-rated ${position} is already on Zoo's roster`);
+    else if (surplus) reasons.push(`${position} depth exceeds the preferred count, but value still controls`);
+    if (isNegativeAvailabilityStatus(currentAvailability.status)) reasons.push(`Availability: ${currentAvailability.status}`);
+    if (!surplus) reasons.push('Compare this roster spot against available waiver value');
+    return { playerId: player.playerId || null, name: player.name, position,
+      nflTeam: player.nflTeam || '', lineupStatus: player.rosterStatus || player.lineupSlot || '',
+      injuryStatus: player.injuryStatus || 'ACTIVE', currentAvailabilityStatus: currentAvailability.status || '',
+      expendabilityScore: score, seasonPlayerValue: Math.round(value),
+      currentPositionCount: samePosition.length, preferredPositionCount: preferred,
+      surplusAtPosition: surplus, reasons, bestAvailableReplacement: null };
+  }).sort((a,b) => b.expendabilityScore - a.expendabilityScore || a.seasonPlayerValue - b.seasonPlayerValue);
 
-    const afterCutCounts = simulateCountsAfterCut(counts, position);
-    const replacementOptions = buildBestAvailableOptions(
-      espnData,
-      posts,
-      afterCutCounts,
-      10,
-      watchListIntelligence
-    );
-    const bestReplacement = replacementOptions[0] || null;
-
-    // "Who should I cut today?" score. Player opportunity and current availability
-    // are deliberately weighted more heavily than simply being above a positional quota.
-    let score = 36;
-
-    if (surplus > 0) score += Math.min(16, 8 + ((surplus - 1) * 4));
-
-    score -= profile.scarcity * 0.12;
-    score -= profile.market * 0.08;
-    score -= marketQuality * 0.10;
-    score -= news * 0.25;
-
-    // A negative teammate opportunity adjustment means this player's path narrowed,
-    // so invert it here: -24 opportunity becomes +24 expendability.
-    score -= teammateContext.adjustment;
-
-    if (availability.totalAdjustment <= -20) score += 12;
-    else if (availability.totalAdjustment < 0) score += 5;
-
-    if (position === "RB") score -= 8;
-    if (position === "WR") score -= 5;
-    if (position === "LB" && surplus === 0) score -= 6;
-
-    if (
-      LFL_CONFIG.philosophy.singleCarryPositions.includes(position) &&
-      positionCount > preferred
-    ) {
-      score += 18;
+  // Pick distinct free agents across the three cards, reserving the top kicker
+  // for the highest-priority cut when Zoo has no starting kicker.
+  const top3 = results.slice(0, 3).map((drop, index) => {
+    let add = null;
+    if (index === 0 && !hasKicker) {
+      add = available.filter(p => canonicalPosition(p.position) === 'K')
+        .sort((a,b) => b.zooValueScore - a.zooValueScore)[0] || null;
     }
-
-    if (bestReplacement) {
-      score += Math.max(0, (bestReplacement.zooValueScore - 60) * 0.30);
-    }
-
-    const strategicOverride =
-      LFL_CONFIG.zooStrategicOverrides[normalize(player.name)] ||
-      null;
-
-    if (strategicOverride) {
-      score += Number(strategicOverride.expendabilityAdjustment || 0);
-    }
-
-    score = clamp(Math.round(score), 0, 100);
-
-    const reasons = [];
-    if (surplus > 0) reasons.push(`${position} is above Zoo's preferred roster count`);
-    if (position === "LB" && surplus > 0) reasons.push("LB surplus matters, but no longer outweighs a major role/opportunity decline elsewhere");
-    if (teammateContext.adjustment < 0) reasons.push(...teammateContext.notes);
-    if (teammateContext.adjustment > 0) reasons.push(...teammateContext.notes.map(note => `${note} — roster spot protected`));
-    if (isNegativeAvailabilityStatus(currentAvailability.status)) {
-      reasons.push(`current availability: ${currentAvailability.status}`);
-    }
-    if (position === "RB") reasons.push("RB scarcity/trade value protects this roster spot unless opportunity materially falls");
-    if (LFL_CONFIG.philosophy.singleCarryPositions.includes(position) && positionCount > preferred) {
-      reasons.push(`duplicate ${position} is normally unnecessary`);
-    }
-    if (bestReplacement && bestReplacement.zooValueScore >= 65) {
-      reasons.push(`best Zoo-value waiver target: ${bestReplacement.name} (${bestReplacement.position})`);
-    }
-    if (bestReplacement?.onWatchList) reasons.push("replacement is already on Zoo's Watch List");
-    if (strategicOverride?.note) reasons.push(strategicOverride.note);
-    if (!reasons.length) reasons.push("lower marginal value versus the rest of Zoo's roster");
-
-    results.push({
-      playerId: player.playerId || null,
-      name: player.name,
-      position,
-      nflTeam: player.nflTeam || "",
-      lineupStatus: player.rosterStatus || player.lineupSlot || "",
-      injuryStatus: player.injuryStatus || "ACTIVE",
-      currentAvailabilityStatus: currentAvailability.status || "",
-      expendabilityScore: score,
-      currentPositionCount: positionCount,
-      preferredPositionCount: preferred,
-      surplusAtPosition: surplus,
-      historicalPositionAverage: historicalPositionAverage(position),
-      strategicAdjustment: strategicOverride?.expendabilityAdjustment || 0,
-      teammateOpportunityAdjustment: teammateContext.adjustment,
-      teammateOpportunityPlayers: teammateContext.relatedPlayers,
-      bestAvailableReplacement: bestReplacement ? {
-        playerId: bestReplacement.playerId || null,
-        name: bestReplacement.name,
-        position: bestReplacement.position,
-        nflTeam: bestReplacement.nflTeam || "",
-        acquisitionScore: bestReplacement.zooValueScore,
-        zooValueScore: bestReplacement.zooValueScore,
-        onWatchList: Boolean(bestReplacement.onWatchList),
-        watchRecommendation: bestReplacement.watchRecommendation || "",
-        percentOwned: bestReplacement.percentOwned ?? null,
-        percentStarted: bestReplacement.percentStarted ?? null
+    if (!add) add = available.find(p => !usedAdds.has(normalize(p.name)) &&
+      !rosterNames.has(normalize(p.name)) &&
+      (!hasKicker || canonicalPosition(p.position) !== 'K')) || null;
+    if (add) usedAdds.add(normalize(add.name));
+    const gain = add ? Math.round(add.zooValueScore - drop.seasonPlayerValue) : null;
+    return { ...drop, rank: index + 1,
+      bestAvailableReplacement: add ? {
+        playerId: add.playerId || null, name: add.name, position: add.position,
+        nflTeam: add.nflTeam || '', acquisitionScore: add.zooValueScore,
+        zooValueScore: add.zooValueScore, onWatchList: Boolean(add.onWatchList)
       } : null,
-      reasons
-    });
+      projectedValueGain: gain,
+      reasons: [...drop.reasons, ...(add ? [!hasKicker && index === 0 && canonicalPosition(add.position) === 'K'
+        ? 'Fills Zoo’s empty starting kicker position'
+        : gain >= 8 ? `Available player rates ${gain} points higher` : 'Review before making a move; upgrade is not established'] : [])]
+    };
+  });
+  return { top3, all: results, rosterCounts: counts,
+    preferredRosterCounts: LFL_CONFIG.preferredRosterCounts, bestAvailableOverall: available.slice(0, 20) };
+}
+
+function buildSituationChanges(espnData = {}, posts = []) {
+  const roster = getZooRoster(espnData);
+  const own = new Set(roster.map(p => normalize(p.name)));
+  const available = new Set((espnData.availablePlayers || []).map(p => normalize(p.name)));
+  const candidates = new Map();
+  const cutoff = Date.now() - 12 * 60 * 60 * 1000;
+  for (const post of posts) {
+    const when = new Date(post.publishedAt || 0).getTime();
+    if (!Number.isFinite(when) || when < cutoff) continue;
+    const headline = String(post.title || '').trim();
+    const description = String(post.text || '').trim();
+    const lead = `${headline} ${description.slice(0, 280)}`.toLowerCase();
+    const negative = /ruled out|will miss|out for|injured reserve|concussion|sustain(?:s|ed)? .*injur|suffer(?:s|ed)? .*injur|did not practice|limited practice|demoted|benched|lost (?:his |the )?starting/.test(lead);
+    const positive = /cleared to play|full practice|returned to practice|removed from injury report|named starter|promoted to starter|increased (?:role|snaps|workload)|will start/.test(lead);
+    // Mixed or speculative headlines are not sufficiently clear to label.
+    if (negative === positive) continue;
+    const direct = (post.intelligence?.players || []).filter(p => p?.name &&
+      (own.has(normalize(p.name)) || available.has(normalize(p.name))));
+    // Avoid assigning a teammate's headline to every player mentioned in the body.
+    const primary = direct.find(p => headline && textContainsPlayer(headline, p.name));
+    if (!primary) continue;
+    const key = normalize(primary.name);
+    const item = { player: primary.name, position: primary.position || '',
+      context: own.has(key) ? 'ZOO' : 'AVAILABLE',
+      direction: negative ? 'WORSENED' : 'IMPROVED',
+      reason: description.slice(0, 360) || headline, headline,
+      publishedAt: post.publishedAt || '', link: post.link || '',
+      impactScore: (own.has(key) ? 20 : 0) + (negative ? 15 : 5) +
+        Number(post.intelligence?.fantasyRelevance || 0) };
+    const existing = candidates.get(key);
+    if (!existing || when > new Date(existing.publishedAt || 0).getTime()) candidates.set(key, item);
   }
-
-  results.sort((a, b) => b.expendabilityScore - a.expendabilityScore);
-
-  return {
-    top3: results.slice(0, 3).map((item, index) => ({
-      rank: index + 1,
-      ...item
-    })),
-    all: results,
-    rosterCounts: counts,
-    preferredRosterCounts: LFL_CONFIG.preferredRosterCounts,
-    bestAvailableOverall: buildBestAvailableOptions(
-      espnData,
-      posts,
-      counts,
-      20,
-      watchListIntelligence
-    )
-  };
+  return [...candidates.values()].sort((a,b) => b.impactScore - a.impactScore).slice(0, 8);
 }
 
 function getActionTier({
@@ -7142,6 +7098,7 @@ async function () {
           opponentIntelligence,
           opponentActionableUpdates: opponentIntelligence,
           opportunityAlerts,
+          situationChanges: buildSituationChanges(espnData, posts),
           zooPlayerUpdates,
           posts
         };
