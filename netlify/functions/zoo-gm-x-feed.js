@@ -3455,7 +3455,11 @@ function buildAddDropDecisions(
     const kicker = available
       .filter(player => canonicalPosition(player.position) === "K")
       .sort((a, b) => Number(b.zooValueScore || 0) - Number(a.zooValueScore || 0))[0];
-    const drop = drops.find(item => canonicalPosition(item.position) !== "K") || null;
+    const drop = drops.find(item => {
+      if (canonicalPosition(item.position) === "K") return false;
+      const rosterPlayer = roster.find(p => String(p.playerId || "") === String(item.playerId || "") || normalize(p.name) === normalize(item.name));
+      return rosterPlayer && lflBestPlayerScore(rosterPlayer, counts, posts, null) < 85;
+    }) || null;
 
     if (kicker) {
       decisions.push({
@@ -3507,6 +3511,15 @@ function buildAddDropDecisions(
       const keepValue = lflBestPlayerScore(dropPlayer, counts, posts, null);
       const addValue = Number(add.zooValueScore || add.acquisitionScore || 0);
       const rosterGain = Math.round(addValue - keepValue);
+      // Protect established elite players from inconsistent value scales.
+      // A legitimate waiver recommendation must improve the actual roster.
+      const weeklyRanks = dropPlayer.weeklyExpertRankings || dropPlayer.expertRankings || {};
+      const expertRank = Number(
+        dropPlayer.consensusRank || dropPlayer.weeklyConsensusRank ||
+        weeklyRanks.consensusRank || weeklyRanks.averageRank || 0
+      );
+      const isElite = (expertRank > 0 && expertRank <= 12) || keepValue >= 85;
+      if (isElite || rosterGain < 8) continue;
 
       const pair = {
         add: {
@@ -3564,7 +3577,7 @@ function buildAddDropDecisions(
       if (!bestPair || temporaryPair.rosterValueChange > bestPair.rosterValueChange) bestPair = temporaryPair;
     }
 
-    if (bestPair && (bestPair.verdict !== "NO" || Number(add.zooValueScore || 0) >= 80)) {
+    if (bestPair && bestPair.verdict !== "NO") {
       decisions.push(bestPair);
     }
 
@@ -6681,17 +6694,9 @@ async function () {
         playerCatalog
       );
 
-    // If the official FantasyPros API is configured, prefer it over scraped
-    // FantasyPros player-news cards while still keeping the weekly article.
-    const filteredScrapedItems =
-      fantasyProsApiItems.length
-        ? scrapedItems.filter(item =>
-            !(
-              item.sourceKey === "fantasypros" &&
-              item.sourceType === "PLAYER_NEWS"
-            )
-          )
-        : scrapedItems;
+    // Keep both FantasyPros paths: the API can omit articles present on the
+    // public player-news page. The existing deduper removes overlap.
+    const filteredScrapedItems = scrapedItems;
 
     const newsCutoff = Date.now() - (12 * 60 * 60 * 1000);
 
