@@ -3233,12 +3233,34 @@ function inferEmptyStartingPositions(roster = []) {
   return missing;
 }
 
-function buildStartingLineupAlerts(espnData = {}, posts = []) {
+function buildStartingLineupAlerts(
+  espnData = {},
+  posts = [],
+  byeTeams = null
+) {
   const roster = getZooRoster(espnData);
   const alerts = [];
 
   for (const player of roster) {
     if (!isZooStarter(player)) continue;
+
+    if (zooPlayerOnBye(player, byeTeams)) {
+      alerts.push({
+        playerId: player.playerId || null,
+        player: player.name,
+        position: canonicalPosition(player.position),
+        nflTeam: player.nflTeam || "",
+        lineupStatus: player.rosterStatus || player.lineupSlot || "",
+        availabilityStatus: "BYE",
+        severity: "URGENT",
+        action: "CHANGE LINEUP",
+        reason: player.name + " is on BYE this week",
+        source: "ESPN NFL Schedule",
+        publishedAt: "",
+        link: ""
+      });
+      continue;
+    }
 
     const news = currentNewsAvailability(player, posts);
     const status = String(news.status || "").toUpperCase();
@@ -3331,7 +3353,8 @@ function buildReplacementRecommendations(
   espnData = {},
   posts = [],
   watchListIntelligence = [],
-  lineupAlerts = []
+  lineupAlerts = [],
+  byeTeams = null
 ) {
   const roster = getZooRoster(espnData);
   const counts = countRosterPositions(roster);
@@ -3388,6 +3411,7 @@ function buildReplacementRecommendations(
       }));
 
     const best = [...bench, ...watch, ...available]
+        .filter(player => !zooPlayerOnBye(player, byeTeams))
       .sort((a, b) => b.score - a.score)[0] || null;
 
     results.push({
@@ -5462,6 +5486,21 @@ async function fetchSourcePage(source = {}) {
   }
 }
 
+function zooIsTeamDefenseNews(item = {}) {
+  const title = String(item.title || "").trim();
+
+  // Only filter articles explicitly about a team defense.
+  // Individual LB, DL, CB and S player news remains eligible.
+  const teamDefense =
+    /\b(?:D\/ST|DST|team defense|team defenses|defense\/special teams)\b/i;
+
+  const teamDefenseTitle =
+    /\b(?:defense|defences|defenses)\b.*\b(?:fantasy|stream|rank|start|sit)\b/i;
+
+  return teamDefense.test(title) ||
+    teamDefenseTitle.test(title);
+}
+
 async function fetchFantasyProsApiNews() {
   if (!FANTASYPROS_API_KEY) return [];
 
@@ -5482,7 +5521,9 @@ async function fetchFantasyProsApiNews() {
       }
     );
 
-    const items = (data.items || []).map(item => ({
+    const items = (data.items || [])
+      .filter(item => !zooIsTeamDefenseNews(item))
+      .map(item => ({
       author: "FantasyPros",
       handle: "fantasypros",
       text: cleanSourceText(item.desc || item.description || item.title || ""),
@@ -5550,8 +5591,21 @@ function rankingFocusCatalog(playerCatalog = [], allowedPositions = []) {
 }
 
 
+// Normalize punctuation differences for ranking name matching only.
+function zooRankingName(value = "") {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u2018\u2019\u02bc\u02bb']/g, "")
+    .replace(/\./g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function matchRankedPlayerFromRow(rowText = "", focus = []) {
-  const text = ` ${normalize(rowText).replace(/\./g, "")} `;
+  const text = ` ${zooRankingName(rowText)} `;
   if (!text.trim()) return null;
 
   const stripSuffix = value => String(value || "")
@@ -5560,7 +5614,7 @@ function matchRankedPlayerFromRow(rowText = "", focus = []) {
     .trim();
 
   for (const player of focus) {
-    const rawName = normalize(player.name || "").replace(/\./g, "");
+    const rawName = zooRankingName(player.name || "");
     if (!rawName) continue;
 
     // Exact catalog name first.
@@ -6549,8 +6603,51 @@ function buildEspnPlayerDiagnostic(espnData = {}) {
   };
 }
 
-exports.handler =
-async function () {
+// ZOO_GM_BYE_PATCH_V3
+async function loadZooByeTeams(espnData) {
+  const season = Number(espnData.seasonId || 2026);
+  const week = Number(
+    espnData.matchupPeriodId ||
+    espnData.scoringPeriodId ||
+    espnData.reportWeek
+  );
+
+  if (!Number.isInteger(week) || week < 1 || week > 18)
+    return null;
+
+  try {
+    const url =
+      "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard" +
+      "?dates=" + season +
+      "&seasontype=2&week=" + week + "&limit=100";
+
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (Number(data.week?.number) !== week ||
+        !Array.isArray(data.week?.teamsOnBye))
+      return null;
+
+    return new Set(
+      data.week.teamsOnBye.map(t =>
+        normalizeNflTeam(t.abbreviation || "")
+      )
+    );
+  } catch {
+    return null;
+  }
+}
+
+function zooPlayerOnBye(player, byeTeams) {
+  if (!(byeTeams instanceof Set)) return false;
+  const team = normalizeNflTeam(player.nflTeam || "");
+  return Boolean(team && byeTeams.has(team));
+}
+
+exports.handler = async function () {
   const runStartedAt = Date.now();
 
   if (
@@ -6618,6 +6715,9 @@ async function () {
       espnData.currentMatchupPeriodId ||
       1
     ) || 1;
+
+      const zooByeTeams = await loadZooByeTeams(espnData);
+      const zooOnBye = player => zooPlayerOnBye(player, zooByeTeams);
 
     const expertRankings =
       await loadExpertRankings(
@@ -6781,7 +6881,8 @@ async function () {
         nflTeam: player.nflTeam || "",
         playerScore: universal.score,
         seasonLongRating: universal.score,
-        weeklyAdviceRating: weekly.score,
+        weeklyAdviceRating: zooOnBye(player) ? null : weekly.score,
+          weeklyStatus: zooOnBye(player) ? "BYE" : "ACTIVE",
         components: universal.components,
         weeklyComponents: weekly.components
       };
@@ -6809,7 +6910,8 @@ async function () {
           name: player.name || "",
           position: canonicalPosition(player.position),
           nflTeam: player.nflTeam || "",
-          weeklyAdviceRating: weekly.score,
+          weeklyAdviceRating: zooOnBye(player) ? null : weekly.score,
+          weeklyStatus: zooOnBye(player) ? "BYE" : "ACTIVE",
           components: weekly.components
         };
       });
@@ -6824,17 +6926,19 @@ async function () {
 
     const lineupAlerts =
       buildStartingLineupAlerts(
-        espnData,
-        posts
-      );
+          espnData,
+          posts,
+          zooByeTeams
+        );
 
     const replacementRecommendations =
       buildReplacementRecommendations(
         espnData,
         posts,
         watchListIntelligence,
-        lineupAlerts
-      );
+          lineupAlerts,
+          zooByeTeams
+        );
 
     const addDropDecisions =
       buildAddDropDecisions(
