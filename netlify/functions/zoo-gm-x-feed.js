@@ -5683,7 +5683,24 @@ function rankingsFromTableRows(source = {}, html = "", playerCatalog = []) {
     }
 
     if (!rank || rank > 200) continue;
-    const player = matchRankedPlayerFromRow(rowText, focus);
+    let player = null;
+
+    // CBS: identify the player from the actual name field first.
+    if (source.key === "jamey" || source.key === "heath") {
+      const nameMatch = row.match(
+        /FantasyRankingsTable-playerName[^>]*>([\s\S]*?)<\/span>\s*<\/a>/i
+      );
+
+      if (nameMatch) {
+        const nameText = cleanSourceText(nameMatch[1]);
+        player = matchRankedPlayerFromRow(nameText, focus);
+      }
+    }
+
+    // Preserve existing matching for all other sources.
+    if (!player) {
+      player = matchRankedPlayerFromRow(rowText, focus);
+    }
     if (!player) continue;
     const position = canonicalPosition(player.position);
     if (allowedPositions.length && !allowedPositions.includes(position)) continue;
