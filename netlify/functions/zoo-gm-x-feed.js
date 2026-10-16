@@ -1,3 +1,4 @@
+
 const ESPN_ENDPOINT = "https://ma3dtribe.com/.netlify/functions/zoo-gm-espn";
 
 // -----------------------------------------------------------------------------
@@ -5584,7 +5585,10 @@ function rankingFocusCatalog(playerCatalog = [], allowedPositions = []) {
 
   const output = [];
   for (const [position, players] of grouped.entries()) {
-    players.sort((a, b) => playerMarketQuality(b) - playerMarketQuality(a));
+    players.sort((a, b) =>
+      Number(b.ownershipStatus === "ZOO") - Number(a.ownershipStatus === "ZOO") ||
+      playerMarketQuality(b) - playerMarketQuality(a)
+    );
     output.push(...players.slice(0, limits[position]));
   }
   return output;
@@ -5685,15 +5689,34 @@ function rankingsFromTableRows(source = {}, html = "", playerCatalog = []) {
     if (!rank || rank > 200) continue;
     let player = null;
 
-    // CBS: identify the player from the actual name field first.
+    // CBS encodes apostrophes in player names as &#039; (e.g. D&#039;Andre).
+    // Decode numeric HTML entities and match the player-name spans directly,
+    // rather than searching the entire row, which may include other names.
     if (source.key === "jamey" || source.key === "heath") {
-      const nameMatch = row.match(
-        /FantasyRankingsTable-playerName[^>]*>([\s\S]*?)<\/span>\s*<\/a>/i
-      );
-
-      if (nameMatch) {
-        const nameText = cleanSourceText(nameMatch[1]);
-        player = matchRankedPlayerFromRow(nameText, focus);
+      const decodeCbsName = value => cleanSourceText(String(value || "")
+        .replace(/&#(?:x([0-9a-f]+)|(\d+));/gi, (entity, hex, decimal) => {
+          const code = parseInt(hex || decimal, hex ? 16 : 10);
+          return code > 0 && code <= 0x10ffff
+            ? String.fromCodePoint(code) : entity;
+        }));
+      const firstMatch = row.match(/FantasyRankingsTable-firstName[^>]*>([\s\S]*?)<\/span>/i);
+      const lastMatch = row.match(/FantasyRankingsTable-lastName[^>]*>([\s\S]*?)<\/span>/i);
+      if (firstMatch && lastMatch) {
+        const cbsName = zooRankingName(
+          `${decodeCbsName(firstMatch[1])} ${decodeCbsName(lastMatch[1])}`
+        );
+        const candidates = focus.filter(candidate => {
+          const candidateName = zooRankingName(candidate.name);
+          if (candidateName === cbsName) return true;
+          const parts = candidateName.split(/\s+/);
+          return parts.length >= 2 &&
+            new RegExp(`^${escapeRegExp(parts[0])}(?:\\s+[a-z])?\\s+${escapeRegExp(parts[parts.length - 1])}$`).test(cbsName);
+        });
+        player = candidates.find(candidate => candidate.ownershipStatus === "ZOO") || candidates[0] || null;
+      }
+      if (!player) {
+        const decodedRowText = decodeCbsName(row);
+        player = matchRankedPlayerFromRow(decodedRowText, focus);
       }
     }
 
