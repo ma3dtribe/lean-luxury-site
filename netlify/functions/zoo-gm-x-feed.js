@@ -3870,7 +3870,8 @@ function buildSituationChanges(espnData = {}, posts = []) {
     if (!Number.isFinite(when) || when < cutoff) continue;
     const headline = String(post.title || '').trim();
     const description = String(post.text || '').trim();
-    const lead = `${headline} ${description.slice(0, 280)}`.toLowerCase();
+    // Only the headline may establish a change; the article body often discusses teammates.
+    const lead = headline.toLowerCase();
     const negative = /ruled out|will miss|out for|injured reserve|concussion|sustain(?:s|ed)? .*injur|suffer(?:s|ed)? .*injur|did not practice|limited practice|demoted|benched|lost (?:his |the )?starting/.test(lead);
     const positive = /cleared to play|full practice|returned to practice|removed from injury report|named starter|promoted to starter|increased (?:role|snaps|workload)|will start/.test(lead);
     // Mixed or speculative headlines are not sufficiently clear to label.
@@ -3880,6 +3881,11 @@ function buildSituationChanges(espnData = {}, posts = []) {
     // Avoid assigning a teammate's headline to every player mentioned in the body.
     const primary = direct.find(p => headline && textContainsPlayer(headline, p.name));
     if (!primary) continue;
+    // Do not let a teammate's practice news improve an injured player's status.
+    const rosterPlayer = roster.find(p => normalize(p.name) === normalize(primary.name));
+    const injuryStatus = String(rosterPlayer?.injuryStatus || '').toLowerCase();
+    if (positive && /concussion|protocol/.test(injuryStatus) &&
+        !/cleared (?:concussion )?protocol|cleared to play|removed from injury report/.test(lead)) continue;
     const key = normalize(primary.name);
     const item = { player: primary.name, position: primary.position || '',
       context: own.has(key) ? 'ZOO' : 'AVAILABLE',
