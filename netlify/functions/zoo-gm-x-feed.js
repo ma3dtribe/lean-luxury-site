@@ -571,7 +571,8 @@ function decodeXml(text = "") {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
+    .replace(/&#0*39;/gi, "'")
+    .replace(/&#(?:x0*27);/gi, "'")
     .replace(/&#x27;/g, "'")
     .replace(/&#x2F;/g, "/");
 }
@@ -5681,7 +5682,8 @@ function rankingsFromTableRows(source = {}, html = "", playerCatalog = []) {
       const match = rowText.match(/^(\d{1,3})\.?\s+/);
       if (match) rank = Number(match[1]);
     } else if (source.key === "jamey" || source.key === "heath") {
-      const match = row.match(/FantasyRankingsTable-td--rank[^>]*>\s*(\d{1,3})\s*<\/td>/i);
+      const match = row.match(/FantasyRankingsTable-td--rank[^>]*>\s*(\d{1,3})\s*<\/td>/i)
+        || row.match(/<td\b[^>]*class=["'][^"']*(?:--rank|rank)[^"']*["'][^>]*>\s*(?:<[^>]+>\s*)*(\d{1,3})/i);
       if (match) rank = Number(match[1]);
     } else if (source.key === "fabiano") {
       const cells = [...row.matchAll(/<td[^>]*>[\s\S]*?<p[^>]*>\s*([^<]+?)\s*<\/p>[\s\S]*?<\/td>/gi)]
@@ -5719,6 +5721,10 @@ function rankingsFromTableRows(source = {}, html = "", playerCatalog = []) {
             new RegExp(`^${escapeRegExp(parts[0])}(?:\\s+[a-z])?\\s+${escapeRegExp(parts[parts.length - 1])}$`).test(cbsName);
         });
         player = candidates.find(candidate => candidate.ownershipStatus === "ZOO") || candidates[0] || null;
+      }
+      if (!player) {
+        const playerLink = row.match(/<a\b[^>]*href=["'][^"']*\/players\/[^"']*["'][^>]*>([\s\S]*?)<\/a>/i);
+        if (playerLink) player = matchRankedPlayerFromRow(decodeCbsName(playerLink[1]), focus);
       }
       if (!player) {
         const decodedRowText = decodeCbsName(row);
@@ -5822,44 +5828,44 @@ function mergePositionRankings(target = {}, incoming = {}) {
 }
 
 async function fetchExpertRankingPage(source = {}, page = {}, playerCatalog = []) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3200);
-
-  try {
-    const response = await fetch(page.url, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.3; +https://ma3dtribe.com)",
-        "Accept": "text/html,application/xhtml+xml",
-        "Cache-Control": "no-cache"
-      },
-      signal: controller.signal
-    });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const html = await response.text();
-    const rankings = rankingsFromPage(
-      { ...source, positions: page.positions || source.positions || [] },
-      html,
-      playerCatalog
-    );
-    const playerCount = Object.values(rankings).reduce((sum, names) => sum + names.length, 0);
-    if (!playerCount) throw new Error("no matched players");
-
-    return { ok: true, url: page.url, positions: page.positions || [], rankings, playerCount };
-  } catch (error) {
-    return {
-      ok: false,
-      url: page.url,
-      positions: page.positions || [],
-      rankings: {},
-      playerCount: 0,
-      error: error.name === "AbortError" ? "timeout" : (error.message || String(error))
-    };
-  } finally {
-    clearTimeout(timer);
+  const timeoutMs = source.key === "espn_rankings" ? 8500 : 6500;
+  let lastError = "";
+  let htmlLength = 0;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(page.url, {
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; Zoo-GM/2.3; +https://ma3dtribe.com)",
+          "Accept": "text/html,application/xhtml+xml"
+        },
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const html = await response.text();
+      htmlLength = html.length;
+      const rankings = rankingsFromPage(
+        { ...source, positions: page.positions || source.positions || [] },
+        html, playerCatalog
+      );
+      const playerCount = Object.values(rankings)
+        .reduce((sum, names) => sum + names.filter(Boolean).length, 0);
+      if (!playerCount) throw new Error(`no matched players (HTML ${htmlLength} chars)`);
+      return { ok: true, url: page.url, positions: page.positions || [], rankings, playerCount, htmlLength };
+    } catch (error) {
+      lastError = error.name === "AbortError" ? "timeout" : (error.message || String(error));
+      // Retry transient timeouts, but do not retry pages with no matching rows.
+      if (attempt === 2 || (!/timeout|HTTP 5\d\d/.test(lastError))) break;
+    } finally {
+      clearTimeout(timer);
+    }
   }
+  return {
+    ok: false, url: page.url, positions: page.positions || [],
+    rankings: {}, playerCount: 0, htmlLength, error: lastError
+  };
 }
 
 async function discoverFabianoRankingPages(week = 1) {
@@ -5918,7 +5924,7 @@ async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 
     if (result.ok) mergePositionRankings(rankings, result.rankings);
   }
 
-  const playerCount = Object.values(rankings).reduce((sum, names) => sum + names.length, 0);
+  const playerCount = Object.values(rankings).reduce((sum, names) => sum + names.filter(Boolean).length, 0);
   const ok = playerCount > 0;
 
   return {
@@ -5926,11 +5932,13 @@ async function fetchExpertRankingSource(source = {}, playerCatalog = [], week = 
     source,
     expert: ok ? { name: source.name, rankings } : null,
     playerCount,
+    partial: pageResults.some(result => !result.ok),
     pageStatus: pageResults.map(result => ({
       url: result.url,
       positions: result.positions,
       ok: result.ok,
       playerCount: result.playerCount,
+      htmlLength: result.htmlLength || 0,
       error: result.ok ? "" : result.error
     })),
     error: ok ? "" : "No current weekly ranking pages returned matched players"
@@ -6309,6 +6317,7 @@ async function loadExpertRankings(playerCatalog = [], currentWeek = 1) {
           name: result.source.name,
           url: result.pageStatus?.[0]?.url || result.source.url || "",
           ok: result.ok,
+          partial: Boolean(result.partial),
           playerCount: result.playerCount || 0,
           pageStatus: result.pageStatus || [],
           error: result.ok ? "" : result.error
