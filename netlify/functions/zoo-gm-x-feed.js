@@ -2530,13 +2530,16 @@ function lflProductionScore(player = {}) {
   const production = productionSnapshot(player);
   const actualAverage = Number(production.seasonActualAverage);
   const actualPoints = Number(production.seasonActualPoints);
-  const historicalAverage = historicalPositionAverage(player.position);
+  const benchmark = historicalPositionAverage(player.position);
   const history = historicalProductionIndex(player.position);
-  if (!(actualAverage > 0) || !(actualPoints > 0) || historicalAverage <= 0) {
+  if (!(actualAverage > 0) || !(actualPoints > 0) || benchmark <= 0) {
     return clamp(Math.round(history * 0.25), 0, 100);
   }
-  const actual = clamp((actualAverage / historicalAverage) * 100, 0, 100);
-  return clamp(Math.round((actual * 0.80) + (history * 0.20)), 0, 100);
+  // A positional benchmark is a strong season, not an automatic 100.
+  // Above-benchmark players remain distinguishable instead of tying at the cap.
+  const ratio = actualAverage / benchmark;
+  const performance = ratio <= 1 ? ratio * 76 : 76 + ((ratio - 1) * 40);
+  return clamp(Math.round((performance * 0.85) + (history * 0.15)), 0, 100);
 }
 function roleOpportunityScore(player = {}, posts = []) {
   const production = productionSnapshot(player);
@@ -2567,14 +2570,21 @@ function universalPlayerScore(player = {}, posts = []) {
   const marketValue = playerMarketQuality(player);
   const healthAvailability = healthAvailabilityScore(player);
   const newsMomentum = newsMomentumScore(player, posts);
-  const score = clamp(Math.round(
-    ((expert == null ? 50 : expert) * 0.25) +
-    (production * 0.30) +
-    (roleOpportunity * 0.20) +
-    (marketValue * 0.10) +
-    (healthAvailability * 0.10) +
-    (newsMomentum * 0.05)
+  let score = clamp(Math.round(
+    ((expert == null ? 45 : expert) * 0.25) +
+    (production * 0.35) +
+    (roleOpportunity * 0.15) +
+    (marketValue * 0.15) +
+    (healthAvailability * 0.07) +
+    (newsMomentum * 0.03)
   ), 0, 100);
+  // An elite overall grade requires elite production AND expert/market support.
+  // Kickers can be valuable weekly without being 90+ overall roster assets.
+  const eliteEvidence = expert != null && expert >= 85 &&
+    production >= 85 && marketValue >= 75 &&
+    Number(productionSnapshot(player).seasonActualPoints) > 0;
+  if (canonicalPosition(player.position) === "K") score = Math.min(score, 82);
+  else if (!eliteEvidence) score = Math.min(score, 89);
   return { score, components: {
     expertConsensus: expert,
     lflProductionHistoricalValue: production,
@@ -2624,22 +2634,16 @@ function weeklyProductionScore(player = {}) {
   const projection = Number(production.currentWeekProjectedPoints);
   const actual = Number(production.currentWeekPoints);
   const values = [];
-
-  if (Number.isFinite(avg) && avg > 0) values.push({ value: avg, weight: 0.55 });
-  if (Number.isFinite(projection) && projection > 0) values.push({ value: projection, weight: 0.45 });
-  // Keep current-week points once a game has begun. Locked Thursday players should
-  // reflect what they actually produced while the rest of the week is still active.
-  if (Number.isFinite(actual) && actual > 0) values.push({ value: actual, weight: 0.30 });
-
-  if (!values.length) {
-    return { score: 50, average: null, projection: null, actual: null };
-  }
-
-  const totalWeight = values.reduce((sum, item) => sum + item.weight, 0);
-  const weightedPoints = values.reduce((sum, item) => sum + (item.value * item.weight), 0) / totalWeight;
-
+  if (Number.isFinite(avg) && avg > 0) values.push({ value: avg, weight: 0.35 });
+  if (Number.isFinite(projection) && projection > 0) values.push({ value: projection, weight: 0.65 });
+  if (Number.isFinite(actual) && actual > 0) values.push({ value: actual, weight: 0.50 });
+  if (!values.length) return { score: 35, average: null, projection: null, actual: null };
+  const weight = values.reduce((sum, item) => sum + item.weight, 0);
+  const points = values.reduce((sum, item) => sum + item.value * item.weight, 0) / weight;
+  const benchmark = historicalPositionAverage(player.position) || 40;
+  // A benchmark week earns ~70, with truly exceptional weeks approaching 100.
   return {
-    score: clamp(Math.round((weightedPoints / 50) * 100), 0, 100),
+    score: clamp(Math.round((points / benchmark) * 70), 0, 100),
     average: Number.isFinite(avg) ? Math.round(avg * 10) / 10 : null,
     projection: Number.isFinite(projection) ? Math.round(projection * 10) / 10 : null,
     actual: Number.isFinite(actual) ? Math.round(actual * 10) / 10 : null
@@ -2675,72 +2679,44 @@ function weeklyHealthScore(player = {}) {
   return { score: 85, status: rawStatus, rawStatus, conflict: false };
 }
 
-function weeklyRoleScore(player = {}, expertScore = null) {
-  let score = 50;
-  const projection = Number(player?.production?.currentWeekProjectedPoints);
+function weeklyRoleScore(player = {}, posts = []) {
+  // Role is independent of rankings/projections; those are scored elsewhere.
   const started = Number(player.percentStarted);
-  const rosterStatus = String(player.rosterStatus || "").toUpperCase();
-
-  if (expertScore != null) {
-    if (expertScore >= 90) score += 25;
-    else if (expertScore >= 75) score += 20;
-    else if (expertScore >= 60) score += 15;
-    else if (expertScore >= 45) score += 10;
-    else if (expertScore >= 25) score += 5;
-    else score -= 5;
-  }
-
-  if (Number.isFinite(projection) && projection > 0) {
-    if (projection >= 40) score += 15;
-    else if (projection >= 25) score += 12;
-    else if (projection >= 15) score += 8;
-    else score += 4;
-  }
-
-  if (Number.isFinite(started) && started >= 0) {
-    if (started >= 80) score += 15;
-    else if (started >= 50) score += 12;
-    else if (started >= 25) score += 8;
-    else if (started >= 10) score += 4;
-  }
-
-  if (rosterStatus === "STARTER") score += 5;
+  const role = roleOpportunitySignal(player, posts);
+  const startedScore = Number.isFinite(started) && started > 0
+    ? clamp(started * 1.15, 0, 100) : 35;
+  const score = startedScore * 0.65 + 35 * 0.35 + role.adjustment * 1.5;
   return clamp(Math.round(score), 0, 100);
 }
 
-function weeklyAdviceRating(player = {}) {
+function weeklyAdviceRating(player = {}, posts = []) {
   const position = canonicalPosition(player.position);
   const expert = weeklyExpertScore(player);
   const production = weeklyProductionScore(player);
   const health = weeklyHealthScore(player);
-  const role = weeklyRoleScore(player, expert);
+  const role = weeklyRoleScore(player, posts);
   const matchupNews = 50;
   const idpPosition = ["LB", "DL", "CB", "S"].includes(position);
 
-  let score;
-  if (expert != null) {
-    score =
-      (expert * 0.40) +
-      (role * 0.25) +
-      (production.score * 0.20) +
-      (health.score * 0.10) +
-      (matchupNews * 0.05);
-  } else if (!idpPosition) {
-    // Offensive player with no weekly expert rank: normalize the other 60%.
-    score =
-      (role * (0.25 / 0.60)) +
-      (production.score * (0.20 / 0.60)) +
-      (health.score * (0.10 / 0.60)) +
-      (matchupNews * (0.05 / 0.60));
-  } else {
-    // Defensive players should never reach this branch because missing IDP rank = 0.
-    score =
-      (role * 0.25) +
-      (production.score * 0.20) +
-      (health.score * 0.10) +
-      (matchupNews * 0.05);
+  // Weekly weighting favors projections and near-term role changes.
+  // Matchup stays neutral until a trustworthy opponent feed is connected.
+  const hasExpert = expert != null;
+  const expertWeight = hasExpert ? 0.30 : 0;
+  const otherWeight = hasExpert ? 1 : 0.70;
+  let score = (
+    (hasExpert ? expert * expertWeight : 0) +
+    (production.score * 0.30) +
+    (role * 0.20) +
+    (health.score * 0.15) +
+    (matchupNews * 0.05)
+  ) / otherWeight;
+  // Availability is a hard weekly constraint, even when experts are optimistic.
+  if (health.score <= 15) score = Math.min(score, 25);
+  else if (health.score <= 40) score = Math.min(score, 50);
+  // Avoid 90+ on a good projection alone: require corroborating expert/role evidence.
+  if (!(expert >= 85 && production.score >= 85 && role >= 65 && health.score >= 90)) {
+    score = Math.min(score, 89);
   }
-
   return {
     score: clamp(Math.round(score), 0, 100),
     components: {
@@ -6928,7 +6904,7 @@ exports.handler = async function () {
     // used everywhere else in Zoo GM. Roster status does not change the score.
     const zooRosterScores = getZooRoster(espnData).map(player => {
       const universal = universalPlayerScore(player, posts);
-      const weekly = weeklyAdviceRating(player);
+      const weekly = weeklyAdviceRating(player, posts);
       return {
         playerId: player.playerId || null,
         name: player.name || "",
@@ -6959,7 +6935,7 @@ exports.handler = async function () {
         return true;
       })
       .map(player => {
-        const weekly = weeklyAdviceRating(player);
+        const weekly = weeklyAdviceRating(player, posts);
         return {
           playerId: player.playerId || null,
           name: player.name || "",
