@@ -2601,10 +2601,10 @@ function universalPlayerScore(player = {}, posts = []) {
 // ============================================================
 // WEEKLY ADVICE RATING (0-100)
 // Separate from the existing season-long Player Score.
-// 40% weekly expert consensus
-// 25% current role / opportunity
-// 20% LFL production + current-week projection/actual
-// 10% health / availability
+// 30% weekly expert consensus
+// 20% current role / opportunity
+// 30% actual LFL production (season average and current-week actual)
+// 15% health / availability
 //  5% matchup/news (neutral 50 until a reliable NFL matchup feed is added)
 // ============================================================
 const WEEKLY_ADVICE_POOLS = {
@@ -2631,36 +2631,25 @@ function weeklyExpertScore(player = {}) {
 function weeklyProductionScore(player = {}) {
   const production = productionSnapshot(player);
   const avg = Number(production.seasonActualAverage);
-  const projection = Number(production.currentWeekProjectedPoints);
   const actual = Number(production.currentWeekPoints);
   const values = [];
+  // ESPN weekly projections are intentionally excluded from Zoo GM ratings.
   if (Number.isFinite(avg) && avg > 0) values.push({ value: avg, weight: 0.35 });
-  if (Number.isFinite(projection) && projection > 0) values.push({ value: projection, weight: 0.65 });
   if (Number.isFinite(actual) && actual > 0) values.push({ value: actual, weight: 0.50 });
-  if (!values.length) return { score: 35, average: null, projection: null, actual: null };
+  if (!values.length) return { score: 35, average: null, actual: null };
   const weight = values.reduce((sum, item) => sum + item.weight, 0);
   const points = values.reduce((sum, item) => sum + item.value * item.weight, 0) / weight;
   const benchmark = historicalPositionAverage(player.position) || 40;
   // A benchmark week earns ~70, with truly exceptional weeks approaching 100.
   return {
     score: clamp(Math.round((points / benchmark) * 70), 0, 100),
-    average: Number.isFinite(avg) ? Math.round(avg * 10) / 10 : null,
-    projection: Number.isFinite(projection) ? Math.round(projection * 10) / 10 : null,
-    actual: Number.isFinite(actual) ? Math.round(actual * 10) / 10 : null
+    average: Number.isFinite(avg) && avg > 0 ? Math.round(avg * 10) / 10 : null,
+    actual: Number.isFinite(actual) && actual > 0 ? Math.round(actual * 10) / 10 : null
   };
 }
 
 function weeklyHealthScore(player = {}) {
   const rawStatus = String(player.injuryStatus || player.status || "").trim().toUpperCase();
-  const projection = Number(player?.production?.currentWeekProjectedPoints);
-  const rank = Number(player?.expertRanking?.averageRank);
-  const hasProjection = Number.isFinite(projection) && projection > 0;
-  const hasRanking = Number.isFinite(rank) && rank > 0;
-
-  // Do not let a likely stale OUT tag erase strong live ranking/projection signals.
-  if (rawStatus === "OUT" && hasProjection && hasRanking) {
-    return { score: 60, status: "CONFLICT", rawStatus: "OUT", conflict: true };
-  }
   if (!rawStatus || rawStatus === "ACTIVE" || rawStatus === "HEALTHY") {
     return { score: 100, status: rawStatus || "ACTIVE", rawStatus: rawStatus || "ACTIVE", conflict: false };
   }
@@ -2680,7 +2669,7 @@ function weeklyHealthScore(player = {}) {
 }
 
 function weeklyRoleScore(player = {}, posts = []) {
-  // Role is independent of rankings/projections; those are scored elsewhere.
+  // Role is independent of expert rankings and actual production.
   const started = Number(player.percentStarted);
   const role = roleOpportunitySignal(player, posts);
   const startedScore = Number.isFinite(started) && started > 0
@@ -2698,7 +2687,7 @@ function weeklyAdviceRating(player = {}, posts = []) {
   const matchupNews = 50;
   const idpPosition = ["LB", "DL", "CB", "S"].includes(position);
 
-  // Weekly weighting favors projections and near-term role changes.
+  // Weekly weighting favors expert consensus, actual production, and near-term role changes.
   // Matchup stays neutral until a trustworthy opponent feed is connected.
   const hasExpert = expert != null;
   const expertWeight = hasExpert ? 0.30 : 0;
@@ -2713,7 +2702,7 @@ function weeklyAdviceRating(player = {}, posts = []) {
   // Availability is a hard weekly constraint, even when experts are optimistic.
   if (health.score <= 15) score = Math.min(score, 25);
   else if (health.score <= 40) score = Math.min(score, 50);
-  // Avoid 90+ on a good projection alone: require corroborating expert/role evidence.
+  // Require corroborating expert, production, and role evidence for 90+.
   if (!(expert >= 85 && production.score >= 85 && role >= 65 && health.score >= 90)) {
     score = Math.min(score, 89);
   }
@@ -2726,7 +2715,6 @@ function weeklyAdviceRating(player = {}, posts = []) {
       healthAvailability: health.score,
       matchupNews,
       averagePoints: production.average,
-      currentWeekProjection: production.projection,
       currentWeekActual: production.actual,
       status: health.status,
       rawStatus: health.rawStatus,
