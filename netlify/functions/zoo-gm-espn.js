@@ -417,8 +417,8 @@ function playerProductionSnapshot(
     .filter(stat => stat.appliedTotal !== null || stat.appliedAverage !== null);
 
   // ESPN statSourceId 0 is actual production and 1 is projection.
-  const actualRows = rows.filter(stat => stat.statSourceId === 0);
-  const projectedRows = rows.filter(stat => stat.statSourceId === 1);
+  const actualRows = rows.filter(stat => stat.statSourceId === 0 && stat.seasonId === SEASON_ID);
+  const projectedRows = rows.filter(stat => stat.statSourceId === 1 && stat.seasonId === SEASON_ID);
 
   const seasonActual = actualRows.find(stat => stat.scoringPeriodId === 0) || null;
   const seasonProjected = projectedRows.find(stat => stat.scoringPeriodId === 0) || null;
