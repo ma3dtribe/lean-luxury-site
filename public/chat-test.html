@@ -1133,6 +1133,29 @@ max-height:36vh !important;
   }
 }
 
+/* MA3DTRIBE MOBILE-ONLY UNIFORM STICKERS */
+@media (max-width: 520px) {
+
+  #stickerModal #stickerGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    align-items: center !important;
+    justify-items: center !important;
+    gap: 4px !important;
+  }
+
+  #stickerModal #stickerGrid img,
+  #stickerModal #stickerGrid video {
+    width: 100% !important;
+    max-width: 110px !important;
+    height: 85px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+}
+    
 </style>
 </head>    
 
