@@ -1197,6 +1197,33 @@ max-height:36vh !important;
   flex: 0 0 100% !important;
   margin: 0 !important;
   border-radius: 10px !important;
+} 
+
+/* MA3DTRIBE UNIFORM ANIMATED MEDIA SIZE */
+
+#chatMessages .msg:has(
+  video,
+  img[src*=".gif" i],
+  img[alt="gif"]
+) {
+  width: 252px !important;
+  max-width: 92% !important;
+  box-sizing: border-box !important;
+  padding: 6px !important;
+}
+
+#chatMessages .msg video,
+#chatMessages .msg img[src*=".gif" i],
+#chatMessages .msg img[alt="gif"] {
+  width: 240px !important;
+  max-width: 100% !important;
+  height: 180px !important;
+  max-height: 180px !important;
+  object-fit: contain !important;
+  display: block !important;
+  flex: 0 0 auto !important;
+  margin: 0 auto !important;
+  border-radius: 10px !important;
 }    
 </style>
 </head>    
