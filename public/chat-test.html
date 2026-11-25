@@ -1172,6 +1172,31 @@ max-height:36vh !important;
   display: block !important;
   margin: 0 !important;
   border-radius: 10px !important;
+}  
+
+/* MA3DTRIBE FULL-WIDTH ANIMATED STICKERS */
+
+#chatMessages .msg:has(video, img[src*=".gif" i]) {
+  width: 92% !important;
+  max-width: 420px !important;
+  padding: 6px !important;
+}
+
+#chatMessages .msg:has(video, img[src*=".gif" i]) .msgBody {
+  width: 100% !important;
+}
+
+#chatMessages .msg video,
+#chatMessages .msg img[src*=".gif" i] {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  display: block !important;
+  flex: 0 0 100% !important;
+  margin: 0 !important;
+  border-radius: 10px !important;
 }    
 </style>
 </head>    
