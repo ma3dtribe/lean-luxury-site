@@ -3028,5 +3028,119 @@ await loadPinnedMessage();
 }, 30000);
 });
   </script>
+
+
+<script>
+/* MA3DTRIBE MOBILE PICKER AUTO-NORMALIZE */
+(() => {
+  const grid = document.getElementById("stickerGrid");
+  if (!grid) return;
+
+  const cache = new Map();
+  const processed = new WeakSet();
+
+  async function normalizeSticker(img) {
+    if (window.innerWidth > 520) return;
+    if (processed.has(img)) return;
+
+    const src = img.currentSrc || img.src;
+    if (!src) return;
+
+    // Preserve animated stickers
+    if (!/\.(webp|png)(\?|$)/i.test(src)) return;
+
+    processed.add(img);
+
+    try {
+      if (cache.has(src)) {
+        img.src = cache.get(src);
+        return;
+      }
+
+      const original = new Image();
+      original.crossOrigin = "anonymous";
+      original.src = src;
+      await original.decode();
+
+      const canvas = document.createElement("canvas");
+      canvas.width = original.naturalWidth;
+      canvas.height = original.naturalHeight;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(original, 0, 0);
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const pixels = ctx.getImageData(0, 0, w, h).data;
+
+      let left = w, right = -1;
+      let top = h, bottom = -1;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (pixels[(y * w + x) * 4 + 3] > 20) {
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+          }
+        }
+      }
+
+      if (right < left || bottom < top) return;
+
+      const cw = right - left + 1;
+      const ch = bottom - top + 1;
+
+      const output = document.createElement("canvas");
+      output.width = 285;
+      output.height = 220;
+
+      const out = output.getContext("2d");
+      out.imageSmoothingQuality = "high";
+
+      const scale = Math.min(275 / cw, 210 / ch);
+      const dw = cw * scale;
+      const dh = ch * scale;
+
+      out.drawImage(
+        original,
+        left, top, cw, ch,
+        (285 - dw) / 2,
+        (220 - dh) / 2,
+        dw, dh
+      );
+
+      const normalized = output.toDataURL("image/png");
+      cache.set(src, normalized);
+
+      if (window.innerWidth <= 520) {
+        img.src = normalized;
+      }
+
+    } catch (err) {
+      console.warn("Sticker normalization skipped:", err);
+    }
+  }
+
+  function scanStickers() {
+    if (window.innerWidth > 520) return;
+
+    grid.querySelectorAll("img").forEach(img => {
+      normalizeSticker(img);
+    });
+  }
+
+  const observer = new MutationObserver(scanStickers);
+
+  observer.observe(grid, {
+    childList: true,
+    subtree: true
+  });
+
+  scanStickers();
+})();
+</script>
+      
 </body>
 </html>
